@@ -1,7 +1,7 @@
-name: Scientific rule issue
-description: Report or propose a scoring definition, boundary, or reference-method change
-title: "[Scientific rule]: "
-labels: [scientific-rule]
+name: Reference Documentation
+description: Report a question or correction involving scoring definitions or source documentation
+title: "[Reference Documentation]: "
+labels: [documentation]
 body:
   - type: input
     id: standard
@@ -37,15 +37,15 @@ body:
   - type: textarea
     id: source
     attributes:
-      label: Normative source and exact locator
+      label: Reference and exact locator
       description: Include DOI or URL plus page, table, supplement, and row.
     validations:
       required: true
   - type: textarea
     id: issue
     attributes:
-      label: Proposed rule or discrepancy
-      description: Describe the boundary, modifier, precedence, or reference behavior.
+      label: Question, correction, or discrepancy
+      description: Describe the relevant boundary, modifier, precedence, or reference behavior.
     validations:
       required: true
   - type: textarea
@@ -53,4 +53,3 @@ body:
     attributes:
       label: Independent calculation or evidence
       description: Do not use package output as the expected result.
-

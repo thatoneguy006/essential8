@@ -1,13 +1,8 @@
 name: Bug report
-description: Report reproducible package behavior that is not a scoring-rule dispute
+description: Report a reproducible problem with package behavior
 title: "[Bug]: "
 labels: [bug]
 body:
-  - type: markdown
-    attributes:
-      value: >-
-        This scaffold does not yet provide verified scoring functions. Use the
-        scientific-rule template for source or scoring-definition concerns.
   - type: textarea
     id: description
     attributes:
@@ -30,4 +25,3 @@ body:
       render: text
     validations:
       required: true
-

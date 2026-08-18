@@ -1,0 +1,18 @@
+standard_id,rule_set_version,metric,population,age_min,age_min_inclusive,age_max,age_max_inclusive,measurement_method,source_citation,source_locator,verification_status,verified_by,verification_date,notes
+AHA2022,2022.1,diet,adult,20,TRUE,,,mepa_or_population_quantile,doi:10.1161/CIR.0000000000001078,TODO: exact advisory supplement locator,planned,,,No rule values transcribed
+AHA2022,2022.1,physical_activity,adult,20,TRUE,,,moderate_equivalent_minutes_week,doi:10.1161/CIR.0000000000001078,TODO: exact advisory supplement locator,planned,,,No rule values transcribed
+AHA2022,2022.1,nicotine,adult,20,TRUE,,,status_quit_time_nds_secondhand,doi:10.1161/CIR.0000000000001078,TODO: exact advisory supplement locator,planned,,,No rule values transcribed
+AHA2022,2022.1,sleep,adult,20,TRUE,,,average_hours_per_24h,doi:10.1161/CIR.0000000000001078,TODO: exact advisory supplement locator,planned,,,No rule values transcribed
+AHA2022,2022.1,bmi,adult,20,TRUE,,,bmi_kg_m2,doi:10.1161/CIR.0000000000001078,TODO: exact advisory supplement locator,planned,,,General and Asian Pacific profiles require separate methods
+AHA2022,2022.1,blood_lipids,adult,20,TRUE,,,non_hdl_cholesterol,doi:10.1161/CIR.0000000000001078,TODO: exact advisory supplement locator,planned,,,Treatment modifier requires explicit ordering
+AHA2022,2022.1,blood_glucose,adult,20,TRUE,,,fasting_glucose_or_hba1c,doi:10.1161/CIR.0000000000001078,TODO: exact advisory supplement locator,planned,,,Precedence when both inputs exist must be sourced
+AHA2022,2022.1,blood_pressure,adult,20,TRUE,,,sbp_dbp_and_treatment,doi:10.1161/CIR.0000000000001078,TODO: exact advisory supplement locator,planned,,,Compound conditions require truth-table tests
+AHA2022,2022.1,diet,pediatric,2,TRUE,20,FALSE,to_be_verified,doi:10.1161/CIR.0000000000001078,TODO: exact pediatric supplement locator,planned,,,Raw-input capability is not yet defined
+AHA2022,2022.1,physical_activity,pediatric,2,TRUE,20,FALSE,to_be_verified,doi:10.1161/CIR.0000000000001078,TODO: exact pediatric supplement locator,planned,,,Age transitions must be metric-specific
+AHA2022,2022.1,nicotine,pediatric,2,TRUE,20,FALSE,to_be_verified,doi:10.1161/CIR.0000000000001078,TODO: exact pediatric supplement locator,planned,,,Applicability by age must be verified
+AHA2022,2022.1,sleep,pediatric,2,TRUE,20,FALSE,to_be_verified,doi:10.1161/CIR.0000000000001078,TODO: exact pediatric supplement locator,planned,,,Age-specific score bands must be transcribed
+AHA2022,2022.1,bmi,pediatric,2,TRUE,20,FALSE,age_sex_reference_percentile,doi:10.1161/CIR.0000000000001078,TODO: exact pediatric supplement locator,planned,,,Reference provider and point mapping are separate decisions
+AHA2022,2022.1,blood_lipids,pediatric,2,TRUE,20,FALSE,to_be_verified,doi:10.1161/CIR.0000000000001078,TODO: exact pediatric supplement locator,planned,,,Do not reuse adult bands without verification
+AHA2022,2022.1,blood_glucose,pediatric,2,TRUE,20,FALSE,to_be_verified,doi:10.1161/CIR.0000000000001078,TODO: exact pediatric supplement locator,planned,,,Eligibility and measurement rules must be verified
+AHA2022,2022.1,blood_pressure,pediatric,2,TRUE,20,FALSE,reference_percentile_or_category,doi:10.1161/CIR.0000000000001078,TODO: exact pediatric supplement locator,planned,,,Provider source and fallback must be explicit
+

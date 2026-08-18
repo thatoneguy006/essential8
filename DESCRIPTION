@@ -3,16 +3,14 @@ Title: Reproducible Cardiovascular Health Metric Scoring
 Version: 0.0.0.9000
 Authors@R:
     person(
-      given = "Package",
-      family = "Maintainer",
-      email = "maintainer@example.com",
-      role = c("aut", "cre")
+      given = "Carson",
+      family = "Richardson",
+      email = "carson.richardson@outlook.com",
+      role = c("aut", "cre", "cph")
     )
-Description: Provides a development framework for transparent, versioned,
-    and auditable calculation of cardiovascular health metric scores across
-    adult and pediatric populations. This pre-CRAN scaffold contains no
-    scientifically verified scoring rules and is not intended for clinical
-    decision support.
+Description: Provides reproducible R implementations of the American Heart Association 
+             Life’s Essential 8 scoring framework for adult and pediatric populations, including 
+             component-level and composite cardiovascular health scores.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Language: en-US

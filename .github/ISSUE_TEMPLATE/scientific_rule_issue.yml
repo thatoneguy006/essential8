@@ -1,0 +1,56 @@
+name: Scientific rule issue
+description: Report or propose a scoring definition, boundary, or reference-method change
+title: "[Scientific rule]: "
+labels: [scientific-rule]
+body:
+  - type: input
+    id: standard
+    attributes:
+      label: Standard and version
+      placeholder: AHA2022 / 2022.1
+    validations:
+      required: true
+  - type: dropdown
+    id: metric
+    attributes:
+      label: Metric
+      options:
+        - diet
+        - physical_activity
+        - nicotine
+        - sleep
+        - bmi
+        - blood_lipids
+        - blood_glucose
+        - blood_pressure
+    validations:
+      required: true
+  - type: dropdown
+    id: population
+    attributes:
+      label: Population
+      options:
+        - adult
+        - pediatric
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Normative source and exact locator
+      description: Include DOI or URL plus page, table, supplement, and row.
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: Proposed rule or discrepancy
+      description: Describe the boundary, modifier, precedence, or reference behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Independent calculation or evidence
+      description: Do not use package output as the expected result.
+

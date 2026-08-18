@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: >-
+  This pre-CRAN scaffold is not yet ready to cite for scientific scoring.
+  Replace the placeholder author metadata before public release.
+title: essential8
+type: software
+version: 0.0.0.9000
+date-released: 2026-08-18
+authors:
+  - family-names: Maintainer
+    given-names: Package
+    email: maintainer@example.com
+license: MIT
+

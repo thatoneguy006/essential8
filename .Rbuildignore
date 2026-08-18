@@ -1,0 +1,11 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.github$
+^CODE_OF_CONDUCT\.md$
+^CONTRIBUTING\.md$
+^CITATION\.cff$
+^LICENSE\.md$
+^cran-comments\.md$
+^data-raw$
+^docs$
+^pkgdown$

@@ -1,0 +1,28 @@
+Package: essential8
+Title: Reproducible Cardiovascular Health Metric Scoring
+Version: 0.0.0.9000
+Authors@R:
+    person(
+      given = "Package",
+      family = "Maintainer",
+      email = "maintainer@example.com",
+      role = c("aut", "cre")
+    )
+Description: Provides a development framework for transparent, versioned,
+    and auditable calculation of cardiovascular health metric scores across
+    adult and pediatric populations. This pre-CRAN scaffold contains no
+    scientifically verified scoring rules and is not intended for clinical
+    decision support.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Language: en-US
+Depends:
+    R (>= 4.2.0)
+Imports:
+    cli (>= 3.6.0)
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+

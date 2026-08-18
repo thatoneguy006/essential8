@@ -1,4 +1,4 @@
-# essential8
+# essential8 <img src="man/essential8_favicon.png" align="right" height="160" alt="" />
 
 <!-- badges: start -->
 <!-- badges: end -->

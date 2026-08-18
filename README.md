@@ -1,6 +1,7 @@
-# essential8
+# essential8 <img src="man/essential8_favicon.png" align="right" height="160" alt="" />
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/thatoneguy006/essential8/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/thatoneguy006/essential8/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 ## Overview

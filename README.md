@@ -21,3 +21,7 @@ install.packages("essential8")
 #install.packages("remotes")
 remotes::install_github("thatoneguy006/essential8")
 ```
+
+# Disclaimer
+`essential8` is independent research software and is NOT affiliated with,
+sponsored by, approved by, or endorsed by the American Heart Association.

@@ -7,8 +7,8 @@ type: software
 version: 0.0.0.9000
 date-released: 2026-08-18
 authors:
-  - family-names: Maintainer
-    given-names: Package
-    email: maintainer@example.com
+  - family-names: Richardson
+    given-names: Carson
+    email: carson.richardson@outlook.com
 license: MIT
 

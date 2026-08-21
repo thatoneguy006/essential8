@@ -49,15 +49,15 @@
 <h3 id="adult-lifes-essential-scoring-0-1-0">Adult Life’s Essential 8 scoring<a class="anchor" aria-label="anchor" href="#adult-lifes-essential-scoring-0-1-0"></a></h3>
 <ul><li>Added <code><a href="../reference/score_le8.html">score_le8()</a></code> for complete adult records aged 20 years or older, using the eight component definitions in the AHA 2022 Presidential Advisory.</li>
 <li>Added raw 16-item MEPA derivation with exact case-insensitive screener-column matching, optional explicit column mappings, an auditable <code>mepa_total</code>, and population-percentile diet scoring.</li>
-<li>Documented and boundary-tested the MEPA alcohol policy as a bounded positive interval: <code>(0, 14]</code> weekly servings for men and <code>(0, 7]</code> for women.</li>
 <li>Added moderate-equivalent activity minutes, general or Asian-Pacific BMI profiles, and explicit glucose-measure selection.</li>
-<li>Added strict validation for source-undefined combinations instead of silently inferring clinical status or measurement precedence.</li>
 <li>Added a manually scored 10-subject example data set, AHA worked-example tests, and cut-point, modifier, compound-condition, and validation tests.</li>
-<li>Transcribed 69 source-located adult LE8 rules across all eight metrics and a separate 17-row ledger representing the 16 MEPA screener criteria. These remain unverified, with source interpretations explicitly documented, until independent human verification is recorded.</li>
-<li>Added a reproducible Get Started vignette and reduced the README to a basic <code><a href="../reference/score_le8.html">score_le8()</a></code> workflow.</li>
+<li>Added a reproducible Get Started vignette.</li>
 </ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.0.9000" id="essential8-0009000">essential8 0.0.0.9000<a class="anchor" aria-label="anchor" href="#essential8-0009000"></a></h2>
 <div class="section level3">
-<h3 id="initial-development-version-0-1-0">Initial development version<a class="anchor" aria-label="anchor" href="#initial-development-version-0-1-0"></a></h3>
+<h3 id="initial-development-version-0-0-0-9000">Initial development version<a class="anchor" aria-label="anchor" href="#initial-development-version-0-0-0-9000"></a></h3>
 <ul><li>Created the initial package structure and development metadata.</li>
 <li>Added the rule schema, structured rule-validation errors, and unit tests.</li>
 <li>Added source hierarchy, evidence ledger, adult and pediatric transcription workspaces, and verification-gated build scripts.</li>

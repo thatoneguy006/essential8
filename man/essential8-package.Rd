@@ -8,22 +8,24 @@
 \description{
 \code{essential8} is being developed as a transparent, versioned, and auditable
 implementation of published cardiovascular health metric definitions for
-adult and pediatric research. The current development scaffold contains no
-verified scoring rules and exports no scoring functions.
+adult and pediatric research. Adult scoring based on the American Heart
+Association's 2022 Life's Essential 8 definition is available through
+\code{\link[=score_le8]{score_le8()}}.
 }
 \section{Scientific status}{
 
 Rule-transcription files are not executable package data until their source
 locations, boundary semantics, and expected results have been independently
-verified. The package is not intended for clinical decision support.
+verified. The package is research software and is not intended for clinical
+decision support.
 }
 
 \author{
-\strong{Maintainer}: Package Maintainer \email{maintainer@example.com}
+\strong{Maintainer}: Carson Richardson \email{carson.richardson@outlook.com} [copyright holder]
 
 Authors:
 \itemize{
-  \item Package Maintainer \email{maintainer@example.com}
+  \item Carson Richardson \email{carson.richardson@outlook.com} [copyright holder]
 }
 
 }

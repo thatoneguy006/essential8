@@ -1,10 +1,10 @@
 cff-version: 1.2.0
 message: >-
-  This pre-CRAN scaffold is not yet ready to cite.
+  If you use essential8, please cite this software.
 title: essential8
 type: software
-version: 0.0.0.9000
-date-released: 2026-08-18
+version: 0.1.0
+date-released: 2026-08-20
 authors:
   - family-names: Richardson
     given-names: Carson

@@ -1,6 +1,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.github$
+^_pkgdown\.yml$
 ^CODE_OF_CONDUCT\.md$
 ^CONTRIBUTING\.md$
 ^CITATION\.cff$
@@ -9,3 +10,4 @@
 ^data-raw$
 ^docs$
 ^pkgdown$
+^tmp$

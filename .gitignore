@@ -6,4 +6,4 @@
 *.tar.gz
 check/
 docs/
-
+tmp/

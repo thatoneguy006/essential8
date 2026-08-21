@@ -8,20 +8,13 @@
 - Added raw 16-item MEPA derivation with exact case-insensitive screener-column
   matching, optional explicit column mappings, an auditable `mepa_total`, and
   population-percentile diet scoring.
-- Documented and boundary-tested the MEPA alcohol policy as a bounded positive
-  interval: `(0, 14]` weekly servings for men and `(0, 7]` for women.
 - Added moderate-equivalent activity minutes, general or Asian-Pacific BMI
   profiles, and explicit glucose-measure selection.
-- Added strict validation for source-undefined combinations instead of
-  silently inferring clinical status or measurement precedence.
 - Added a manually scored 10-subject example data set, AHA worked-example
   tests, and cut-point, modifier, compound-condition, and validation tests.
-- Transcribed 69 source-located adult LE8 rules across all eight metrics and a
-  separate 17-row ledger representing the 16 MEPA screener criteria. These
-  remain unverified, with source interpretations explicitly documented, until
-  independent human verification is recorded.
-- Added a reproducible Get Started vignette and reduced the README to a basic
-  `score_le8()` workflow.
+- Added a reproducible Get Started vignette.
+
+# essential8 0.0.0.9000
 
 ## Initial development version
 

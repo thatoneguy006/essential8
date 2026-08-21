@@ -1,6 +1,6 @@
 Package: essential8
 Title: Reproducible Cardiovascular Health Metric Scoring
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R:
     person(
       given = "Carson",
@@ -19,7 +19,10 @@ Depends:
 Imports:
     cli (>= 3.6.0)
 Suggests:
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0)
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0

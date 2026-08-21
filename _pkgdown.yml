@@ -1,5 +1,65 @@
 url: https://thatoneguy006.github.io/essential8/
 
+development:
+  mode: auto
+
+repo:
+  url:
+    home: https://github.com/thatoneguy006/essential8/
+    source: https://github.com/thatoneguy006/essential8/blob/HEAD/
+    issue: https://github.com/thatoneguy006/essential8/issues/
+    user: https://github.com/
+
 template:
   bootstrap: 5
   light-switch: true
+  bslib:
+    font-size: 0.9rem
+    border-radius: 0.5rem
+    btn-border-radius: 0.25rem
+
+home:
+  title: essential8
+  description: Provides reproducible R implementations of the American Heart Association 
+             Life’s Essential 8 cardiovascular health scoring framework for adult and pediatric populations, including 
+             component-level and composite cardiovascular health scores.
+  sidebar:
+    html: pkgdown/home-sidebar.html
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [search, lightswitch, github]
+  components:
+    intro:
+      text: Get Started
+      href: articles/essential8-get-started.html
+    articles:
+      text: Articles
+      menu:
+        - text: Get Started
+          href: articles/essential8-get-started.html
+    news:
+      text: Changelog
+      href: news/index.html
+    github:
+      icon: fab fa-github fa-lg
+      href: https://github.com/thatoneguy006/ggforestplotR
+      aria-label: GitHub
+
+articles:
+  - title: Get Started
+    navbar: ~
+    contents:
+      - essential8-get-started
+
+footer:
+  structure:
+    left: developed_by
+    right: built_with
+
+authors:
+  Carson Richardson:
+    href: https://github.com/thatoneguy006
+  sidebar:
+    roles: [aut, cre]

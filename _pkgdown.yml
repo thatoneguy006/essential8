@@ -1,0 +1,5 @@
+url: https://thatoneguy006.github.io/essential8/
+
+template:
+  bootstrap: 5
+  light-switch: true

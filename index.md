@@ -25,10 +25,53 @@ Install the development version from GitHub with:
 remotes::install_github("thatoneguy006/essential8")
 ```
 
+## Background
+
+The American Heart Association Life’s Essential 8 (LE8) score is made up
+of 8 lifestyle components which are combined to create a composite
+outlook of an individual’s overall cardiovascular health profile.
+Currently, the only way to compute the LE8 score is to define a custom
+function or use the official tool online. This can be tedious to do,
+especially given that the online tool can only be used on a
+per-individual basis, and if you decide to create a custom function, the
+difference in scoring methods for adult and pediatric populations can be
+burdensome to program correctly.
+
+The purpose of this package is to streamline the ability to compute not
+only the composite LE8 score, but also the sub-components, taking into
+account all of the nuances specific to the adult and pediatric
+populations. This package also allows for some provider-specific
+alterations to the scores, outlined in Lloyd-Jones et. al. (2022).
+
+The composite LE8 score is simply the mean of all user provided scores.
+So, if a user only has 4/8 subscores, the composite is calculated based
+on these 4 sub-components. However, it is planned for this package to
+also allow you to choose how to deal with subjects who don’t complete
+all 8 components (call an error, warn, or propagate).
+
 ## Basic use
 
-Create one row per person, then pass the data frame to
-[`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md):
+**NOTE:** Prior to using this package, I **HIGHLY** recommend you read
+the AHA advisory (linked below). There are several options and nuances
+you need to be aware of, otherwise you will (or may) compute incorrect
+scores.
+
+To begin, pass a data-frame with at least **one** of the eight AHA
+metrics:
+
+- diet (can be MEPA or percentile based, see below for more info)
+- physical activity (moderate and vigorous activity)
+- smoking
+- sleep
+- BMI
+- blood lipids
+- blood glucose & diabetes
+- blood pressure (requires both systolic and diastolic measures)
+
+to the function. This example uses
+`score_le8(patient, diet_method = "mepa")`:
+
+For simplicity, this example only contains one record.
 
 ``` r
 
@@ -38,7 +81,8 @@ patient <- data.frame(
   id = "patient_1",
   age = 55,
   sex = "female",
-  diet_method = "mepa",
+
+  # MEPA items --------------------------
   # Daily servings
   olive_oil = 2,
   green_leafy_vegetables = 1,
@@ -58,37 +102,84 @@ patient <- data.frame(
   alcohol = 4,
   # Fast-food meals per week
   fast_food = 0,
+  # -------------------------------------
+
+  # Physical activity -------------------
   moderate_activity_minutes = 90,
   vigorous_activity_minutes = 0,
+  # -------------------------------------
+
+  # Smoking -----------------------------
   smoking_status = "former",
   years_since_quit = 6,
   current_inhaled_nds = FALSE,
   secondhand_smoke_home = FALSE,
+  # --------------------------------------
+
+  # Sleep --------------------------------
   sleep_hours = 7.5,
+  # --------------------------------------
+
+  # BMI ----------------------------------
   bmi = 27.5,
   bmi_profile = "general",
+  # --------------------------------------
+
+  # Blood lipids -------------------------
   non_hdl_cholesterol = 145,
   lipid_lowering_treatment = FALSE,
+  # --------------------------------------
+
+  # Diabetes & Glucose -------------------
   diabetes = FALSE,
   glucose_measure = "fasting_glucose",
   glucose_value = 95,
+  # --------------------------------------
+
+  # Blood Pressure -----------------------
   systolic_bp = 128,
   diastolic_bp = 78,
   antihypertensive_treatment = FALSE
+  # --------------------------------------
 )
 
-scores <- score_le8(patient)
-scores[c("id", "mepa_total", "le8_diet_score", "le8_score", "le8_category")]
+scores <- score_le8(patient, diet_method = "mepa")
+scores[
+  c(
+    "id",
+    "mepa_total",
+    "le8_diet_score",
+    "le8_composite_score",
+    "le8_category"
+  )
+]
 ```
 
-For `diet_method = "mepa"`, the package calculates `mepa_total` directly
-from the 16 screener responses. Their column names must be the screener
-labels shown above, with underscores between words. Matching is
-case-insensitive but does not guess alternative names. The result also
-appends all eight component scores, the exact unrounded composite score,
-and its cardiovascular health category. See
+`score_le8(data, diet_method = "mepa", mepa_columns = NULL)` applies one
+scalar diet method to every row in a call. The `diet_method` argument
+can be specified either as `"mepa"` or `"percentile"` corresponding to
+the 16 MEPA items seen above or the DASH percentile alternative scores.
+For `diet_method = "mepa"`, the function calculates `mepa_total`
+directly from the 16 screener responses. Their column names must be the
+screener labels shown above, with underscores between words. Matching is
+case-insensitive.
+
+The default MEPA sex field is `sex`; if it is absent, a `female` column
+is recognized automatically. Map any other field with, for example,
+`mepa_columns = c(sex = "reported_sex", alcohol = "alc")`. For sex,
+values are trimmed and matched case-insensitively as `m`/`f` or
+`male`/`female`. Numeric or character `0`/`1` values are also accepted,
+where `0` is male and `1` is female.
+
+For data that use both diet methods, split the rows into separate
+data-frames and call
+[`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+separately. Percentile calls require `diet_value`, containing a DASH or
+HEI-2015 percentile from 1 to 100. The result appends all eight
+component scores, the composite score, and its cardiovascular health
+category. See
 [`?score_le8`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
-for the complete input contract and optional clinical-judgment flags.
+for more information.
 
 ## Learn more
 

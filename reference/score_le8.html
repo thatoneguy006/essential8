@@ -59,7 +59,7 @@ for every required input and applies only to adults aged 20 years or older.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">score_le8</span><span class="op">(</span><span class="va">data</span>, mepa_columns <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">score_le8</span><span class="op">(</span><span class="va">data</span>, diet_method <span class="op">=</span> <span class="st">"mepa"</span>, mepa_columns <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -69,6 +69,13 @@ for every required input and applies only to adults aged 20 years or older.</p>
 <dl><dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
 <dd><p>A data frame with one row per adult and the required columns
 described below.</p></dd>
+
+
+<dt id="arg-diet-method">diet_method<a class="anchor" aria-label="anchor" href="#arg-diet-method"></a></dt>
+<dd><p>A single diet-scoring method applied to every row in
+<code>data</code>: <code>"mepa"</code> (the default) or <code>"percentile"</code>. Values are matched
+case-insensitively. Score data that use different methods in separate
+calls.</p></dd>
 
 
 <dt id="arg-mepa-columns">mepa_columns<a class="anchor" aria-label="anchor" href="#arg-mepa-columns"></a></dt>
@@ -82,32 +89,32 @@ values are actual column names. Unmapped fields use their canonical names.</p></
     <p>A data frame containing the original columns plus
 <code>mepa_total</code> (missing for population-percentile rows),
 <code>physical_activity_moderate_equivalent_minutes</code>, the eight component score
-columns prefixed with <code>le8_</code>, <code>le8_score</code>, and <code>le8_category</code>. The composite
-score is the exact, unrounded mean. Categories are <code>"low"</code> for scores below
-50, <code>"moderate"</code> for scores from 50 to less than 80, and <code>"high"</code> for
-scores of at least 80.</p>
+columns prefixed with <code>le8_</code>, <code>le8_composite_score</code>, and <code>le8_category</code>.
+The composite score is the exact, unrounded mean. Categories are <code>"low"</code>
+for scores below 50, <code>"moderate"</code> for scores from 50 to less than 80, and
+<code>"high"</code> for scores of at least 80.</p>
     </div>
     <div class="section level2">
     <h2 id="required-columns">Required columns<a class="anchor" aria-label="anchor" href="#required-columns"></a></h2>
 
 
 <ul><li><p><code>age</code>: Age in years; must be at least 20.</p></li>
-<li><p><code>diet_method</code>: Either <code>"mepa"</code> for an individual Mediterranean Eating
-Pattern for Americans score or <code>"percentile"</code> for a population DASH or
-HEI-2015 percentile. Values are matched case-insensitively.</p></li>
-<li><p>For <code>"mepa"</code>, the 16 Table C screener-item columns named below and <code>sex</code>.
+<li><p>For <code>diet_method = "mepa"</code>, the 16 Table C screener-item columns named
+below and <code>sex</code> (or <code>female</code> when <code>sex</code> is absent).
 The item names are matched exactly after case normalization. Supply daily
 servings in <code>olive_oil</code>, <code>green_leafy_vegetables</code>, <code>other_vegetables</code>, and
 <code>whole_grains</code>; supply weekly servings or frequency in <code>berries</code>,
 <code>other_fruit</code>, <code>meat</code>, <code>fish</code>, <code>chicken</code>, <code>cheese</code>, <code>butter_cream</code>,
 <code>beans</code>, <code>sweets_and_pastries</code>, <code>nuts</code>, and <code>alcohol</code>; supply the number
 of times per week that fast-food meals are consumed in <code>fast_food</code>.
-<code>sex</code> must be <code>"female"</code> or <code>"male"</code>, matched case-insensitively.</p></li>
-<li><p><code>diet_value</code>: Required only for <code>"percentile"</code> rows. Supply a DASH or
-HEI-2015 percentile from 1 to 100, calculated against the relevant
+Sex may be encoded as <code>"m"</code>/<code>"f"</code>, <code>"male"</code>/<code>"female"</code>, or <code>0</code>/<code>1</code>,
+where <code>0</code> is male and <code>1</code> is female. Character encodings are matched
+case-insensitively, and character <code>"0"</code>/<code>"1"</code> values are also accepted.</p></li>
+<li><p><code>diet_value</code>: Required only when <code>diet_method = "percentile"</code>. Supply a
+DASH or HEI-2015 percentile from 1 to 100, calculated against the relevant
 reference distribution. The function does not rank supplied rows against
-one another. If this column is present for mixed-method data, its MEPA
-rows must be missing.</p></li>
+one another. If this column is present for MEPA data, all its values must
+be missing.</p></li>
 <li><p><code>moderate_activity_minutes</code> and <code>vigorous_activity_minutes</code>: Weekly
 minutes. Each vigorous minute counts as two moderate-equivalent minutes.</p></li>
 <li><p><code>smoking_status</code>: One of <code>"never"</code>, <code>"former"</code>, or <code>"current"</code>.</p></li>
@@ -186,7 +193,6 @@ Life's Essential 8 Metrics. <em>Circulation</em>, 146(11), 822-835.
 <span class="r-in"><span>  id <span class="op">=</span> <span class="st">"patient_1"</span>,</span></span>
 <span class="r-in"><span>  age <span class="op">=</span> <span class="fl">55</span>,</span></span>
 <span class="r-in"><span>  sex <span class="op">=</span> <span class="st">"female"</span>,</span></span>
-<span class="r-in"><span>  diet_method <span class="op">=</span> <span class="st">"mepa"</span>,</span></span>
 <span class="r-in"><span>  <span class="co"># Daily servings</span></span></span>
 <span class="r-in"><span>  olive_oil <span class="op">=</span> <span class="fl">2</span>,</span></span>
 <span class="r-in"><span>  green_leafy_vegetables <span class="op">=</span> <span class="fl">1</span>,</span></span>
@@ -225,18 +231,18 @@ Life's Essential 8 Metrics. <em>Circulation</em>, 146(11), 822-835.
 <span class="r-in"><span>  antihypertensive_treatment <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">scores</span> <span class="op">&lt;-</span> <span class="fu">score_le8</span><span class="op">(</span><span class="va">patient</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">scores</span> <span class="op">&lt;-</span> <span class="fu">score_le8</span><span class="op">(</span><span class="va">patient</span>, diet_method <span class="op">=</span> <span class="st">"mepa"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">scores</span><span class="op">[</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="st">"id"</span>,</span></span>
 <span class="r-in"><span>    <span class="st">"mepa_total"</span>,</span></span>
 <span class="r-in"><span>    <span class="st">"le8_diet_score"</span>,</span></span>
-<span class="r-in"><span>    <span class="st">"le8_score"</span>,</span></span>
+<span class="r-in"><span>    <span class="st">"le8_composite_score"</span>,</span></span>
 <span class="r-in"><span>    <span class="st">"le8_category"</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">]</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          id mepa_total le8_diet_score le8_score le8_category</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 patient_1         14             80        80         high</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          id mepa_total le8_diet_score le8_composite_score le8_category</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 patient_1         14             80                  80         high</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

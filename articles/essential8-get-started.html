@@ -100,7 +100,6 @@ profiles and both glucose measures.</p>
 <span>  id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"patient_1"</span>, <span class="st">"patient_2"</span><span class="op">)</span>,</span>
 <span>  age <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">42</span>, <span class="fl">61</span><span class="op">)</span>,</span>
 <span>  sex <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"female"</span>, <span class="st">"male"</span><span class="op">)</span>,</span>
-<span>  diet_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mepa"</span>, <span class="st">"mepa"</span><span class="op">)</span>,</span>
 <span>  <span class="co"># Daily servings</span></span>
 <span>  olive_oil <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  green_leafy_vegetables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.5</span><span class="op">)</span>,</span>
@@ -145,26 +144,30 @@ profiles and both glucose measures.</p>
 frame retains the input columns and appends the derived activity
 measure, eight component scores, composite score, and category.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">scored</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span><span class="va">adult_data</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">scored</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span><span class="va">adult_data</span>, diet_method <span class="op">=</span> <span class="st">"mepa"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">scored</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"id"</span>,</span>
 <span>  <span class="st">"mepa_total"</span>,</span>
 <span>  <span class="st">"le8_diet_score"</span>,</span>
 <span>  <span class="st">"physical_activity_moderate_equivalent_minutes"</span>,</span>
-<span>  <span class="st">"le8_score"</span>,</span>
+<span>  <span class="st">"le8_composite_score"</span>,</span>
 <span>  <span class="st">"le8_category"</span></span>
 <span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;          id mepa_total le8_diet_score</span></span>
 <span><span class="co">#&gt; 1 patient_1         14             80</span></span>
 <span><span class="co">#&gt; 2 patient_2          4             25</span></span>
-<span><span class="co">#&gt;   physical_activity_moderate_equivalent_minutes le8_score le8_category</span></span>
-<span><span class="co">#&gt; 1                                           150    97.500         high</span></span>
-<span><span class="co">#&gt; 2                                            60    54.375     moderate</span></span></code></pre></div>
-<p>Vigorous activity minutes count twice toward
-<code>physical_activity_moderate_equivalent_minutes</code>.
-<code>le8_score</code> is the exact, unrounded mean of the eight
-component scores. Categories are <code>"low"</code> below 50,
+<span><span class="co">#&gt;   physical_activity_moderate_equivalent_minutes le8_composite_score</span></span>
+<span><span class="co">#&gt; 1                                           150              97.500</span></span>
+<span><span class="co">#&gt; 2                                            60              54.375</span></span>
+<span><span class="co">#&gt;   le8_category</span></span>
+<span><span class="co">#&gt; 1         high</span></span>
+<span><span class="co">#&gt; 2     moderate</span></span></code></pre></div>
+<p>Each vigorous activity minute counts as two moderate activity minutes
+and is recorded as
+<code>physical_activity_moderate_equivalent_minutes</code>. The
+<code>le8_composite_score</code> is the mean of the eight component
+scores. Categories are <code>"low"</code> below 50,
 <code>"moderate"</code> from 50 to less than 80, and <code>"high"</code>
 at 80 or higher.</p>
 <p>The component scores are available for analysis and quality
@@ -172,7 +175,7 @@ checks:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">component_columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^le8_.*_score$"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">scored</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>  <span class="st">"le8_score"</span></span>
+<span>  <span class="st">"le8_composite_score"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">scored</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="va">component_columns</span><span class="op">)</span><span class="op">]</span></span>
@@ -189,10 +192,9 @@ checks:</p>
 <div class="section level2">
 <h2 id="understand-the-mepa-inputs">Understand the MEPA inputs<a class="anchor" aria-label="anchor" href="#understand-the-mepa-inputs"></a>
 </h2>
-<p>The MEPA response columns use the screener-item labels in snake case.
-The underscores and words must match exactly, although letter case is
-ignored. This avoids silently assigning an intake measurement to the
-wrong screener item.</p>
+<p>The MEPA response columns use the 16 screener-item labels in snake
+case. The column names should reflect as seen below, but you can map
+custom columns using <code>mepa_columns = c()</code>.</p>
 <ul>
 <li>
 <code>olive_oil</code>, <code>green_leafy_vegetables</code>,
@@ -214,23 +216,30 @@ or sausage; <code>fish</code> includes fish, shellfish, or seafood; and
 cheese.</p>
 <p><code><a href="../reference/score_le8.html">score_le8()</a></code> evaluates each criterion and returns their
 sum as <code>mepa_total</code> so that the derived diet input can be
-audited. The alcohol criterion awards a point for intake above zero and
-no more than 7 servings per week for women or 14 for men; it awards no
-point at zero or above the applicable limit. The <code>sex</code> column
-is therefore required for MEPA scoring and accepts <code>"female"</code>
-or <code>"male"</code> (case-insensitive).</p>
+audited. The default MEPA sex field is <code>sex</code>. If
+<code>sex</code> is absent, a field named <code>female</code> is
+recognized automatically; map any other name with, for example,
+<code>mepa_columns = c(sex = "reported_sex")</code>. Values are trimmed
+and matched case-insensitively as <code>"m"</code>/<code>"f"</code> or
+<code>"male"</code>/<code>"female"</code>. Numeric or character
+<code>0</code>/<code>1</code> values are also accepted, where
+<code>0</code> is male and <code>1</code> is female.</p>
 </div>
 <div class="section level2">
 <h2 id="choose-other-input-methods-explicitly">Choose other input methods explicitly<a class="anchor" aria-label="anchor" href="#choose-other-input-methods-explicitly"></a>
 </h2>
-<p>Several LE8 inputs require an explicit method choice:</p>
+<p>The <code>diet_method</code> argument defaults to
+<code>"mepa"</code>. If a source data set contains both MEPA and
+percentile inputs, split the rows into separate data-frames and call
+<code><a href="../reference/score_le8.html">score_le8()</a></code> separately for each method.</p>
 <ul>
-<li>For <code>diet_method = "percentile"</code>, supply a DASH or
-HEI-2015 percentile from 1 to 100 in <code>diet_value</code>. Calculate
-that percentile against the relevant reference population before calling
-<code><a href="../reference/score_le8.html">score_le8()</a></code>; the function does not rank the supplied rows.
-<code>diet_value</code> need not be present for pure-MEPA data; in
-mixed-method data it must be missing on MEPA rows.</li>
+<li>For <code>diet_method = "mepa"</code>, <code>diet_value</code> is
+ignored.</li>
+<li>For <code>diet_method = "percentile"</code>, <code>diet_value</code>
+is required and MEPA columns will be ignored. Supply a DASH or HEI-2015
+percentile from 1 to 100, calculated against the relevant reference
+population before calling <code><a href="../reference/score_le8.html">score_le8()</a></code>; the function does
+not rank the supplied rows.</li>
 <li>Set <code>bmi_profile</code> to either <code>"general"</code> or
 <code>"asian_pacific"</code>. The function does not infer a BMI profile
 from race or ethnicity.</li>

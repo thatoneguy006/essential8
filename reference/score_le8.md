@@ -9,7 +9,7 @@ or older.
 ## Usage
 
 ``` r
-score_le8(data, mepa_columns = NULL)
+score_le8(data, diet_method = "mepa", mepa_columns = NULL)
 ```
 
 ## Arguments
@@ -18,6 +18,13 @@ score_le8(data, mepa_columns = NULL)
 
   A data frame with one row per adult and the required columns described
   below.
+
+- diet_method:
+
+  A single diet-scoring method applied to every row in `data`: `"mepa"`
+  (the default) or `"percentile"`. Values are matched
+  case-insensitively. Score data that use different methods in separate
+  calls.
 
 - mepa_columns:
 
@@ -30,34 +37,33 @@ score_le8(data, mepa_columns = NULL)
 A data frame containing the original columns plus `mepa_total` (missing
 for population-percentile rows),
 `physical_activity_moderate_equivalent_minutes`, the eight component
-score columns prefixed with `le8_`, `le8_score`, and `le8_category`. The
-composite score is the exact, unrounded mean. Categories are `"low"` for
-scores below 50, `"moderate"` for scores from 50 to less than 80, and
-`"high"` for scores of at least 80.
+score columns prefixed with `le8_`, `le8_composite_score`, and
+`le8_category`. The composite score is the exact, unrounded mean.
+Categories are `"low"` for scores below 50, `"moderate"` for scores from
+50 to less than 80, and `"high"` for scores of at least 80.
 
 ## Required columns
 
 - `age`: Age in years; must be at least 20.
 
-- `diet_method`: Either `"mepa"` for an individual Mediterranean Eating
-  Pattern for Americans score or `"percentile"` for a population DASH or
-  HEI-2015 percentile. Values are matched case-insensitively.
+- For `diet_method = "mepa"`, the 16 Table C screener-item columns named
+  below and `sex` (or `female` when `sex` is absent). The item names are
+  matched exactly after case normalization. Supply daily servings in
+  `olive_oil`, `green_leafy_vegetables`, `other_vegetables`, and
+  `whole_grains`; supply weekly servings or frequency in `berries`,
+  `other_fruit`, `meat`, `fish`, `chicken`, `cheese`, `butter_cream`,
+  `beans`, `sweets_and_pastries`, `nuts`, and `alcohol`; supply the
+  number of times per week that fast-food meals are consumed in
+  `fast_food`. Sex may be encoded as `"m"`/`"f"`, `"male"`/`"female"`,
+  or `0`/`1`, where `0` is male and `1` is female. Character encodings
+  are matched case-insensitively, and character `"0"`/`"1"` values are
+  also accepted.
 
-- For `"mepa"`, the 16 Table C screener-item columns named below and
-  `sex`. The item names are matched exactly after case normalization.
-  Supply daily servings in `olive_oil`, `green_leafy_vegetables`,
-  `other_vegetables`, and `whole_grains`; supply weekly servings or
-  frequency in `berries`, `other_fruit`, `meat`, `fish`, `chicken`,
-  `cheese`, `butter_cream`, `beans`, `sweets_and_pastries`, `nuts`, and
-  `alcohol`; supply the number of times per week that fast-food meals
-  are consumed in `fast_food`. `sex` must be `"female"` or `"male"`,
-  matched case-insensitively.
-
-- `diet_value`: Required only for `"percentile"` rows. Supply a DASH or
-  HEI-2015 percentile from 1 to 100, calculated against the relevant
-  reference distribution. The function does not rank supplied rows
-  against one another. If this column is present for mixed-method data,
-  its MEPA rows must be missing.
+- `diet_value`: Required only when `diet_method = "percentile"`. Supply
+  a DASH or HEI-2015 percentile from 1 to 100, calculated against the
+  relevant reference distribution. The function does not rank supplied
+  rows against one another. If this column is present for MEPA data, all
+  its values must be missing.
 
 - `moderate_activity_minutes` and `vigorous_activity_minutes`: Weekly
   minutes. Each vigorous minute counts as two moderate-equivalent
@@ -156,7 +162,6 @@ patient <- data.frame(
   id = "patient_1",
   age = 55,
   sex = "female",
-  diet_method = "mepa",
   # Daily servings
   olive_oil = 2,
   green_leafy_vegetables = 1,
@@ -195,16 +200,16 @@ patient <- data.frame(
   antihypertensive_treatment = FALSE
 )
 
-scores <- score_le8(patient)
+scores <- score_le8(patient, diet_method = "mepa")
 scores[
   c(
     "id",
     "mepa_total",
     "le8_diet_score",
-    "le8_score",
+    "le8_composite_score",
     "le8_category"
   )
 ]
-#>          id mepa_total le8_diet_score le8_score le8_category
-#> 1 patient_1         14             80        80         high
+#>          id mepa_total le8_diet_score le8_composite_score le8_category
+#> 1 patient_1         14             80                  80         high
 ```

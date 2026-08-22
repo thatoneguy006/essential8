@@ -50,6 +50,9 @@
 <ul><li>Added <code><a href="../reference/score_le8.html">score_le8()</a></code> for complete adult records aged 20 years or older, using the eight component definitions in the AHA 2022 Presidential Advisory.</li>
 <li>Added raw 16-item MEPA derivation with exact case-insensitive screener-column matching, optional explicit column mappings, an auditable <code>mepa_total</code>, and population-percentile diet scoring.</li>
 <li>Added moderate-equivalent activity minutes, general or Asian-Pacific BMI profiles, and explicit glucose-measure selection.</li>
+<li>Changed <code><a href="../reference/score_le8.html">score_le8()</a></code> to take one scalar <code>diet_method</code> argument per call, defaulting to <code>"mepa"</code>; percentile calls require <code>diet_value</code>, and data using both methods must be scored in separate calls.</li>
+<li>Renamed the composite output from <code>le8_score</code> to <code>le8_composite_score</code>.</li>
+<li>Expanded MEPA sex input to accept trimmed, case-insensitive <code>m</code>/<code>f</code> and <code>male</code>/<code>female</code>, plus numeric or character <code>0</code>/<code>1</code> (<code>0</code> is male and <code>1</code> is female). The default field is <code>sex</code>, <code>female</code> is recognized when <code>sex</code> is absent, and other field names can be supplied through <code>mepa_columns</code>.</li>
 <li>Added a reproducible Get Started vignette.</li>
 </ul></div>
 </div>

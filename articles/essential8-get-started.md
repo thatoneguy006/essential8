@@ -26,7 +26,6 @@ adult_data <- data.frame(
   id = c("patient_1", "patient_2"),
   age = c(42, 61),
   sex = c("female", "male"),
-  diet_method = c("mepa", "mepa"),
   # Daily servings
   olive_oil = c(2, 1),
   green_leafy_vegetables = c(1, 0.5),
@@ -75,29 +74,32 @@ category.
 
 ``` r
 
-scored <- score_le8(adult_data)
+scored <- score_le8(adult_data, diet_method = "mepa")
 
 scored[c(
   "id",
   "mepa_total",
   "le8_diet_score",
   "physical_activity_moderate_equivalent_minutes",
-  "le8_score",
+  "le8_composite_score",
   "le8_category"
 )]
 #>          id mepa_total le8_diet_score
 #> 1 patient_1         14             80
 #> 2 patient_2          4             25
-#>   physical_activity_moderate_equivalent_minutes le8_score le8_category
-#> 1                                           150    97.500         high
-#> 2                                            60    54.375     moderate
+#>   physical_activity_moderate_equivalent_minutes le8_composite_score
+#> 1                                           150              97.500
+#> 2                                            60              54.375
+#>   le8_category
+#> 1         high
+#> 2     moderate
 ```
 
-Vigorous activity minutes count twice toward
-`physical_activity_moderate_equivalent_minutes`. `le8_score` is the
-exact, unrounded mean of the eight component scores. Categories are
-`"low"` below 50, `"moderate"` from 50 to less than 80, and `"high"` at
-80 or higher.
+Each vigorous activity minute counts as two moderate activity minutes
+and is recorded as `physical_activity_moderate_equivalent_minutes`. The
+`le8_composite_score` is the mean of the eight component scores.
+Categories are `"low"` below 50, `"moderate"` from 50 to less than 80,
+and `"high"` at 80 or higher.
 
 The component scores are available for analysis and quality checks:
 
@@ -105,7 +107,7 @@ The component scores are available for analysis and quality checks:
 
 component_columns <- setdiff(
   grep("^le8_.*_score$", names(scored), value = TRUE),
-  "le8_score"
+  "le8_composite_score"
 )
 
 scored[c("id", component_columns)]
@@ -122,10 +124,9 @@ scored[c("id", component_columns)]
 
 ## Understand the MEPA inputs
 
-The MEPA response columns use the screener-item labels in snake case.
-The underscores and words must match exactly, although letter case is
-ignored. This avoids silently assigning an intake measurement to the
-wrong screener item.
+The MEPA response columns use the 16 screener-item labels in snake case.
+The column names should reflect as seen below, but you can map custom
+columns using `mepa_columns = c()`.
 
 - `olive_oil`, `green_leafy_vegetables`, `other_vegetables`, and
   `whole_grains` are servings per day.
@@ -141,23 +142,29 @@ or regular cheese or cream cheese.
 
 [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
 evaluates each criterion and returns their sum as `mepa_total` so that
-the derived diet input can be audited. The alcohol criterion awards a
-point for intake above zero and no more than 7 servings per week for
-women or 14 for men; it awards no point at zero or above the applicable
-limit. The `sex` column is therefore required for MEPA scoring and
-accepts `"female"` or `"male"` (case-insensitive).
+the derived diet input can be audited. The default MEPA sex field is
+`sex`. If `sex` is absent, a field named `female` is recognized
+automatically; map any other name with, for example,
+`mepa_columns = c(sex = "reported_sex")`. Values are trimmed and matched
+case-insensitively as `"m"`/`"f"` or `"male"`/`"female"`. Numeric or
+character `0`/`1` values are also accepted, where `0` is male and `1` is
+female.
 
 ## Choose other input methods explicitly
 
-Several LE8 inputs require an explicit method choice:
+The `diet_method` argument defaults to `"mepa"`. If a source data set
+contains both MEPA and percentile inputs, split the rows into separate
+data-frames and call
+[`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+separately for each method.
 
-- For `diet_method = "percentile"`, supply a DASH or HEI-2015 percentile
-  from 1 to 100 in `diet_value`. Calculate that percentile against the
-  relevant reference population before calling
+- For `diet_method = "mepa"`, `diet_value` is ignored.
+- For `diet_method = "percentile"`, `diet_value` is required and MEPA
+  columns will be ignored. Supply a DASH or HEI-2015 percentile from 1
+  to 100, calculated against the relevant reference population before
+  calling
   [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md);
-  the function does not rank the supplied rows. `diet_value` need not be
-  present for pure-MEPA data; in mixed-method data it must be missing on
-  MEPA rows.
+  the function does not rank the supplied rows.
 - Set `bmi_profile` to either `"general"` or `"asian_pacific"`. The
   function does not infer a BMI profile from race or ethnicity.
 - Set `glucose_measure` to `"fasting_glucose"` for a value in mg/dL or

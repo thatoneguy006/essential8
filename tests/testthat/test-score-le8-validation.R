@@ -46,10 +46,8 @@ test_that("adult age and source-defined measurement domains are enforced", {
   )
   expect_error(
     score_le8(
-      adult_example_row(
-        diet_method = "percentile",
-        diet_value = 0.999
-      )
+      adult_example_row(diet_value = 0.999),
+      diet_method = "percentile"
     ),
     class = "essential8_adult_input_error"
   )
@@ -124,14 +122,80 @@ test_that("clinical-judgment penalties must be explicitly applicable", {
   )
 })
 
-test_that("existing output columns cannot be silently overwritten", {
-  input <- adult_input_fixture()
-  input$le8_score <- 0
-
-  expect_error(
-    score_le8(input),
-    class = "essential8_adult_input_error"
+test_that("diet_method is a scalar, case-insensitive call-level argument", {
+  input <- rbind(
+    adult_example_row(diet_value = 25),
+    adult_example_row(diet_value = 95)
   )
+
+  result <- score_le8(input, diet_method = "  PeRcEnTiLe  ")
+
+  expect_equal(result$le8_diet_score, c(25, 100))
+  expect_false("diet_method" %in% names(result))
+})
+
+test_that("diet_method rejects non-scalar and unsupported values", {
+  invalid_methods <- list(
+    character(),
+    c("mepa", "percentile"),
+    NA_character_,
+    "",
+    "unknown",
+    1,
+    TRUE
+  )
+
+  for (method in invalid_methods) {
+    expect_error(
+      score_le8(adult_example_row(), diet_method = method),
+      class = "essential8_adult_input_error"
+    )
+  }
+})
+
+test_that("matching legacy diet_method columns are accepted unchanged", {
+  input <- rbind(
+    adult_mepa_row(total = 16),
+    adult_mepa_row(total = 15)
+  )
+  input$diet_method <- c(" MePa ", "MEPA")
+
+  result <- score_le8(input, diet_method = "mepa")
+
+  expect_identical(result$diet_method, input$diet_method)
+  expect_equal(result$mepa_total, c(16, 15))
+})
+
+test_that("legacy diet_method conflicts and mixed methods are rejected", {
+  legacy_values <- list(
+    c("percentile", "percentile"),
+    c("mepa", "percentile")
+  )
+
+  for (values in legacy_values) {
+    input <- rbind(
+      adult_mepa_row(total = 16),
+      adult_mepa_row(total = 15)
+    )
+    input$diet_method <- values
+
+    expect_error(
+      score_le8(input, diet_method = "mepa"),
+      class = "essential8_adult_input_error"
+    )
+  }
+})
+
+test_that("existing current or legacy composite columns are rejected", {
+  for (column in c("le8_composite_score", "le8_score")) {
+    input <- adult_input_fixture()
+    input[[column]] <- 0
+
+    expect_error(
+      score_le8(input),
+      class = "essential8_adult_input_error"
+    )
+  }
 })
 
 test_that("duplicate input column names are rejected", {
@@ -150,6 +214,6 @@ test_that("zero-row adult input has type-stable output", {
   result <- score_le8(input)
 
   expect_equal(nrow(result), 0L)
-  expect_type(result$le8_score, "double")
+  expect_type(result$le8_composite_score, "double")
   expect_type(result$le8_category, "character")
 })

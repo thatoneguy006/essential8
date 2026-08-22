@@ -4,11 +4,16 @@
 \alias{score_le8}
 \title{Score Life's Essential 8 cardiovascular health}
 \usage{
-score_le8(data, mepa_columns = NULL)
+score_le8(data, diet_method = "mepa", mepa_columns = NULL)
 }
 \arguments{
 \item{data}{A data frame with one row per adult and the required columns
 described below.}
+
+\item{diet_method}{A single diet-scoring method applied to every row in
+\code{data}: \code{"mepa"} (the default) or \code{"percentile"}. Values are matched
+case-insensitively. Score data that use different methods in separate
+calls.}
 
 \item{mepa_columns}{\code{NULL}, or a named character vector mapping canonical
 MEPA fields to columns in \code{data}. The names are canonical fields and the
@@ -18,10 +23,10 @@ values are actual column names. Unmapped fields use their canonical names.}
 A data frame containing the original columns plus
 \code{mepa_total} (missing for population-percentile rows),
 \code{physical_activity_moderate_equivalent_minutes}, the eight component score
-columns prefixed with \code{le8_}, \code{le8_score}, and \code{le8_category}. The composite
-score is the exact, unrounded mean. Categories are \code{"low"} for scores below
-50, \code{"moderate"} for scores from 50 to less than 80, and \code{"high"} for
-scores of at least 80.
+columns prefixed with \code{le8_}, \code{le8_composite_score}, and \code{le8_category}.
+The composite score is the exact, unrounded mean. Categories are \code{"low"}
+for scores below 50, \code{"moderate"} for scores from 50 to less than 80, and
+\code{"high"} for scores of at least 80.
 }
 \description{
 Computes the eight adult Life's Essential 8 (LE8) component scores and
@@ -33,22 +38,22 @@ for every required input and applies only to adults aged 20 years or older.
 
 \itemize{
 \item \code{age}: Age in years; must be at least 20.
-\item \code{diet_method}: Either \code{"mepa"} for an individual Mediterranean Eating
-Pattern for Americans score or \code{"percentile"} for a population DASH or
-HEI-2015 percentile. Values are matched case-insensitively.
-\item For \code{"mepa"}, the 16 Table C screener-item columns named below and \code{sex}.
+\item For \code{diet_method = "mepa"}, the 16 Table C screener-item columns named
+below and \code{sex} (or \code{female} when \code{sex} is absent).
 The item names are matched exactly after case normalization. Supply daily
 servings in \code{olive_oil}, \code{green_leafy_vegetables}, \code{other_vegetables}, and
 \code{whole_grains}; supply weekly servings or frequency in \code{berries},
 \code{other_fruit}, \code{meat}, \code{fish}, \code{chicken}, \code{cheese}, \code{butter_cream},
 \code{beans}, \code{sweets_and_pastries}, \code{nuts}, and \code{alcohol}; supply the number
 of times per week that fast-food meals are consumed in \code{fast_food}.
-\code{sex} must be \code{"female"} or \code{"male"}, matched case-insensitively.
-\item \code{diet_value}: Required only for \code{"percentile"} rows. Supply a DASH or
-HEI-2015 percentile from 1 to 100, calculated against the relevant
+Sex may be encoded as \code{"m"}/\code{"f"}, \code{"male"}/\code{"female"}, or \code{0}/\code{1},
+where \code{0} is male and \code{1} is female. Character encodings are matched
+case-insensitively, and character \code{"0"}/\code{"1"} values are also accepted.
+\item \code{diet_value}: Required only when \code{diet_method = "percentile"}. Supply a
+DASH or HEI-2015 percentile from 1 to 100, calculated against the relevant
 reference distribution. The function does not rank supplied rows against
-one another. If this column is present for mixed-method data, its MEPA
-rows must be missing.
+one another. If this column is present for MEPA data, all its values must
+be missing.
 \item \code{moderate_activity_minutes} and \code{vigorous_activity_minutes}: Weekly
 minutes. Each vigorous minute counts as two moderate-equivalent minutes.
 \item \code{smoking_status}: One of \code{"never"}, \code{"former"}, or \code{"current"}.
@@ -117,7 +122,6 @@ patient <- data.frame(
   id = "patient_1",
   age = 55,
   sex = "female",
-  diet_method = "mepa",
   # Daily servings
   olive_oil = 2,
   green_leafy_vegetables = 1,
@@ -156,13 +160,13 @@ patient <- data.frame(
   antihypertensive_treatment = FALSE
 )
 
-scores <- score_le8(patient)
+scores <- score_le8(patient, diet_method = "mepa")
 scores[
   c(
     "id",
     "mepa_total",
     "le8_diet_score",
-    "le8_score",
+    "le8_composite_score",
     "le8_category"
   )
 ]

@@ -8,28 +8,32 @@
 #'
 #' @param data A data frame with one row per adult and the required columns
 #'   described below.
+#' @param diet_method A single diet-scoring method applied to every row in
+#'   `data`: `"mepa"` (the default) or `"percentile"`. Values are matched
+#'   case-insensitively. Score data that use different methods in separate
+#'   calls.
 #' @param mepa_columns `NULL`, or a named character vector mapping canonical
 #'   MEPA fields to columns in `data`. The names are canonical fields and the
 #'   values are actual column names. Unmapped fields use their canonical names.
 #'
 #' @section Required columns:
 #' * `age`: Age in years; must be at least 20.
-#' * `diet_method`: Either `"mepa"` for an individual Mediterranean Eating
-#'   Pattern for Americans score or `"percentile"` for a population DASH or
-#'   HEI-2015 percentile. Values are matched case-insensitively.
-#' * For `"mepa"`, the 16 Table C screener-item columns named below and `sex`.
+#' * For `diet_method = "mepa"`, the 16 Table C screener-item columns named
+#'   below and `sex` (or `female` when `sex` is absent).
 #'   The item names are matched exactly after case normalization. Supply daily
 #'   servings in `olive_oil`, `green_leafy_vegetables`, `other_vegetables`, and
 #'   `whole_grains`; supply weekly servings or frequency in `berries`,
 #'   `other_fruit`, `meat`, `fish`, `chicken`, `cheese`, `butter_cream`,
 #'   `beans`, `sweets_and_pastries`, `nuts`, and `alcohol`; supply the number
 #'   of times per week that fast-food meals are consumed in `fast_food`.
-#'   `sex` must be `"female"` or `"male"`, matched case-insensitively.
-#' * `diet_value`: Required only for `"percentile"` rows. Supply a DASH or
-#'   HEI-2015 percentile from 1 to 100, calculated against the relevant
+#'   Sex may be encoded as `"m"`/`"f"`, `"male"`/`"female"`, or `0`/`1`,
+#'   where `0` is male and `1` is female. Character encodings are matched
+#'   case-insensitively, and character `"0"`/`"1"` values are also accepted.
+#' * `diet_value`: Required only when `diet_method = "percentile"`. Supply a
+#'   DASH or HEI-2015 percentile from 1 to 100, calculated against the relevant
 #'   reference distribution. The function does not rank supplied rows against
-#'   one another. If this column is present for mixed-method data, its MEPA
-#'   rows must be missing.
+#'   one another. If this column is present for MEPA data, all its values must
+#'   be missing.
 #' * `moderate_activity_minutes` and `vigorous_activity_minutes`: Weekly
 #'   minutes. Each vigorous minute counts as two moderate-equivalent minutes.
 #' * `smoking_status`: One of `"never"`, `"former"`, or `"current"`.
@@ -89,10 +93,10 @@
 #' A data frame containing the original columns plus
 #' `mepa_total` (missing for population-percentile rows),
 #' `physical_activity_moderate_equivalent_minutes`, the eight component score
-#' columns prefixed with `le8_`, `le8_score`, and `le8_category`. The composite
-#' score is the exact, unrounded mean. Categories are `"low"` for scores below
-#' 50, `"moderate"` for scores from 50 to less than 80, and `"high"` for
-#' scores of at least 80.
+#' columns prefixed with `le8_`, `le8_composite_score`, and `le8_category`.
+#' The composite score is the exact, unrounded mean. Categories are `"low"`
+#' for scores below 50, `"moderate"` for scores from 50 to less than 80, and
+#' `"high"` for scores of at least 80.
 #'
 #' @references
 #' Lloyd-Jones DM, Allen NB, Anderson CAM, et al. (2022). Life's Essential 8:
@@ -110,7 +114,6 @@
 #'   id = "patient_1",
 #'   age = 55,
 #'   sex = "female",
-#'   diet_method = "mepa",
 #'   # Daily servings
 #'   olive_oil = 2,
 #'   green_leafy_vegetables = 1,
@@ -149,20 +152,21 @@
 #'   antihypertensive_treatment = FALSE
 #' )
 #'
-#' scores <- score_le8(patient)
+#' scores <- score_le8(patient, diet_method = "mepa")
 #' scores[
 #'   c(
 #'     "id",
 #'     "mepa_total",
 #'     "le8_diet_score",
-#'     "le8_score",
+#'     "le8_composite_score",
 #'     "le8_category"
 #'   )
 #' ]
 #'
 #' @export
-score_le8 <- function(data, mepa_columns = NULL) {
-  data <- .validate_le8_adult_data(data)
+score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
+  diet_method <- .normalize_adult_diet_method(diet_method)
+  data <- .validate_le8_adult_data(data, diet_method)
 
   sleep_apnea_penalty <- .optional_adult_flag(
     data,
@@ -177,7 +181,7 @@ score_le8 <- function(data, mepa_columns = NULL) {
     "apply_lean_muscular_bmi_override"
   )
 
-  diet_method <- tolower(as.character(data$diet_method))
+  diet_methods <- rep(diet_method, nrow(data))
   smoking_status <- as.character(data$smoking_status)
   bmi_profile <- as.character(data$bmi_profile)
   glucose_measure <- as.character(data$glucose_measure)
@@ -185,19 +189,20 @@ score_le8 <- function(data, mepa_columns = NULL) {
   activity_minutes <- data$moderate_activity_minutes +
     2 * data$vigorous_activity_minutes
 
-  mepa_rows <- diet_method == "mepa"
-  percentile_rows <- diet_method == "percentile"
+  mepa_rows <- diet_methods == "mepa"
+  percentile_rows <- diet_methods == "percentile"
   mepa_total <- .compute_adult_mepa_total(
     data = data,
     rows = mepa_rows,
-    mepa_columns = mepa_columns
+    mepa_columns = mepa_columns,
+    require_schema = diet_method == "mepa"
   )
   diet_value <- rep(NA_real_, nrow(data))
   diet_value[mepa_rows] <- mepa_total[mepa_rows]
   if (any(percentile_rows)) {
     diet_value[percentile_rows] <- data$diet_value[percentile_rows]
   }
-  diet_score <- .score_adult_diet(method = diet_method, value = diet_value)
+  diet_score <- .score_adult_diet(method = diet_methods, value = diet_value)
   physical_activity_score <- .score_adult_physical_activity(
     activity_minutes
   )
@@ -242,11 +247,13 @@ score_le8 <- function(data, mepa_columns = NULL) {
     blood_glucose_score,
     blood_pressure_score
   )
-  le8_score <- rowMeans(score_matrix)
-  le8_category <- character(length(le8_score))
-  le8_category[le8_score < 50] <- "low"
-  le8_category[le8_score >= 50 & le8_score < 80] <- "moderate"
-  le8_category[le8_score >= 80] <- "high"
+  le8_composite_score <- rowMeans(score_matrix)
+  le8_category <- character(length(le8_composite_score))
+  le8_category[le8_composite_score < 50] <- "low"
+  le8_category[
+    le8_composite_score >= 50 & le8_composite_score < 80
+  ] <- "moderate"
+  le8_category[le8_composite_score >= 80] <- "high"
 
   scores <- data.frame(
     mepa_total = mepa_total,
@@ -259,7 +266,7 @@ score_le8 <- function(data, mepa_columns = NULL) {
     le8_blood_lipids_score = blood_lipids_score,
     le8_blood_glucose_score = blood_glucose_score,
     le8_blood_pressure_score = blood_pressure_score,
-    le8_score = le8_score,
+    le8_composite_score = le8_composite_score,
     le8_category = le8_category,
     stringsAsFactors = FALSE,
     check.names = FALSE
@@ -271,7 +278,6 @@ score_le8 <- function(data, mepa_columns = NULL) {
 .le8_adult_required_columns <- function() {
   c(
     "age",
-    "diet_method",
     "moderate_activity_minutes",
     "vigorous_activity_minutes",
     "smoking_status",
@@ -304,12 +310,64 @@ score_le8 <- function(data, mepa_columns = NULL) {
     "le8_blood_lipids_score",
     "le8_blood_glucose_score",
     "le8_blood_pressure_score",
+    "le8_composite_score",
+    # Reserve the pre-rename output name to prevent ambiguous results.
     "le8_score",
     "le8_category"
   )
 }
 
-.validate_le8_adult_data <- function(data) {
+.normalize_adult_diet_method <- function(diet_method) {
+  supported_type <- is.character(diet_method) || is.factor(diet_method)
+  if (!supported_type || length(diet_method) != 1L || anyNA(diet_method)) {
+    .abort_adult_scoring(c(
+      "{.arg diet_method} must be one complete string.",
+      "i" = "Choose {.val mepa} or {.val percentile}."
+    ))
+  }
+
+  normalized <- tolower(trimws(as.character(diet_method)))
+  if (!nzchar(normalized)) {
+    .abort_adult_scoring(
+      "{.arg diet_method} must not be empty."
+    )
+  }
+
+  .validate_adult_choices(
+    normalized,
+    "diet_method",
+    c("mepa", "percentile")
+  )
+  normalized
+}
+
+.validate_legacy_adult_diet_method <- function(data, diet_method) {
+  index <- match("diet_method", tolower(names(data)))
+  if (is.na(index)) {
+    return(invisible(NULL))
+  }
+
+  column <- names(data)[index]
+  .validate_adult_character_column(data, column)
+  legacy_method <- tolower(trimws(as.character(data[[column]])))
+  .validate_adult_choices(
+    legacy_method,
+    column,
+    c("mepa", "percentile")
+  )
+
+  if (any(legacy_method != diet_method)) {
+    .abort_adult_scoring(c(
+      "{.field {column}} conflicts with {.arg diet_method}.",
+      "x" = "A single diet method must apply to every row in one call.",
+      "i" = "Remove the legacy column and pass {.arg diet_method} directly."
+    ))
+  }
+
+  invisible(NULL)
+}
+
+.validate_le8_adult_data <- function(data, diet_method) {
   if (!is.data.frame(data)) {
     .abort_adult_scoring(c(
       "{.arg data} must be a data frame.",
@@ -327,6 +385,8 @@ score_le8 <- function(data, mepa_columns = NULL) {
       "x" = "Duplicated after case normalization: {paste(duplicated_columns, collapse = ', ')}."
     ))
   }
+
+  .validate_legacy_adult_diet_method(data, diet_method)
 
   missing_columns <- setdiff(.le8_adult_required_columns(), names(data))
   if (length(missing_columns) > 0L) {
@@ -383,7 +443,6 @@ score_le8 <- function(data, mepa_columns = NULL) {
   }
 
   character_columns <- c(
-    "diet_method",
     "smoking_status",
     "bmi_profile",
     "glucose_measure"
@@ -392,12 +451,6 @@ score_le8 <- function(data, mepa_columns = NULL) {
     .validate_adult_character_column(data, column)
   }
 
-  diet_method <- tolower(as.character(data$diet_method))
-  .validate_adult_choices(
-    diet_method,
-    "diet_method",
-    c("mepa", "percentile")
-  )
   .validate_adult_choices(
     data$smoking_status,
     "smoking_status",
@@ -481,9 +534,9 @@ score_le8 <- function(data, mepa_columns = NULL) {
 
   mepa <- diet_method == "mepa"
   percentile <- diet_method == "percentile"
-  if (any(percentile) && !"diet_value" %in% names(data)) {
+  if (percentile && !"diet_value" %in% names(data)) {
     .abort_adult_scoring(c(
-      "Population-percentile rows require {.field diet_value}.",
+      "Population-percentile scoring requires {.field diet_value}.",
       "i" = "Supply a DASH or HEI-2015 percentile from 1 to 100."
     ))
   }
@@ -493,16 +546,18 @@ score_le8 <- function(data, mepa_columns = NULL) {
         "Percentile {.field diet_value} must be numeric."
       )
     }
-    if (any(!is.na(data$diet_value[mepa]))) {
+    if (mepa && any(!is.na(data$diet_value))) {
       .abort_adult_scoring(c(
-        "MEPA rows must not supply a precomputed {.field diet_value}.",
+        "MEPA data must not supply a precomputed {.field diet_value}.",
         "i" = "Provide the 16 raw MEPA screener responses; the package derives {.field mepa_total}."
       ))
     }
-    percentile_value <- data$diet_value[percentile]
+    percentile_value <- data$diet_value[
+      rep(percentile, nrow(data))
+    ]
     if (anyNA(percentile_value) || any(!is.finite(percentile_value))) {
       .abort_adult_scoring(
-        "Percentile {.field diet_value} must be complete and finite for percentile rows."
+        "Percentile {.field diet_value} must be complete and finite."
       )
     }
     if (any(percentile_value < 1 | percentile_value > 100)) {

@@ -84,18 +84,71 @@
   data_names <- names(data)
   index <- match(tolower(unname(requested)), tolower(data_names))
 
+  sex_position <- match("sex", names(requested))
+  uses_default_sex <- tolower(unname(requested[sex_position])) == "sex"
+  if (is.na(index[sex_position]) && uses_default_sex) {
+    index[sex_position] <- match("female", tolower(data_names))
+  }
+
   if (anyNA(index)) {
     missing <- names(requested)[is.na(index)]
     expected <- unname(requested[missing])
     details <- paste0(missing, " -> ", expected)
     .abort_adult_scoring(c(
-      "MEPA scoring requires all 16 screener items and {.field sex}.",
+      "MEPA scoring requires all 16 screener items and sex information.",
       "x" = "Missing mappings: {paste(details, collapse = ', ')}.",
-      "i" = "Use exact snake_case labels or provide {.arg mepa_columns}."
+      "i" = "Use {.field sex}, {.field female}, or provide {.arg mepa_columns}."
+    ))
+  }
+
+  duplicated_columns <- unique(data_names[index[duplicated(index)]])
+  if (length(duplicated_columns) > 0L) {
+    .abort_adult_scoring(c(
+      "MEPA column mappings must resolve each field to a different column.",
+      "x" = "Duplicated resolved column: {paste(duplicated_columns, collapse = ', ')}."
     ))
   }
 
   stats::setNames(data_names[index], names(requested))
+}
+
+.normalize_adult_mepa_sex <- function(sex, column) {
+  supported_type <-
+    is.character(sex) || is.factor(sex) || is.numeric(sex)
+  if (!supported_type) {
+    .abort_adult_scoring(c(
+      "MEPA sex field {.field {column}} has an unsupported type.",
+      "i" = "Use character labels, a factor, or numeric 0/1 values."
+    ))
+  }
+
+  if (anyNA(sex)) {
+    .abort_adult_scoring(
+      "MEPA sex field {.field {column}} must be complete."
+    )
+  }
+
+  labels <- tolower(trimws(as.character(sex)))
+  if (any(labels == "")) {
+    .abort_adult_scoring(
+      "MEPA sex field {.field {column}} must not contain blank values."
+    )
+  }
+
+  normalized <- rep(NA_character_, length(labels))
+  normalized[labels %in% c("m", "male", "0")] <- "male"
+  normalized[labels %in% c("f", "female", "1")] <- "female"
+
+  unknown <- unique(labels[is.na(normalized)])
+  if (length(unknown) > 0L) {
+    .abort_adult_scoring(c(
+      "MEPA sex field {.field {column}} contains unsupported values.",
+      "x" = "Unsupported: {paste(unknown, collapse = ', ')}.",
+      "i" = "Use m/f, male/female, or 0/1; 0 is male and 1 is female."
+    ))
+  }
+
+  normalized
 }
 
 .validate_adult_mepa_inputs <- function(data, columns, rows) {
@@ -124,39 +177,14 @@
   }
 
   sex_column <- columns[["sex"]]
-  sex <- data[[sex_column]]
-  if (!is.character(sex) && !is.factor(sex)) {
-    .abort_adult_scoring(
-      "MEPA field {.field sex} ({.field {sex_column}}) must be character or factor."
-    )
-  }
-
-  applicable_sex <- as.character(sex[rows])
-  if (anyNA(applicable_sex) || any(applicable_sex == "")) {
-    .abort_adult_scoring(
-      "MEPA field {.field sex} must be complete for MEPA rows."
-    )
-  }
-
-  normalized_sex <- tolower(applicable_sex)
-  unknown <- setdiff(unique(normalized_sex), c("female", "male"))
-  if (length(unknown) > 0L) {
-    .abort_adult_scoring(c(
-      "MEPA field {.field sex} contains values without a source-defined alcohol criterion.",
-      "x" = "Unsupported: {paste(unknown, collapse = ', ')}.",
-      "i" = "Allowed values are {.val female} and {.val male}, matched case-insensitively."
-    ))
-  }
-
-  invisible(NULL)
+  .normalize_adult_mepa_sex(data[[sex_column]][rows], sex_column)
 }
 
-.score_adult_mepa_items <- function(data, columns, rows) {
+.score_adult_mepa_items <- function(data, columns, rows, sex) {
   value <- function(item) {
     data[[columns[[item]]]][rows]
   }
 
-  sex <- tolower(as.character(data[[columns[["sex"]]]][rows]))
   alcohol <- value("alcohol")
 
   cbind(
@@ -184,17 +212,27 @@
   )
 }
 
-.compute_adult_mepa_total <- function(data, rows, mepa_columns = NULL) {
+.compute_adult_mepa_total <- function(
+  data,
+  rows,
+  mepa_columns = NULL,
+  require_schema = any(rows)
+) {
   total <- rep(NA_integer_, nrow(data))
   .normalize_adult_mepa_column_map(mepa_columns)
 
-  if (!any(rows)) {
+  if (!require_schema) {
     return(total)
   }
 
   columns <- .resolve_adult_mepa_columns(data, mepa_columns)
-  .validate_adult_mepa_inputs(data, columns, rows)
-  item_scores <- .score_adult_mepa_items(data, columns, rows)
+  sex <- .validate_adult_mepa_inputs(data, columns, rows)
+  item_scores <- .score_adult_mepa_items(
+    data,
+    columns,
+    rows,
+    sex
+  )
   total[rows] <- as.integer(rowSums(item_scores))
 
   total

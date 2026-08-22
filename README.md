@@ -38,7 +38,6 @@ patient <- data.frame(
   id = "patient_1",
   age = 55,
   sex = "female",
-  diet_method = "mepa",
   # Daily servings
   olive_oil = 2,
   green_leafy_vegetables = 1,
@@ -77,16 +76,35 @@ patient <- data.frame(
   antihypertensive_treatment = FALSE
 )
 
-scores <- score_le8(patient)
-scores[c("id", "mepa_total", "le8_diet_score", "le8_score", "le8_category")]
+scores <- score_le8(patient, diet_method = "mepa")
+scores[
+  c(
+    "id",
+    "mepa_total",
+    "le8_diet_score",
+    "le8_composite_score",
+    "le8_category"
+  )
+]
 ```
 
-For `diet_method = "mepa"`, the package calculates `mepa_total` directly
-from the 16 screener responses. Their column names must be the screener labels
-shown above, with underscores between words. Matching is case-insensitive but
-does not guess alternative names. The result also appends all eight component
-scores, the exact unrounded composite score, and its cardiovascular health
-category. See `?score_le8` for the complete input contract and optional
+`score_le8(data, diet_method = "mepa", mepa_columns = NULL)` applies one
+scalar diet method to every row in a call. For `diet_method = "mepa"`, the
+package calculates `mepa_total` directly from the 16 screener responses. Their
+column names must be the screener labels shown above, with underscores between
+words. Matching is case-insensitive but does not guess alternative names.
+
+The default MEPA sex field is `sex`; if it is absent, a `female` column is
+recognized automatically. Map any other field with, for example,
+`mepa_columns = c(sex = "reported_sex")`. Values are trimmed and matched
+case-insensitively as `m`/`f` or `male`/`female`. Numeric or character `0`/`1`
+values are also accepted, where `0` is male and `1` is female.
+
+For data that use both diet methods, split the rows and call `score_le8()`
+separately for each method. Percentile calls require `diet_value`, containing a
+DASH or HEI-2015 percentile from 1 to 100. The result appends all eight
+component scores, the exact unrounded composite score, and its cardiovascular
+health category. See `?score_le8` for the complete input contract and optional
 clinical-judgment flags.
 
 ## Learn more

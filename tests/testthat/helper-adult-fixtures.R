@@ -24,7 +24,9 @@ adult_example_fixture <- function() {
 
 adult_input_fixture <- function() {
   fixture <- adult_example_fixture()
-  fixture[!startsWith(names(fixture), "expected_")]
+  fixture <- fixture[!startsWith(names(fixture), "expected_")]
+  fixture$diet_method <- NULL
+  fixture
 }
 
 adult_example_row <- function(...) {
@@ -33,23 +35,6 @@ adult_example_row <- function(...) {
 
   for (column in names(changes)) {
     row[[column]] <- changes[[column]]
-  }
-
-  if (
-    "diet_value" %in% names(changes) &&
-      "diet_value" %in% names(row) &&
-      tolower(as.character(row$diet_method)) == "mepa"
-  ) {
-    profile <- adult_mepa_profile(row$diet_value, row$sex)
-    for (column in adult_mepa_columns()) {
-      row[[column]] <- profile[[column]]
-    }
-
-    # Explicit screener overrides should win over the generated total profile.
-    for (column in intersect(names(changes), adult_mepa_columns())) {
-      row[[column]] <- changes[[column]]
-    }
-    row$diet_value <- NA_real_
   }
 
   row
@@ -168,7 +153,6 @@ adult_mepa_profile <- function(total = 16L, sex = "male") {
 
 adult_mepa_row <- function(total = 16L, sex = "male", ...) {
   row <- adult_example_row(...)
-  row$diet_method <- "mepa"
   row$diet_value <- NULL
 
   profile <- adult_mepa_profile(total, sex)

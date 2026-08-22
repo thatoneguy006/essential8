@@ -89,17 +89,16 @@ scores, the exact unrounded composite score, and its cardiovascular health
 category. See `?score_le8` for the complete input contract and optional
 clinical-judgment flags.
 
-For a guided introduction with reproducible multi-person examples, run:
-
-```r
-vignette("get-started", package = "essential8")
-```
+## Learn more
+- Package website: https://thatoneguy006.github.io/essential8/index.html
+- Get started: https://thatoneguy006.github.io/essential8/articles/essential8-get-started.html
 
 ## Disclaimer
 
 `essential8` is independent research software and is not affiliated with,
 sponsored by, approved by, or endorsed by the American Heart Association.
-It is not intended for clinical decision support.
+It is not intended for supporting clinical decision making or diagnosis of health 
+problems.
 
 ## References
 

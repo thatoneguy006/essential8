@@ -1,7 +1,0 @@
-priority,source_class,authority,use_in_package,verification_requirement
-1,AHA Presidential Advisory and supplement,normative,Canonical definitions and point mappings,Exact locator plus independent transcription review
-2,AHA-authored implementation study,normative implementation,Implementation details and reproduction targets,Cross-check against priority 1
-3,Validated pediatric reference standard,reference,Percentile or reference-state calculation,Document provider source version and independent fixtures
-4,Independent application study,validation,Reproduction and known adaptations,Never override a higher-priority source silently
-5,Software engineering standard,engineering,Testing documentation and release practices,Apply without changing the scientific target
-

@@ -7,7 +7,6 @@
 ^CITATION\.cff$
 ^LICENSE\.md$
 ^cran-comments\.md$
-^data-raw$
 ^docs$
 ^pkgdown$
 ^tmp$

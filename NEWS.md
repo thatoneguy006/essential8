@@ -10,16 +10,4 @@
   population-percentile diet scoring.
 - Added moderate-equivalent activity minutes, general or Asian-Pacific BMI
   profiles, and explicit glucose-measure selection.
-- Added a manually scored 10-subject example data set, AHA worked-example
-  tests, and cut-point, modifier, compound-condition, and validation tests.
 - Added a reproducible Get Started vignette.
-
-# essential8 0.0.0.9000
-
-## Initial development version
-
-- Created the initial package structure and development metadata.
-- Added the rule schema, structured rule-validation errors, and unit tests.
-- Added source hierarchy, evidence ledger, adult and pediatric transcription
-  workspaces, and verification-gated build scripts.
-- Added cross-platform R CMD check automation and repository governance files.

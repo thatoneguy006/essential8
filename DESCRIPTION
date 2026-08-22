@@ -9,17 +9,13 @@ Authors@R:
       role = c("aut", "cre", "cph"),
       comment = c(ORCID = "0009-0004-8710-1097")
     )
-Description: Provides reproducible R implementations of the American Heart Association 
-             Life’s Essential 8 cardiovascular health scoring framework for adult and pediatric populations, including 
-             component-level and composite cardiovascular health scores.
-URL: https://thatoneguy006.github.io/essential8/,
-    https://github.com/thatoneguy006/essential8
-BugReports: https://github.com/thatoneguy006/essential8/issues
+Description: Provides reproducible R implementations of the American Heart Association
+    Life’s Essential 8 cardiovascular health scoring framework for adult and
+    pediatric populations, including component-level and composite
+    cardiovascular health scores.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Language: en-US
-Depends:
-    R (>= 4.2.0)
 Imports:
     cli (>= 3.6.0)
 Suggests:
@@ -28,6 +24,9 @@ Suggests:
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/Needs/website: pkgdown
+URL: https://thatoneguy006.github.io/essential8/, https://github.com/thatoneguy006/essential8
+BugReports: https://github.com/thatoneguy006/essential8/issues
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 8.0.0
+Config/roxygen2/version: 8.0.0
 

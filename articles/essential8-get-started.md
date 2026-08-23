@@ -15,8 +15,8 @@ for the full input contract and scoring details.
 
 Supply one row per person. The example below uses base R and includes
 two adults with raw responses to the 16-item Mediterranean Eating
-Pattern for Americans (MEPA) screener. It also demonstrates both BMI
-profiles and both glucose measures.
+Pattern for Americans (MEPA) screener. It also demonstrates both
+possible BMI profiles and both possible glucose measures.
 
 ``` r
 
@@ -202,8 +202,7 @@ raw measurements before scoring.
 
 [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
 also rejects combinations for which the AHA source does not define a
-score instead of guessing. Examples include an underweight BMI that
-requires clinical judgment, a diagnostic-range glucose value paired with
-no diabetes diagnosis, and simultaneous current combustible smoking and
-inhaled nicotine-delivery-system use. Reconcile these records before
-scoring.
+score. Examples include an underweight BMI that requires clinical
+judgment, a diagnostic-range glucose value paired with no diabetes
+diagnosis, and simultaneous current combustible smoking and inhaled
+nicotine-delivery-system use. Reconcile these records before scoring.

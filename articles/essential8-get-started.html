@@ -91,8 +91,8 @@ details.</p>
 </h2>
 <p>Supply one row per person. The example below uses base R and includes
 two adults with raw responses to the 16-item Mediterranean Eating
-Pattern for Americans (MEPA) screener. It also demonstrates both BMI
-profiles and both glucose measures.</p>
+Pattern for Americans (MEPA) screener. It also demonstrates both
+possible BMI profiles and both possible glucose measures.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://thatoneguy006.github.io/essential8/">essential8</a></span><span class="op">)</span></span>
 <span></span>
@@ -273,11 +273,11 @@ absent, their adjustments are not applied.</p>
 required input. It does not impute missing data, convert units, or round
 raw measurements before scoring.</p>
 <p><code><a href="../reference/score_le8.html">score_le8()</a></code> also rejects combinations for which the AHA
-source does not define a score instead of guessing. Examples include an
-underweight BMI that requires clinical judgment, a diagnostic-range
-glucose value paired with no diabetes diagnosis, and simultaneous
-current combustible smoking and inhaled nicotine-delivery-system use.
-Reconcile these records before scoring.</p>
+source does not define a score. Examples include an underweight BMI that
+requires clinical judgment, a diagnostic-range glucose value paired with
+no diabetes diagnosis, and simultaneous current combustible smoking and
+inhaled nicotine-delivery-system use. Reconcile these records before
+scoring.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

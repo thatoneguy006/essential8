@@ -230,16 +230,15 @@ and matched case-insensitively as <code>"m"</code>/<code>"f"</code> or
 </h2>
 <p>The <code>diet_method</code> argument defaults to
 <code>"mepa"</code>. If a source data set contains both MEPA and
-percentile inputs, split the rows into separate data-frames and call
+percentile inputs, split the rows into separate data frames and call
 <code><a href="../reference/score_le8.html">score_le8()</a></code> separately for each method.</p>
 <ul>
-<li>For <code>diet_method = "mepa"</code>, <code>diet_value</code> is
-ignored.</li>
+<li>For <code>diet_method = "mepa"</code>, <code>diet_value</code> must
+be absent or contain only missing values.</li>
 <li>For <code>diet_method = "percentile"</code>, <code>diet_value</code>
-is required and MEPA columns will be ignored. Supply a DASH or HEI-2015
+is required; MEPA columns are ignored. Supply a DASH or HEI-2015
 percentile from 1 to 100, calculated against the relevant reference
-population before calling <code><a href="../reference/score_le8.html">score_le8()</a></code>; the function does
-not rank the supplied rows.</li>
+population before calling <code><a href="../reference/score_le8.html">score_le8()</a></code>.</li>
 <li>Set <code>bmi_profile</code> to either <code>"general"</code> or
 <code>"asian_pacific"</code>. The function does not infer a BMI profile
 from race or ethnicity.</li>
@@ -247,6 +246,20 @@ from race or ethnicity.</li>
 for a value in mg/dL or <code>"hba1c"</code> for a percentage. Diagnosed
 diabetes requires HbA1c for scoring.</li>
 </ul>
+<p>The percentile workflow is executable without removing the unused
+MEPA columns:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">percentile_data</span> <span class="op">&lt;-</span> <span class="va">adult_data</span><span class="op">[</span><span class="fl">1</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span><span class="va">percentile_data</span><span class="op">$</span><span class="va">diet_value</span> <span class="op">&lt;-</span> <span class="fl">95</span></span>
+<span><span class="va">percentile_scores</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span></span>
+<span>  <span class="va">percentile_data</span>,</span>
+<span>  diet_method <span class="op">=</span> <span class="st">"percentile"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">percentile_scores</span><span class="op">[</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"diet_value"</span>, <span class="st">"le8_diet_score"</span>, <span class="st">"le8_composite_score"</span><span class="op">)</span></span>
+<span><span class="op">]</span></span>
+<span><span class="co">#&gt;   diet_value le8_diet_score le8_composite_score</span></span>
+<span><span class="co">#&gt; 1         95            100                 100</span></span></code></pre></div>
 <p>Three optional, caller-adjudicated flags control clinical-judgment
 adjustments: <code>apply_lean_muscular_bmi_override</code>,
 <code>apply_sleep_apnea_penalty</code>, and

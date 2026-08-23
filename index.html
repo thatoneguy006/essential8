@@ -11,8 +11,8 @@
 <script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="essential8">
-<meta name="description" content="Provides reproducible R implementations of the American Heart Association Life’s Essential 8 cardiovascular health scoring framework for adult and pediatric populations, including component-level and composite cardiovascular health scores.">
-<meta property="og:description" content="Provides reproducible R implementations of the American Heart Association Life’s Essential 8 cardiovascular health scoring framework for adult and pediatric populations, including component-level and composite cardiovascular health scores.">
+<meta name="description" content="Provides a reproducible R implementation of the American Heart Association Life's Essential 8 cardiovascular health scoring framework for complete adult records from people aged 20 years or older.">
+<meta property="og:description" content="Provides a reproducible R implementation of the American Heart Association Life's Essential 8 cardiovascular health scoring framework for complete adult records from people aged 20 years or older.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -70,7 +70,7 @@
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
 <p><code>essential8</code> provides reproducible R implementations of the American Heart Association Life’s Essential 8 cardiovascular health scoring framework.</p>
-<p>The current development version implements complete-data adult scoring for people aged 20 years or older. Pediatric scoring is planned but not yet implemented.</p>
+<p>The current release implements complete-data adult scoring for people aged 20 years or older. Pediatric scoring is planned but not yet implemented.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -85,15 +85,14 @@
 <div class="section level2">
 <h2 id="background">Background<a class="anchor" aria-label="anchor" href="#background"></a>
 </h2>
-<p>The American Heart Association Life’s Essential 8 (LE8) score is made up of 8 lifestyle components which are combined to create a composite outlook of an individual’s overall cardiovascular health profile. Currently, the only way to compute the LE8 score is to define a custom function or use the official tool online. This can be tedious to do, especially given that the online tool can only be used on a per-individual basis, and if you decide to create a custom function, the difference in scoring methods for adult and pediatric populations can be burdensome to program correctly.</p>
-<p>The purpose of this package is to streamline the ability to compute not only the composite LE8 score, but also the sub-components, taking into account all of the nuances specific to the adult and pediatric populations. This package also allows for some provider-specific alterations to the scores, outlined in Lloyd-Jones et. al. (2022).</p>
-<p>The composite LE8 score is simply the mean of all user provided scores. So, if a user only has 4/8 subscores, the composite is calculated based on these 4 sub-components. However, it is planned for this package to also allow you to choose how to deal with subjects who don’t complete all 8 components (call an error, warn, or propagate).</p>
+<p>The American Heart Association Life’s Essential 8 (LE8) framework combines eight lifestyle and health components into a cardiovascular health score from 0 to 100. <code>essential8</code> applies the published adult scoring bands in one validated workflow and returns all eight component scores plus their exact, unrounded mean.</p>
+<p>Version 0.1.0 requires complete data for every component and supports adults aged 20 years or older. It does not implement pediatric or incomplete-record scoring. Optional AHA clinical-judgment adjustments are applied only when the caller supplies explicit adjudication flags; see <code><a href="reference/score_le8.html">?score_le8</a></code> for details.</p>
 </div>
 <div class="section level2">
 <h2 id="basic-use">Basic use<a class="anchor" aria-label="anchor" href="#basic-use"></a>
 </h2>
-<p><strong>NOTE:</strong> Prior to using this package, I <strong>HIGHLY</strong> recommend you read the AHA advisory (linked below). There are several options and nuances you need to be aware of, otherwise you will (or may) compute incorrect scores.</p>
-<p>To begin, pass a data-frame with at least <strong>one</strong> of the eight AHA metrics:</p>
+<p>Read the AHA advisory and <code><a href="reference/score_le8.html">?score_le8</a></code> before using the package, particularly the input units, population-percentile diet requirements, and optional clinical-judgment adjustments.</p>
+<p>Pass a data frame containing complete adult inputs for all eight AHA metrics:</p>
 <ul>
 <li>diet (can be MEPA or percentile based, see below for more info)</li>
 <li>physical activity (moderate and vigorous activity)</li>
@@ -101,11 +100,10 @@
 <li>sleep</li>
 <li>BMI</li>
 <li>blood lipids</li>
-<li>blood glucose &amp; diabetes</li>
+<li>blood glucose and diabetes status</li>
 <li>blood pressure (requires both systolic and diastolic measures)</li>
 </ul>
-<p>to the function. This example uses <code>score_le8(patient, diet_method = "mepa")</code>:</p>
-<p>For simplicity, this example only contains one record.</p>
+<p>The following example contains one record and uses <code>score_le8(patient, diet_method = "mepa")</code>:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://thatoneguy006.github.io/essential8/">essential8</a></span><span class="op">)</span></span>
 <span></span>
@@ -187,7 +185,7 @@
 <span><span class="op">]</span></span></code></pre></div>
 <p><code>score_le8(data, diet_method = "mepa", mepa_columns = NULL)</code> applies one scalar diet method to every row in a call. The <code>diet_method</code> argument can be specified either as <code>"mepa"</code> or <code>"percentile"</code> corresponding to the 16 MEPA items seen above or the DASH percentile alternative scores. For <code>diet_method = "mepa"</code>, the function calculates <code>mepa_total</code> directly from the 16 screener responses. Their column names must be the screener labels shown above, with underscores between words. Matching is case-insensitive.</p>
 <p>The default MEPA sex field is <code>sex</code>; if it is absent, a <code>female</code> column is recognized automatically. Map any other field with, for example, <code>mepa_columns = c(sex = "reported_sex", alcohol = "alc")</code>. For sex, values are trimmed and matched case-insensitively as <code>m</code>/<code>f</code> or <code>male</code>/<code>female</code>. Numeric or character <code>0</code>/<code>1</code> values are also accepted, where <code>0</code> is male and <code>1</code> is female.</p>
-<p>For data that use both diet methods, split the rows into separate data-frames and call <code><a href="reference/score_le8.html">score_le8()</a></code> separately. Percentile calls require <code>diet_value</code>, containing a DASH or HEI-2015 percentile from 1 to 100. The result appends all eight component scores, the composite score, and its cardiovascular health category. See <code><a href="reference/score_le8.html">?score_le8</a></code> for more information.</p>
+<p>For data that use both diet methods, split the rows into separate data frames and call <code><a href="reference/score_le8.html">score_le8()</a></code> separately. Percentile calls require <code>diet_value</code>, containing a DASH or HEI-2015 percentile from 1 to 100. The result appends all eight component scores, the composite score, and its cardiovascular health category. See <code><a href="reference/score_le8.html">?score_le8</a></code> for more information.</p>
 </div>
 <div class="section level2">
 <h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
@@ -202,7 +200,7 @@
 <div class="section level2">
 <h2 id="disclaimer">Disclaimer<a class="anchor" aria-label="anchor" href="#disclaimer"></a>
 </h2>
-<p><code>essential8</code> is independent research software and is not affiliated with, sponsored by, approved by, or endorsed by the American Heart Association. It is not intended for supporting clinical decision making or diagnosis of health problems.</p>
+<p><code>essential8</code> is independent research software and is not affiliated with, sponsored by, approved by, or endorsed by the American Heart Association. It is not intended for clinical decision-making or diagnosis of health problems.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

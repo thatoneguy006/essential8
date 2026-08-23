@@ -6,9 +6,9 @@
 Heart Association Life’s Essential 8 cardiovascular health scoring
 framework.
 
-The current development version implements complete-data adult scoring
-for people aged 20 years or older. Pediatric scoring is planned but not
-yet implemented.
+The current release implements complete-data adult scoring for people
+aged 20 years or older. Pediatric scoring is planned but not yet
+implemented.
 
 ## Installation
 
@@ -27,36 +27,29 @@ remotes::install_github("thatoneguy006/essential8")
 
 ## Background
 
-The American Heart Association Life’s Essential 8 (LE8) score is made up
-of 8 lifestyle components which are combined to create a composite
-outlook of an individual’s overall cardiovascular health profile.
-Currently, the only way to compute the LE8 score is to define a custom
-function or use the official tool online. This can be tedious to do,
-especially given that the online tool can only be used on a
-per-individual basis, and if you decide to create a custom function, the
-difference in scoring methods for adult and pediatric populations can be
-burdensome to program correctly.
+The American Heart Association Life’s Essential 8 (LE8) framework
+combines eight lifestyle and health components into a cardiovascular
+health score from 0 to 100. `essential8` applies the published adult
+scoring bands in one validated workflow and returns all eight component
+scores plus their exact, unrounded mean.
 
-The purpose of this package is to streamline the ability to compute not
-only the composite LE8 score, but also the sub-components, taking into
-account all of the nuances specific to the adult and pediatric
-populations. This package also allows for some provider-specific
-alterations to the scores, outlined in Lloyd-Jones et. al. (2022).
-
-The composite LE8 score is simply the mean of all user provided scores.
-So, if a user only has 4/8 subscores, the composite is calculated based
-on these 4 sub-components. However, it is planned for this package to
-also allow you to choose how to deal with subjects who don’t complete
-all 8 components (call an error, warn, or propagate).
+Version 0.1.0 requires complete data for every component and supports
+adults aged 20 years or older. It does not implement pediatric or
+incomplete-record scoring. Optional AHA clinical-judgment adjustments
+are applied only when the caller supplies explicit adjudication flags;
+see
+[`?score_le8`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+for details.
 
 ## Basic use
 
-**NOTE:** Prior to using this package, I **HIGHLY** recommend you read
-the AHA advisory (linked below). There are several options and nuances
-you need to be aware of, otherwise you will (or may) compute incorrect
-scores.
+Read the AHA advisory and
+[`?score_le8`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+before using the package, particularly the input units,
+population-percentile diet requirements, and optional clinical-judgment
+adjustments.
 
-To begin, pass a data-frame with at least **one** of the eight AHA
+Pass a data frame containing complete adult inputs for all eight AHA
 metrics:
 
 - diet (can be MEPA or percentile based, see below for more info)
@@ -65,13 +58,11 @@ metrics:
 - sleep
 - BMI
 - blood lipids
-- blood glucose & diabetes
+- blood glucose and diabetes status
 - blood pressure (requires both systolic and diastolic measures)
 
-to the function. This example uses
+The following example contains one record and uses
 `score_le8(patient, diet_method = "mepa")`:
-
-For simplicity, this example only contains one record.
 
 ``` r
 
@@ -171,8 +162,8 @@ values are trimmed and matched case-insensitively as `m`/`f` or
 `male`/`female`. Numeric or character `0`/`1` values are also accepted,
 where `0` is male and `1` is female.
 
-For data that use both diet methods, split the rows into separate
-data-frames and call
+For data that use both diet methods, split the rows into separate data
+frames and call
 [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
 separately. Percentile calls require `diet_value`, containing a DASH or
 HEI-2015 percentile from 1 to 100. The result appends all eight
@@ -192,8 +183,8 @@ for more information.
 
 `essential8` is independent research software and is not affiliated
 with, sponsored by, approved by, or endorsed by the American Heart
-Association. It is not intended for supporting clinical decision making
-or diagnosis of health problems.
+Association. It is not intended for clinical decision-making or
+diagnosis of health problems.
 
 ## References
 

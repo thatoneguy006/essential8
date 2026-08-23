@@ -154,22 +154,40 @@ female.
 
 The `diet_method` argument defaults to `"mepa"`. If a source data set
 contains both MEPA and percentile inputs, split the rows into separate
-data-frames and call
+data frames and call
 [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
 separately for each method.
 
-- For `diet_method = "mepa"`, `diet_value` is ignored.
-- For `diet_method = "percentile"`, `diet_value` is required and MEPA
-  columns will be ignored. Supply a DASH or HEI-2015 percentile from 1
-  to 100, calculated against the relevant reference population before
+- For `diet_method = "mepa"`, `diet_value` must be absent or contain
+  only missing values.
+- For `diet_method = "percentile"`, `diet_value` is required; MEPA
+  columns are ignored. Supply a DASH or HEI-2015 percentile from 1 to
+  100, calculated against the relevant reference population before
   calling
-  [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md);
-  the function does not rank the supplied rows.
+  [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md).
 - Set `bmi_profile` to either `"general"` or `"asian_pacific"`. The
   function does not infer a BMI profile from race or ethnicity.
 - Set `glucose_measure` to `"fasting_glucose"` for a value in mg/dL or
   `"hba1c"` for a percentage. Diagnosed diabetes requires HbA1c for
   scoring.
+
+The percentile workflow is executable without removing the unused MEPA
+columns:
+
+``` r
+
+percentile_data <- adult_data[1, , drop = FALSE]
+percentile_data$diet_value <- 95
+percentile_scores <- score_le8(
+  percentile_data,
+  diet_method = "percentile"
+)
+percentile_scores[
+  c("diet_value", "le8_diet_score", "le8_composite_score")
+]
+#>   diet_value le8_diet_score le8_composite_score
+#> 1         95            100                 100
+```
 
 Three optional, caller-adjudicated flags control clinical-judgment
 adjustments: `apply_lean_muscular_bmi_override`,

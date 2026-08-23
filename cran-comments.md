@@ -1,14 +1,15 @@
 ## Test environments
 
-- Local development environment: pending
-- GitHub Actions: pending
+- Local: Windows 11 x64 (build 26200), R 4.6.1
 
 ## R CMD check results
 
-Pre-CRAN scaffold; results will be recorded here before submission.
+0 errors | 0 warnings | 1 note
 
-## Scientific status
+- This is a new submission.
 
-This development version intentionally exports no scoring functions and
-contains no verified scoring-rule data.
+## Submission notes
+
+- Version 0.1.0 implements complete-data adult scoring for people aged 20 years
+  or older. Pediatric and incomplete-record scoring are not yet implemented.
 

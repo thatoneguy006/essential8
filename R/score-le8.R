@@ -541,29 +541,20 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
     ))
   }
   if ("diet_value" %in% names(data)) {
-    if (!is.numeric(data$diet_value)) {
-      .abort_adult_scoring(
-        "Percentile {.field diet_value} must be numeric."
-      )
-    }
+    .validate_adult_column_shape(data, "diet_value")
     if (mepa && any(!is.na(data$diet_value))) {
       .abort_adult_scoring(c(
         "MEPA data must not supply a precomputed {.field diet_value}.",
         "i" = "Provide the 16 raw MEPA screener responses; the package derives {.field mepa_total}."
       ))
     }
-    percentile_value <- data$diet_value[
-      rep(percentile, nrow(data))
-    ]
-    if (anyNA(percentile_value) || any(!is.finite(percentile_value))) {
-      .abort_adult_scoring(
-        "Percentile {.field diet_value} must be complete and finite."
-      )
-    }
-    if (any(percentile_value < 1 | percentile_value > 100)) {
-      .abort_adult_scoring(
-        "Percentile {.field diet_value} must be from 1 to 100."
-      )
+    if (percentile) {
+      .validate_adult_numeric_column(data, "diet_value")
+      if (any(data$diet_value < 1 | data$diet_value > 100)) {
+        .abort_adult_scoring(
+          "Percentile {.field diet_value} must be from 1 to 100."
+        )
+      }
     }
   }
 
@@ -607,8 +598,18 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
   as.data.frame(data, stringsAsFactors = FALSE)
 }
 
+.validate_adult_column_shape <- function(data, column) {
+  value <- data[[column]]
+  if (!is.null(dim(value)) || length(value) != nrow(data)) {
+    .abort_adult_scoring(
+      "{.field {column}} must be a one-dimensional column with one value per row."
+    )
+  }
+}
+
 .validate_adult_numeric_column <- function(data, column) {
   value <- data[[column]]
+  .validate_adult_column_shape(data, column)
   if (!is.numeric(value)) {
     .abort_adult_scoring(
       "{.field {column}} must be numeric."
@@ -624,6 +625,7 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
 
 .validate_adult_logical_column <- function(data, column) {
   value <- data[[column]]
+  .validate_adult_column_shape(data, column)
   if (!is.logical(value)) {
     .abort_adult_scoring(
       "{.field {column}} must be logical."
@@ -639,6 +641,7 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
 
 .validate_adult_character_column <- function(data, column) {
   value <- data[[column]]
+  .validate_adult_column_shape(data, column)
   if (!is.character(value) && !is.factor(value)) {
     .abort_adult_scoring(
       "{.field {column}} must be character or factor."

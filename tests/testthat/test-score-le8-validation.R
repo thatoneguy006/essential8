@@ -35,6 +35,50 @@ test_that("adult scoring rejects missing or malformed values", {
   )
 })
 
+test_that("adult scoring rejects dimensioned input columns", {
+  dimensioned_columns <- c(
+    "current_inhaled_nds",
+    "smoking_status",
+    "fish",
+    "sex"
+  )
+
+  for (column in dimensioned_columns) {
+    input <- adult_input_fixture()
+    input[[column]] <- I(
+      matrix(
+        rep(input[[column]], 2L),
+        nrow = nrow(input),
+        ncol = 2L
+      )
+    )
+
+    expect_error(
+      score_le8(input),
+      "one-dimensional",
+      class = "essential8_adult_input_error"
+    )
+  }
+
+  single_column_matrix <- adult_input_fixture()
+  single_column_matrix$moderate_activity_minutes <- I(
+    matrix(single_column_matrix$moderate_activity_minutes, ncol = 1L)
+  )
+  expect_error(
+    score_le8(single_column_matrix),
+    "one-dimensional",
+    class = "essential8_adult_input_error"
+  )
+
+  percentile <- adult_example_row(diet_value = 95)
+  percentile$diet_value <- I(matrix(c(95, 95), nrow = 1L))
+  expect_error(
+    score_le8(percentile, diet_method = "percentile"),
+    "one-dimensional",
+    class = "essential8_adult_input_error"
+  )
+})
+
 test_that("adult age and source-defined measurement domains are enforced", {
   expect_error(
     score_le8(adult_example_row(age = 19.999)),
@@ -131,6 +175,7 @@ test_that("diet_method is a scalar, case-insensitive call-level argument", {
   result <- score_le8(input, diet_method = "  PeRcEnTiLe  ")
 
   expect_equal(result$le8_diet_score, c(25, 100))
+  expect_equal(result$le8_composite_score[2], 100)
   expect_false("diet_method" %in% names(result))
 })
 
@@ -198,10 +243,10 @@ test_that("existing current or legacy composite columns are rejected", {
   }
 })
 
-test_that("duplicate input column names are rejected", {
+test_that("duplicate input column names are rejected case-insensitively", {
   input <- adult_input_fixture()
   input <- cbind(input, duplicate_age = input$age)
-  names(input)[ncol(input)] <- "age"
+  names(input)[ncol(input)] <- "AGE"
 
   expect_error(
     score_le8(input),

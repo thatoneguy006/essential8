@@ -6,26 +6,35 @@
 \alias{essential8-package}
 \title{essential8: Reproducible cardiovascular health metric scoring}
 \description{
-\code{essential8} is being developed as a transparent, versioned, and auditable
-implementation of published cardiovascular health metric definitions for
-adult and pediatric research. Adult scoring based on the American Heart
-Association's 2022 Life's Essential 8 definition is available through
-\code{\link[=score_le8]{score_le8()}}.
+\code{essential8} is a transparent, versioned, and auditable implementation of
+published adult cardiovascular health metric definitions. Complete-data
+adult scoring based on the American Heart Association's 2022 Life's
+Essential 8 definition is available through \code{\link[=score_le8]{score_le8()}}.
 }
 \section{Scientific status}{
 
-Rule-transcription files are not executable package data until their source
-locations, boundary semantics, and expected results have been independently
-verified. The package is research software and is not intended for clinical
-decision support.
+The adult scoring rules in version 0.1.0 are implemented from the cited AHA
+publications and covered by boundary and input-validation tests. Users remain
+responsible for verifying measurement protocols, population-specific diet
+percentiles, and caller-adjudicated clinical-judgment flags. The package is
+research software and is not intended for clinical decision support.
 }
 
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://thatoneguy006.github.io/essential8/}
+  \item \url{https://github.com/thatoneguy006/essential8}
+  \item Report bugs at \url{https://github.com/thatoneguy006/essential8/issues}
+}
+
+}
 \author{
-\strong{Maintainer}: Carson Richardson \email{carson.richardson@outlook.com} [copyright holder]
+\strong{Maintainer}: Carson Richardson \email{carson.richardson@outlook.com} (\href{https://orcid.org/0009-0004-8710-1097}{ORCID}) [copyright holder]
 
 Authors:
 \itemize{
-  \item Carson Richardson \email{carson.richardson@outlook.com} [copyright holder]
+  \item Carson Richardson \email{carson.richardson@outlook.com} (\href{https://orcid.org/0009-0004-8710-1097}{ORCID}) [copyright holder]
 }
 
 }

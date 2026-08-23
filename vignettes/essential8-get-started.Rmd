@@ -96,7 +96,10 @@ scored[c(
 ```
 
 Each vigorous activity minute counts as two moderate activity minutes and is
-recorded as `physical_activity_moderate_equivalent_minutes`. The `le8_composite_score` is the mean of the eight component scores. Categories are `"low"` below 50, `"moderate"` from 50 to less than 80, and `"high"` at 80 or higher.
+recorded as `physical_activity_moderate_equivalent_minutes`. The
+`le8_composite_score` is the mean of the eight component scores. Categories
+are `"low"` below 50, `"moderate"` from 50 to less than 80, and `"high"` at
+80 or higher.
 
 The component scores are available for analysis and quality checks:
 
@@ -112,7 +115,8 @@ scored[c("id", component_columns)]
 ## Understand the MEPA inputs
 
 The MEPA response columns use the 16 screener-item labels in snake case. The
-column names should reflect as seen below, but you can map custom columns using `mepa_columns = c()`.
+column names should reflect as seen below, but you can map custom columns using
+`mepa_columns = c()`.
 
 - `olive_oil`, `green_leafy_vegetables`, `other_vegetables`, and
   `whole_grains` are servings per day.
@@ -127,7 +131,8 @@ The screener defines `meat` as red meat, hamburger, bacon, or sausage;
 regular cheese or cream cheese.
 
 `score_le8()` evaluates each criterion and returns their sum as `mepa_total`
-so that the derived diet input can be audited. The default MEPA sex field is `sex`. If `sex` is absent, a field named `female` is
+so that the derived diet input can be audited. The default MEPA sex field is
+`sex`. If `sex` is absent, a field named `female` is
 recognized automatically; map any other name with, for example,
 `mepa_columns = c(sex = "reported_sex")`. Values are trimmed and matched
 case-insensitively as `"m"`/`"f"` or `"male"`/`"female"`. Numeric or character
@@ -135,17 +140,33 @@ case-insensitively as `"m"`/`"f"` or `"male"`/`"female"`. Numeric or character
 
 ## Choose other input methods explicitly
 
-The `diet_method` argument defaults to `"mepa"`. If a source data set contains both MEPA and percentile inputs, split the rows into separate data-frames and call `score_le8()` separately for each method.
+The `diet_method` argument defaults to `"mepa"`. If a source data set
+contains both MEPA and percentile inputs, split the rows into separate data
+frames and call `score_le8()` separately for each method.
 
-- For `diet_method = "mepa"`, `diet_value` is ignored.
-- For `diet_method = "percentile"`, `diet_value` is required and MEPA columns     will be ignored. Supply a DASH or
-  HEI-2015 percentile from 1 to 100, calculated against the relevant reference
-  population before calling `score_le8()`; the function does not rank the
-  supplied rows.
+- For `diet_method = "mepa"`, `diet_value` must be absent or contain only
+  missing values.
+- For `diet_method = "percentile"`, `diet_value` is required; MEPA columns are
+  ignored. Supply a DASH or HEI-2015 percentile from 1 to 100, calculated
+  against the relevant reference population before calling `score_le8()`.
 - Set `bmi_profile` to either `"general"` or `"asian_pacific"`. The function
   does not infer a BMI profile from race or ethnicity.
 - Set `glucose_measure` to `"fasting_glucose"` for a value in mg/dL or
   `"hba1c"` for a percentage. Diagnosed diabetes requires HbA1c for scoring.
+
+The percentile workflow is executable without removing the unused MEPA columns:
+
+```{r percentile}
+percentile_data <- adult_data[1, , drop = FALSE]
+percentile_data$diet_value <- 95
+percentile_scores <- score_le8(
+  percentile_data,
+  diet_method = "percentile"
+)
+percentile_scores[
+  c("diet_value", "le8_diet_score", "le8_composite_score")
+]
+```
 
 Three optional, caller-adjudicated flags control clinical-judgment adjustments:
 `apply_lean_muscular_bmi_override`, `apply_sleep_apnea_penalty`, and

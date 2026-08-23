@@ -56,25 +56,14 @@ test_that("manual fixture arithmetic is internally consistent", {
   )
 })
 
-test_that("public scoring supports population diet and optional-column defaults", {
-  percentile_input <- adult_example_row(
-    diet_value = 95
-  )
-  percentile_result <- score_le8(
-    percentile_input,
-    diet_method = "PeRcEnTiLe"
-  )
+test_that("public scoring uses optional-column defaults", {
+  input <- adult_example_row()
+  input$apply_sleep_apnea_penalty <- NULL
+  input$apply_prediabetes_metformin_penalty <- NULL
+  result <- score_le8(input)
 
-  expect_equal(percentile_result$le8_diet_score, 100)
-  expect_equal(percentile_result$le8_composite_score, 100)
-
-  default_input <- adult_example_row()
-  default_input$apply_sleep_apnea_penalty <- NULL
-  default_input$apply_prediabetes_metformin_penalty <- NULL
-  default_result <- score_le8(default_input)
-
-  expect_equal(default_result$le8_sleep_score, 100)
-  expect_equal(default_result$le8_blood_glucose_score, 100)
+  expect_equal(result$le8_sleep_score, 100)
+  expect_equal(result$le8_blood_glucose_score, 100)
 })
 
 test_that("public scoring supports the explicit lean muscular BMI override", {

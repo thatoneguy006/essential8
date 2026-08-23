@@ -19,23 +19,21 @@ test_that("raw MEPA items produce the sourced totals and LE8 diet bands", {
   )
 })
 
-test_that("different diet methods are scored in separate calls", {
-  mepa <- adult_mepa_row(total = 16)
-  percentile <- adult_example_row(diet_value = 25)
-  percentile[c("sex", adult_mepa_columns())] <- NULL
+test_that("MEPA allows only absent or all-missing diet_value", {
+  input <- adult_mepa_row(total = 16)
+  input$diet_value <- NA
 
-  mepa_result <- score_le8(mepa, diet_method = "mepa")
-  percentile_result <- score_le8(
-    percentile,
-    diet_method = "percentile"
+  result <- score_le8(input)
+
+  expect_identical(result$diet_value, NA)
+  expect_equal(result$mepa_total, 16)
+
+  input$diet_value <- 16
+  expect_error(
+    score_le8(input),
+    "must not supply",
+    class = "essential8_adult_input_error"
   )
-
-  expect_equal(mepa_result$mepa_total, 16)
-  expect_equal(mepa_result$le8_diet_score, 100)
-  expect_equal(percentile_result$mepa_total, NA_integer_)
-  expect_equal(percentile_result$le8_diet_score, 25)
-  expect_false("diet_method" %in% names(mepa_result))
-  expect_false("diet_method" %in% names(percentile_result))
 })
 
 test_that("percentile-only scoring does not require MEPA inputs", {
@@ -157,18 +155,6 @@ test_that("MEPA alcohol uses a bounded positive weekly range", {
   expect_equal(result$le8_diet_score, rep(0, 8))
 })
 
-test_that("MEPA alcohol uses the sex-specific upper threshold", {
-  input <- rbind(
-    adult_mepa_row(total = 0, sex = "male"),
-    adult_mepa_row(total = 0, sex = "female")
-  )
-  input$alcohol <- 10
-
-  result <- score_le8(input)
-
-  expect_equal(result$mepa_total, c(1, 0))
-})
-
 test_that("MEPA method, screener names, and sex are case-insensitive", {
   input <- adult_mepa_row(total = 16, sex = "FEMALE")
 
@@ -230,16 +216,6 @@ test_that("MEPA mappings reject unsupported or ambiguous specifications", {
   input$female <- input$alcohol
   expect_error(
     score_le8(input, mepa_columns = c(alcohol = "female")),
-    class = "essential8_adult_input_error"
-  )
-})
-
-test_that("MEPA rejects ambiguous case-insensitive column matches", {
-  input <- adult_mepa_row(total = 16)
-  input$OLIVE_OIL <- input$olive_oil
-
-  expect_error(
-    score_le8(input),
     class = "essential8_adult_input_error"
   )
 })

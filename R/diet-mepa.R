@@ -155,6 +155,7 @@
   for (item in .adult_mepa_item_columns()) {
     column <- columns[[item]]
     value <- data[[column]]
+    .validate_adult_column_shape(data, column)
 
     if (!is.numeric(value)) {
       .abort_adult_scoring(
@@ -177,7 +178,9 @@
   }
 
   sex_column <- columns[["sex"]]
-  .normalize_adult_mepa_sex(data[[sex_column]][rows], sex_column)
+  sex <- data[[sex_column]]
+  .validate_adult_column_shape(data, sex_column)
+  .normalize_adult_mepa_sex(sex[rows], sex_column)
 }
 
 .score_adult_mepa_items <- function(data, columns, rows, sex) {

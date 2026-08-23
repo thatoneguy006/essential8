@@ -20,9 +20,10 @@ template:
 
 home:
   title: essential8
-  description: Provides reproducible R implementations of the American Heart Association 
-             Life’s Essential 8 cardiovascular health scoring framework for adult and pediatric populations, including 
-             component-level and composite cardiovascular health scores.
+  description: >-
+    Provides a reproducible R implementation of the American Heart Association
+    Life's Essential 8 cardiovascular health scoring framework for complete
+    adult records from people aged 20 years or older.
 
 navbar:
   structure:

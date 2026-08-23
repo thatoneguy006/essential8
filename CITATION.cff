@@ -4,10 +4,12 @@ message: >-
 title: essential8
 type: software
 version: 0.1.0
-date-released: 2026-08-20
+repository-code: https://github.com/thatoneguy006/essential8
+url: https://thatoneguy006.github.io/essential8/
 authors:
   - family-names: Richardson
     given-names: Carson
     email: carson.richardson@outlook.com
+    orcid: https://orcid.org/0009-0004-8710-1097
 license: MIT
 

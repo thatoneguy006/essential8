@@ -32,13 +32,12 @@ remotes::install_github("thatoneguy006/essential8")
 The American Heart Association Life's Essential 8 (LE8) framework combines
 eight lifestyle and health components into a cardiovascular health score from
 0 to 100. `essential8` applies the published adult scoring bands in one
-validated workflow and returns all eight component scores plus their exact,
-unrounded mean.
+validated workflow and returns all eight component scores plus the composite.
 
 Version 0.1.0 requires complete data for every component and supports adults
 aged 20 years or older. It does not implement pediatric or incomplete-record
-scoring. Optional AHA clinical-judgment adjustments are applied only when the
-caller supplies explicit adjudication flags; see `?score_le8` for details.
+scoring (yet). Optional AHA clinical-judgment adjustments are applied only when the
+user supplies explicit adjudication flags; see `?score_le8` for details.
 
 ## Basic use
 
@@ -141,13 +140,13 @@ scores[
 ]
 ```
 
-`score_le8(data, diet_method = "mepa", mepa_columns = NULL)` applies one
-scalar diet method to every row in a call. The `diet_method` argument can be
+`score_le8(data, diet_method = "mepa", mepa_columns = NULL)` applies the user-chosen
+diet method to every row in the call. The `diet_method` argument can be
 specified either as `"mepa"` or `"percentile"` corresponding to the 16
 MEPA items seen above or the DASH percentile alternative scores.
 For `diet_method = "mepa"`, the function calculates `mepa_total` directly from
 the 16 screener responses. Their column names must be the screener labels shown
-above, with underscores between words. Matching is case-insensitive.
+above. Matching is case-insensitive.
 
 The default MEPA sex field is `sex`; if it is absent, a `female` column is
 recognized automatically. Map any other field with, for example,
@@ -159,7 +158,8 @@ For data that use both diet methods, split the rows into separate data frames
 and call `score_le8()` separately. Percentile calls require `diet_value`, containing a
 DASH or HEI-2015 percentile from 1 to 100. The result appends all eight
 component scores, the composite score, and its cardiovascular
-health category. See `?score_le8` for more information.
+health category. Future versions will allow the calculation of these DASH/HEI percentiles,
+similar to how the MEPA is currently implemented. See `?score_le8` for more information.
 
 ## Learn more
 - Package website: https://thatoneguy006.github.io/essential8/index.html

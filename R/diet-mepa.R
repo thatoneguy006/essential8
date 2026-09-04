@@ -79,7 +79,11 @@
   resolved
 }
 
-.resolve_adult_mepa_columns <- function(data, mepa_columns) {
+.resolve_adult_mepa_columns <- function(
+  data,
+  mepa_columns,
+  allow_missing = FALSE
+) {
   requested <- .normalize_adult_mepa_column_map(mepa_columns)
   data_names <- names(data)
   index <- match(tolower(unname(requested)), tolower(data_names))
@@ -94,6 +98,16 @@
     missing <- names(requested)[is.na(index)]
     expected <- unname(requested[missing])
     details <- paste0(missing, " -> ", expected)
+    explicitly_mapped <- if (is.null(mepa_columns)) {
+      character()
+    } else {
+      tolower(names(mepa_columns))
+    }
+
+    if (allow_missing && !any(missing %in% explicitly_mapped)) {
+      return(NULL)
+    }
+
     .abort_adult_scoring(c(
       "MEPA scoring requires all 16 screener items and sex information.",
       "x" = "Missing mappings: {paste(details, collapse = ', ')}.",
@@ -122,14 +136,8 @@
     ))
   }
 
-  if (anyNA(sex)) {
-    .abort_adult_scoring(
-      "MEPA sex field {.field {column}} must be complete."
-    )
-  }
-
   labels <- tolower(trimws(as.character(sex)))
-  if (any(labels == "")) {
+  if (any(labels == "", na.rm = TRUE)) {
     .abort_adult_scoring(
       "MEPA sex field {.field {column}} must not contain blank values."
     )
@@ -139,7 +147,7 @@
   normalized[labels %in% c("m", "male", "0")] <- "male"
   normalized[labels %in% c("f", "female", "1")] <- "female"
 
-  unknown <- unique(labels[is.na(normalized)])
+  unknown <- unique(labels[!is.na(labels) & is.na(normalized)])
   if (length(unknown) > 0L) {
     .abort_adult_scoring(c(
       "MEPA sex field {.field {column}} contains unsupported values.",
@@ -164,13 +172,13 @@
     }
 
     applicable <- value[rows]
-    if (anyNA(applicable) || any(!is.finite(applicable))) {
-      .abort_adult_scoring(c(
-        "MEPA field {.field {item}} must contain complete, finite values for MEPA rows.",
-        "i" = "Missing-value MEPA scoring is not part of this implementation."
-      ))
+    observed <- applicable[!is.na(applicable)]
+    if (any(!is.finite(observed))) {
+      .abort_adult_scoring(
+        "Observed values in MEPA field {.field {item}} must be finite."
+      )
     }
-    if (any(applicable < 0)) {
+    if (any(applicable < 0, na.rm = TRUE)) {
       .abort_adult_scoring(
         "MEPA field {.field {item}} cannot contain negative values."
       )
@@ -228,7 +236,14 @@
     return(total)
   }
 
-  columns <- .resolve_adult_mepa_columns(data, mepa_columns)
+  columns <- .resolve_adult_mepa_columns(
+    data,
+    mepa_columns,
+    allow_missing = TRUE
+  )
+  if (is.null(columns)) {
+    return(total)
+  }
   sex <- .validate_adult_mepa_inputs(data, columns, rows)
   item_scores <- .score_adult_mepa_items(
     data,

@@ -3,10 +3,11 @@
 #' @description
 #' Computes the eight adult Life's Essential 8 (LE8) component scores and
 #' their unweighted mean using the American Heart Association's 2022
-#' Presidential Advisory. This initial implementation requires complete data
-#' for every required input and applies only to adults aged 20 years or older.
+#' Presidential Advisory. Component scores are calculated wherever sufficient
+#' inputs are available, without imputing missing values. This implementation
+#' applies only to adults aged 20 years or older.
 #'
-#' @param data A data frame with one row per adult and the required columns
+#' @param data A data frame with one row per adult and the input columns
 #'   described below.
 #' @param diet_method A single diet-scoring method applied to every row in
 #'   `data`: `"mepa"` (the default) or `"percentile"`. Values are matched
@@ -15,9 +16,14 @@
 #' @param mepa_columns `NULL`, or a named character vector mapping canonical
 #'   MEPA fields to columns in `data`. The names are canonical fields and the
 #'   values are actual column names. Unmapped fields use their canonical names.
+#' @param min_components A single integer from 1 to 8 specifying the minimum
+#'   number of non-missing LE8 component scores required to calculate
+#'   `le8_composite_score`. The default is 7. Available component scores are
+#'   averaged without imputation; observations below the threshold receive
+#'   `NA_real_`.
 #'
-#' @section Required columns:
-#' * `age`: Age in years; must be at least 20.
+#' @section Input columns:
+#' * `age`: Age in years; must be present, complete, and at least 20.
 #' * For `diet_method = "mepa"`, the 16 Table C screener-item columns named
 #'   below and `sex` (or `female` when `sex` is absent).
 #'   The item names are matched exactly after case normalization. Supply daily
@@ -29,11 +35,11 @@
 #'   Sex may be encoded as `"m"`/`"f"`, `"male"`/`"female"`, or `0`/`1`,
 #'   where `0` is male and `1` is female. Character encodings are matched
 #'   case-insensitively, and character `"0"`/`"1"` values are also accepted.
-#' * `diet_value`: Required only when `diet_method = "percentile"`. Supply a
-#'   DASH or HEI-2015 percentile from 1 to 100, calculated against the relevant
+#' * `diet_value`: Used when `diet_method = "percentile"`. Supply a DASH or
+#'   HEI-2015 percentile from 1 to 100, calculated against the relevant
 #'   reference distribution. The function does not rank supplied rows against
-#'   one another. If this column is present for MEPA data, all its values must
-#'   be missing.
+#'   one another. If this column is absent or missing, the diet score is
+#'   missing. If it is present for MEPA data, all its values must be missing.
 #' * `moderate_activity_minutes` and `vigorous_activity_minutes`: Weekly
 #'   minutes. Each vigorous minute counts as two moderate-equivalent minutes.
 #' * `smoking_status`: One of `"never"`, `"former"`, or `"current"`.
@@ -58,6 +64,11 @@
 #'   rejected because the AHA scoring table does not assign that combination.
 #' * `systolic_bp` and `diastolic_bp`: Blood pressure in mm Hg.
 #' * `antihypertensive_treatment`: Whether the blood pressure is treated.
+#'
+#' Component input columns may contain missing values or be omitted. A
+#' component score is `NA_real_` when its available inputs are insufficient.
+#' Missing values are never imputed. A warning is emitted when an entire LE8
+#' component cannot be calculated for any observation.
 #'
 #' @section Optional clinical-judgment columns:
 #' * `apply_lean_muscular_bmi_override`: A caller-adjudicated flag asserting
@@ -93,10 +104,13 @@
 #' A data frame containing the original columns plus
 #' `mepa_total` (missing for population-percentile rows),
 #' `physical_activity_moderate_equivalent_minutes`, the eight component score
-#' columns prefixed with `le8_`, `le8_composite_score`, and `le8_category`.
-#' The composite score is the exact, unrounded mean. Categories are `"low"`
-#' for scores below 50, `"moderate"` for scores from 50 to less than 80, and
-#' `"high"` for scores of at least 80.
+#' columns prefixed with `le8_`, `le8_n_components`, `le8_composite_score`,
+#' `le8_complete`, and `le8_category`. The component count reports how many
+#' scores contributed to the exact, unrounded mean; `le8_complete` is `TRUE`
+#' only when all eight components are available. Categories are `"low"` for
+#' scores below 50, `"moderate"` for scores from 50 to less than 80, and
+#' `"high"` for scores of at least 80. The category is missing when the
+#' composite score is missing.
 #'
 #' @references
 #' Lloyd-Jones DM, Allen NB, Anderson CAM, et al. (2022). Life's Essential 8:
@@ -164,9 +178,17 @@
 #' ]
 #'
 #' @export
-score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
+score_le8 <- function(
+  data,
+  diet_method = "mepa",
+  mepa_columns = NULL,
+  min_components = 7L
+) {
+  min_components <- .validate_min_components(min_components)
   diet_method <- .normalize_adult_diet_method(diet_method)
+  input_columns <- names(data)
   data <- .validate_le8_adult_data(data, diet_method)
+  input_data <- data[input_columns]
 
   sleep_apnea_penalty <- .optional_adult_flag(
     data,
@@ -237,24 +259,6 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
     treated = data$antihypertensive_treatment
   )
 
-  score_matrix <- cbind(
-    diet_score,
-    physical_activity_score,
-    nicotine_score,
-    sleep_score,
-    bmi_score,
-    blood_lipids_score,
-    blood_glucose_score,
-    blood_pressure_score
-  )
-  le8_composite_score <- rowMeans(score_matrix)
-  le8_category <- character(length(le8_composite_score))
-  le8_category[le8_composite_score < 50] <- "low"
-  le8_category[
-    le8_composite_score >= 50 & le8_composite_score < 80
-  ] <- "moderate"
-  le8_category[le8_composite_score >= 80] <- "high"
-
   scores <- data.frame(
     mepa_total = mepa_total,
     physical_activity_moderate_equivalent_minutes = activity_minutes,
@@ -266,36 +270,185 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
     le8_blood_lipids_score = blood_lipids_score,
     le8_blood_glucose_score = blood_glucose_score,
     le8_blood_pressure_score = blood_pressure_score,
-    le8_composite_score = le8_composite_score,
-    le8_category = le8_category,
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
 
-  cbind(data, scores)
+  scores <- .add_le8_composite(scores, min_components)
+  le8_category <- rep(NA_character_, nrow(scores))
+  le8_category[which(scores$le8_composite_score < 50)] <- "low"
+  le8_category[
+    which(
+      scores$le8_composite_score >= 50 &
+        scores$le8_composite_score < 80
+    )
+  ] <- "moderate"
+  le8_category[which(scores$le8_composite_score >= 80)] <- "high"
+  scores$le8_category <- le8_category
+
+  cbind(input_data, scores)
 }
 
-.le8_adult_required_columns <- function() {
+.validate_min_components <- function(min_components) {
+  invalid <- length(min_components) != 1L ||
+    anyNA(min_components) ||
+    !is.numeric(min_components) ||
+    !is.finite(min_components) ||
+    min_components %% 1 != 0 ||
+    min_components < 1 ||
+    min_components > 8
+
+  if (invalid) {
+    .abort_adult_scoring(
+      "{.arg min_components} must be a single integer between 1 and 8."
+    )
+  }
+
+  as.integer(min_components)
+}
+
+.le8_component_score_columns <- function() {
   c(
-    "age",
+    "le8_diet_score",
+    "le8_physical_activity_score",
+    "le8_nicotine_score",
+    "le8_sleep_score",
+    "le8_bmi_score",
+    "le8_blood_lipids_score",
+    "le8_blood_glucose_score",
+    "le8_blood_pressure_score"
+  )
+}
+
+.le8_component_labels <- function() {
+  c(
+    le8_diet_score = "Diet",
+    le8_physical_activity_score = "Physical activity",
+    le8_nicotine_score = "Nicotine exposure",
+    le8_sleep_score = "Sleep",
+    le8_bmi_score = "BMI",
+    le8_blood_lipids_score = "Blood lipids",
+    le8_blood_glucose_score = "Blood glucose",
+    le8_blood_pressure_score = "Blood pressure"
+  )
+}
+
+.add_le8_composite <- function(scores, min_components) {
+  score_columns <- .le8_component_score_columns()
+  score_matrix <- as.matrix(scores[score_columns])
+  component_count <- as.integer(rowSums(!is.na(score_matrix)))
+  component_mean <- rowMeans(score_matrix, na.rm = TRUE)
+  component_mean[component_count == 0L] <- NA_real_
+
+  composite_score <- rep(NA_real_, nrow(scores))
+  eligible <- component_count >= min_components & component_count > 0L
+  composite_score[eligible] <- component_mean[eligible]
+
+  scores$le8_n_components <- component_count
+  scores$le8_composite_score <- composite_score
+  scores$le8_complete <- component_count == 8L
+
+  if (nrow(scores) == 0L) {
+    return(scores)
+  }
+
+  component_labels <- .le8_component_labels()
+  structurally_missing <- vapply(
+    scores[names(component_labels)],
+    function(score) all(is.na(score)),
+    logical(1)
+  )
+  missing_components <- unname(component_labels[structurally_missing])
+
+  if (length(missing_components) == 0L) {
+    return(scores)
+  }
+
+  component_bullets <- stats::setNames(
+    missing_components,
+    rep("x", length(missing_components))
+  )
+  max_possible_components <- 8L - length(missing_components)
+  missing_header <- paste0(
+    "Some LE8 components could not be calculated ",
+    "for any observations."
+  )
+
+  if (min_components > max_possible_components) {
+    cli::cli_warn(
+      c(
+        "!" = missing_header,
+        component_bullets,
+        "i" = paste0(
+          "Only {max_possible_components} LE8 components are available, ",
+          "but {.arg min_components} is {min_components}."
+        ),
+        "i" = "No LE8 composite scores can be calculated."
+      ),
+      class = c(
+        "essential8_insufficient_components",
+        "essential8_warning"
+      ),
+      .envir = environment()
+    )
+  } else {
+    cli::cli_warn(
+      c(
+        "!" = missing_header,
+        component_bullets,
+        "i" = paste0(
+          "Overall LE8 composite scores will use the available components, ",
+          "subject to {.arg min_components}."
+        )
+      ),
+      class = c(
+        "essential8_missing_component",
+        "essential8_warning"
+      ),
+      .envir = environment()
+    )
+  }
+
+  scores
+}
+
+.complete_le8_adult_data <- function(data) {
+  numeric_columns <- c(
     "moderate_activity_minutes",
     "vigorous_activity_minutes",
-    "smoking_status",
     "years_since_quit",
-    "current_inhaled_nds",
-    "secondhand_smoke_home",
     "sleep_hours",
     "bmi",
-    "bmi_profile",
     "non_hdl_cholesterol",
-    "lipid_lowering_treatment",
-    "diabetes",
-    "glucose_measure",
     "glucose_value",
     "systolic_bp",
     "diastolic_bp",
+    "diet_value"
+  )
+  logical_columns <- c(
+    "current_inhaled_nds",
+    "secondhand_smoke_home",
+    "lipid_lowering_treatment",
+    "diabetes",
     "antihypertensive_treatment"
   )
+  character_columns <- c(
+    "smoking_status",
+    "bmi_profile",
+    "glucose_measure"
+  )
+
+  for (column in setdiff(numeric_columns, names(data))) {
+    data[[column]] <- rep(NA_real_, nrow(data))
+  }
+  for (column in setdiff(logical_columns, names(data))) {
+    data[[column]] <- rep(NA, nrow(data))
+  }
+  for (column in setdiff(character_columns, names(data))) {
+    data[[column]] <- rep(NA_character_, nrow(data))
+  }
+
+  data
 }
 
 .le8_adult_output_columns <- function() {
@@ -310,7 +463,9 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
     "le8_blood_lipids_score",
     "le8_blood_glucose_score",
     "le8_blood_pressure_score",
+    "le8_n_components",
     "le8_composite_score",
+    "le8_complete",
     # Reserve the pre-rename output name to prevent ambiguous results.
     "le8_score",
     "le8_category"
@@ -349,6 +504,14 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
 
   column <- names(data)[index]
   .validate_adult_character_column(data, column)
+  if (anyNA(data[[column]])) {
+    .abort_adult_scoring(
+      paste0(
+        "Legacy {.field {column}} values must be complete ",
+        "when the column is supplied."
+      )
+    )
+  }
   legacy_method <- tolower(trimws(as.character(data[[column]])))
   .validate_adult_choices(
     legacy_method,
@@ -388,10 +551,10 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
 
   .validate_legacy_adult_diet_method(data, diet_method)
 
-  missing_columns <- setdiff(.le8_adult_required_columns(), names(data))
+  missing_columns <- setdiff("age", names(data))
   if (length(missing_columns) > 0L) {
     .abort_adult_scoring(c(
-      "{.arg data} is missing required adult LE8 columns.",
+      "{.arg data} is missing a required adult LE8 eligibility column.",
       "x" = "Missing: {paste(missing_columns, collapse = ', ')}."
     ))
   }
@@ -406,6 +569,8 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
     ))
   }
 
+  data <- .complete_le8_adult_data(data)
+
   numeric_columns <- c(
     "age",
     "moderate_activity_minutes",
@@ -419,7 +584,11 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
     "diastolic_bp"
   )
   for (column in numeric_columns) {
-    .validate_adult_numeric_column(data, column)
+    .validate_adult_numeric_column(
+      data,
+      column,
+      allow_missing = column != "age"
+    )
   }
 
   logical_columns <- c(
@@ -467,36 +636,42 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
     c("fasting_glucose", "hba1c")
   )
 
-  if (any(data$age < 20)) {
+  if (any(data$age < 20, na.rm = TRUE)) {
     .abort_adult_scoring(
       "{.field age} must be at least 20 for adult AHA scoring."
     )
   }
-  if (any(data$moderate_activity_minutes < 0) ||
-      any(data$vigorous_activity_minutes < 0)) {
+  if (any(data$moderate_activity_minutes < 0, na.rm = TRUE) ||
+      any(data$vigorous_activity_minutes < 0, na.rm = TRUE)) {
     .abort_adult_scoring(
       "Weekly physical-activity minutes cannot be negative."
     )
   }
-  if (any(data$years_since_quit < 0)) {
+  if (any(data$years_since_quit < 0, na.rm = TRUE)) {
     .abort_adult_scoring(
       "{.field years_since_quit} cannot be negative."
     )
   }
 
   smoking_status <- as.character(data$smoking_status)
-  if (any(smoking_status == "current" & data$current_inhaled_nds)) {
+  if (any(
+    smoking_status == "current" & data$current_inhaled_nds,
+    na.rm = TRUE
+  )) {
     .abort_adult_scoring(c(
       "AHA 2022 does not specify precedence for simultaneous current combustible smoking and current inhaled-NDS use.",
       "i" = "Resolve the dual-use state before scoring rather than assuming a tie-break."
     ))
   }
-  if (any(data$sleep_hours < 0 | data$sleep_hours > 24)) {
+  if (any(
+    data$sleep_hours < 0 | data$sleep_hours > 24,
+    na.rm = TRUE
+  )) {
     .abort_adult_scoring(
       "{.field sleep_hours} must be between 0 and 24."
     )
   }
-  if (any(data$bmi < 18.5)) {
+  if (any(data$bmi < 18.5, na.rm = TRUE)) {
     .abort_adult_scoring(c(
       "BMI values below 18.5 require clinical judgment under AHA 2022.",
       "i" = "This implementation does not guess an underweight score."
@@ -510,23 +685,27 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
   )
   valid_lean_muscular_override <-
     bmi_profile == "general" & data$bmi >= 25 & data$bmi < 30
-  if (any(lean_muscular_bmi_override & !valid_lean_muscular_override)) {
+  if (any(
+    lean_muscular_bmi_override & !valid_lean_muscular_override,
+    na.rm = TRUE
+  )) {
     .abort_adult_scoring(c(
       "The lean muscular BMI override requires the general BMI profile and BMI from 25 to less than 30.",
       "i" = "Set the flag only after the AHA clinical-judgment condition is met."
     ))
   }
-  if (any(data$non_hdl_cholesterol < 0)) {
+  if (any(data$non_hdl_cholesterol < 0, na.rm = TRUE)) {
     .abort_adult_scoring(
       "{.field non_hdl_cholesterol} cannot be negative."
     )
   }
-  if (any(data$glucose_value <= 0)) {
+  if (any(data$glucose_value <= 0, na.rm = TRUE)) {
     .abort_adult_scoring(
       "{.field glucose_value} must be greater than 0."
     )
   }
-  if (any(data$systolic_bp <= 0) || any(data$diastolic_bp <= 0)) {
+  if (any(data$systolic_bp <= 0, na.rm = TRUE) ||
+      any(data$diastolic_bp <= 0, na.rm = TRUE)) {
     .abort_adult_scoring(
       "Blood-pressure values must be greater than 0."
     )
@@ -534,12 +713,6 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
 
   mepa <- diet_method == "mepa"
   percentile <- diet_method == "percentile"
-  if (percentile && !"diet_value" %in% names(data)) {
-    .abort_adult_scoring(c(
-      "Population-percentile scoring requires {.field diet_value}.",
-      "i" = "Supply a DASH or HEI-2015 percentile from 1 to 100."
-    ))
-  }
   if ("diet_value" %in% names(data)) {
     .validate_adult_column_shape(data, "diet_value")
     if (mepa && any(!is.na(data$diet_value))) {
@@ -550,7 +723,10 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
     }
     if (percentile) {
       .validate_adult_numeric_column(data, "diet_value")
-      if (any(data$diet_value < 1 | data$diet_value > 100)) {
+      if (any(
+        data$diet_value < 1 | data$diet_value > 100,
+        na.rm = TRUE
+      )) {
         .abort_adult_scoring(
           "Percentile {.field diet_value} must be from 1 to 100."
         )
@@ -560,7 +736,7 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
 
   diabetes <- data$diabetes
   glucose_measure <- as.character(data$glucose_measure)
-  if (any(diabetes & glucose_measure != "hba1c")) {
+  if (any(diabetes & glucose_measure != "hba1c", na.rm = TRUE)) {
     .abort_adult_scoring(c(
       "Diagnosed diabetes requires an HbA1c value for AHA 2022 scoring.",
       "i" = "Use {.val hba1c} in {.field glucose_measure}."
@@ -573,7 +749,10 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
   no_diabetes_hba1c_range <- !diabetes &
     glucose_measure == "hba1c" &
     data$glucose_value >= 6.5
-  if (any(no_diabetes_fbg_range | no_diabetes_hba1c_range)) {
+  if (any(
+    no_diabetes_fbg_range | no_diabetes_hba1c_range,
+    na.rm = TRUE
+  )) {
     .abort_adult_scoring(c(
       "The AHA table does not score a diagnostic-range glucose value with no diabetes diagnosis.",
       "i" = "Reconcile {.field diabetes} and the laboratory value before scoring."
@@ -588,7 +767,7 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
     (glucose_measure == "fasting_glucose" & data$glucose_value < 100) |
       (glucose_measure == "hba1c" & data$glucose_value < 5.7)
   )
-  if (any(prevention_penalty & !normoglycemic)) {
+  if (any(prevention_penalty & !normoglycemic, na.rm = TRUE)) {
     .abort_adult_scoring(c(
       "The optional prediabetes/metformin penalty requires a normoglycemic value and no diabetes diagnosis.",
       "i" = "Set the flag only after every caller-attested AHA condition is met."
@@ -607,7 +786,11 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
   }
 }
 
-.validate_adult_numeric_column <- function(data, column) {
+.validate_adult_numeric_column <- function(
+  data,
+  column,
+  allow_missing = TRUE
+) {
   value <- data[[column]]
   .validate_adult_column_shape(data, column)
   if (!is.numeric(value)) {
@@ -615,11 +798,16 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
       "{.field {column}} must be numeric."
     )
   }
-  if (anyNA(value) || any(!is.finite(value))) {
-    .abort_adult_scoring(c(
-      "{.field {column}} must contain complete, finite values.",
-      "i" = "Missing-value scoring is not part of this initial implementation."
-    ))
+  if (!allow_missing && anyNA(value)) {
+    .abort_adult_scoring(
+      "{.field {column}} must contain complete values."
+    )
+  }
+  observed <- value[!is.na(value)]
+  if (any(!is.finite(observed))) {
+    .abort_adult_scoring(
+      "Observed values in {.field {column}} must be finite."
+    )
   }
 }
 
@@ -631,12 +819,6 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
       "{.field {column}} must be logical."
     )
   }
-  if (anyNA(value)) {
-    .abort_adult_scoring(c(
-      "{.field {column}} must not contain missing values.",
-      "i" = "Missing-value scoring is not part of this initial implementation."
-    ))
-  }
 }
 
 .validate_adult_character_column <- function(data, column) {
@@ -647,16 +829,17 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
       "{.field {column}} must be character or factor."
     )
   }
-  if (anyNA(value) || any(as.character(value) == "")) {
-    .abort_adult_scoring(c(
-      "{.field {column}} must contain complete, nonempty values.",
-      "i" = "Missing-value scoring is not part of this initial implementation."
-    ))
+  observed <- as.character(value[!is.na(value)])
+  if (any(trimws(observed) == "")) {
+    .abort_adult_scoring(
+      "Observed values in {.field {column}} must not be empty."
+    )
   }
 }
 
 .validate_adult_choices <- function(value, column, choices) {
   value <- as.character(value)
+  value <- value[!is.na(value)]
   unknown <- setdiff(unique(value), choices)
   if (length(unknown) > 0L) {
     .abort_adult_scoring(c(
@@ -675,7 +858,7 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
 }
 
 .score_adult_diet <- function(method, value) {
-  score <- numeric(length(value))
+  score <- rep(NA_real_, length(value))
 
   mepa <- method == "mepa"
   score[mepa] <- ifelse(
@@ -742,9 +925,16 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
     )
   )
 
-  score[current_inhaled_nds & score > 25] <- 25
-  score[secondhand_smoke_home & score > 0] <-
-    score[secondhand_smoke_home & score > 0] - 20
+  inhaled_nds <- which(current_inhaled_nds & score > 25)
+  score[inhaled_nds] <- 25
+  secondhand_smoke <- which(secondhand_smoke_home & score > 0)
+  score[secondhand_smoke] <- score[secondhand_smoke] - 20
+
+  required_missing <- is.na(smoking_status) |
+    is.na(current_inhaled_nds) |
+    is.na(secondhand_smoke_home) |
+    (smoking_status == "former" & is.na(years_since_quit))
+  score[which(required_missing)] <- NA_real_
   score
 }
 
@@ -775,9 +965,9 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
   profile,
   apply_lean_muscular_override = rep(FALSE, length(bmi))
 ) {
-  score <- numeric(length(bmi))
+  score <- rep(NA_real_, length(bmi))
 
-  general <- profile == "general"
+  general <- which(profile == "general")
   score[general] <- ifelse(
     bmi[general] < 25,
     100,
@@ -788,7 +978,7 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
     )
   )
 
-  asian_pacific <- profile == "asian_pacific"
+  asian_pacific <- which(profile == "asian_pacific")
   score[asian_pacific] <- ifelse(
     bmi[asian_pacific] < 23,
     100,
@@ -803,7 +993,8 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
     )
   )
 
-  score[apply_lean_muscular_override] <- 100
+  score[which(apply_lean_muscular_override)] <- 100
+  score[which(is.na(apply_lean_muscular_override))] <- NA_real_
 
   score
 }
@@ -828,23 +1019,23 @@ score_le8 <- function(data, diet_method = "mepa", mepa_columns = NULL) {
   value,
   apply_prevention_penalty
 ) {
-  score <- numeric(length(value))
+  score <- rep(NA_real_, length(value))
 
-  no_diabetes_fbg <- !diabetes & measure == "fasting_glucose"
+  no_diabetes_fbg <- which(!diabetes & measure == "fasting_glucose")
   score[no_diabetes_fbg] <- ifelse(
     value[no_diabetes_fbg] < 100,
     100,
     60
   )
 
-  no_diabetes_hba1c <- !diabetes & measure == "hba1c"
+  no_diabetes_hba1c <- which(!diabetes & measure == "hba1c")
   score[no_diabetes_hba1c] <- ifelse(
     value[no_diabetes_hba1c] < 5.7,
     100,
     60
   )
 
-  with_diabetes <- diabetes
+  with_diabetes <- which(diabetes)
   score[with_diabetes] <- ifelse(
     value[with_diabetes] < 7,
     40,

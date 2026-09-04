@@ -3,7 +3,7 @@ message: >-
   If you use essential8, please cite this software.
 title: essential8
 type: software
-version: 0.1.0
+version: 0.2.0
 repository-code: https://github.com/thatoneguy006/essential8
 url: https://thatoneguy006.github.io/essential8/
 authors:

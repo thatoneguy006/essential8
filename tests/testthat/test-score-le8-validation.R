@@ -12,13 +12,12 @@ test_that("adult scoring requires a data frame and canonical columns", {
   )
 })
 
-test_that("adult scoring rejects missing or malformed values", {
+test_that("adult scoring allows missing values but rejects malformed values", {
   input <- adult_input_fixture()
   input$glucose_value[1] <- NA_real_
-  expect_error(
-    score_le8(input),
-    class = "essential8_adult_input_error"
-  )
+  result <- expect_no_warning(score_le8(input))
+  expect_true(is.na(result$le8_blood_glucose_score[1]))
+  expect_equal(result$le8_n_components[1], 7L)
 
   input <- adult_input_fixture()
   input$current_inhaled_nds <- as.integer(input$current_inhaled_nds)

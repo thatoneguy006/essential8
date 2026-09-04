@@ -10,6 +10,8 @@
 
 ## Submission notes
 
-- Version 0.1.0 implements complete-data adult scoring for people aged 20 years
-  or older. Pediatric and incomplete-record scoring are not yet implemented.
+- Version 0.2.0 supports adult scoring for people aged 20 years or older when
+  some LE8 component inputs are unavailable. Missing values are not imputed,
+  and partial composites report their number of contributing components.
+  Pediatric scoring is not yet implemented.
 

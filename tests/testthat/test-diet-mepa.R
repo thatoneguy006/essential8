@@ -47,18 +47,21 @@ test_that("percentile-only scoring does not require MEPA inputs", {
   expect_equal(result$le8_diet_score, 100)
 })
 
-test_that("zero-row scoring validates only the selected diet schema", {
+test_that("zero-row scoring remains type stable with omitted diet inputs", {
   input <- adult_input_fixture()[0, , drop = FALSE]
   input[c("sex", adult_mepa_columns())] <- NULL
 
-  expect_error(
-    score_le8(input, diet_method = "mepa"),
-    class = "essential8_adult_input_error"
+  mepa_result <- expect_no_warning(
+    score_le8(input, diet_method = "mepa")
   )
-  expect_error(
-    score_le8(input, diet_method = "percentile"),
-    class = "essential8_adult_input_error"
+  percentile_result <- expect_no_warning(
+    score_le8(input, diet_method = "percentile")
   )
+
+  expect_equal(nrow(mepa_result), 0L)
+  expect_type(mepa_result$mepa_total, "integer")
+  expect_equal(nrow(percentile_result), 0L)
+  expect_type(percentile_result$le8_diet_score, "double")
 
   input$diet_value <- numeric()
   result <- score_le8(input, diet_method = "percentile")
@@ -220,22 +223,28 @@ test_that("MEPA mappings reject unsupported or ambiguous specifications", {
   )
 })
 
-test_that("MEPA requires every screener item and sex", {
+test_that("omitted MEPA inputs make diet structurally unavailable", {
   missing_fish <- adult_mepa_row(total = 16)
   missing_fish$fish <- NULL
-  expect_error(
+  expect_warning(
     score_le8(missing_fish),
-    "fish",
-    class = "essential8_adult_input_error"
+    "Diet",
+    class = "essential8_missing_component"
   )
+  fish_result <- suppressWarnings(score_le8(missing_fish))
+  expect_true(is.na(fish_result$le8_diet_score))
+  expect_equal(fish_result$le8_n_components, 7L)
 
   missing_sex <- adult_mepa_row(total = 16)
   missing_sex$sex <- NULL
-  expect_error(
+  expect_warning(
     score_le8(missing_sex),
-    "sex",
-    class = "essential8_adult_input_error"
+    "Diet",
+    class = "essential8_missing_component"
   )
+  sex_result <- suppressWarnings(score_le8(missing_sex))
+  expect_true(is.na(sex_result$le8_diet_score))
+  expect_equal(sex_result$le8_n_components, 7L)
 })
 
 test_that("female is auto-resolved when the sex column is absent", {
@@ -278,14 +287,10 @@ test_that("MEPA accepts and preserves supported sex encodings", {
   }
 })
 
-test_that("MEPA screener responses must be complete nonnegative numbers", {
+test_that("observed MEPA responses must be finite nonnegative numbers", {
   malformed <- list(
     character = function(data) {
       data$fish <- as.character(data$fish)
-      data
-    },
-    missing = function(data) {
-      data$berries <- NA_real_
       data
     },
     infinite = function(data) {
@@ -306,9 +311,8 @@ test_that("MEPA screener responses must be complete nonnegative numbers", {
   }
 })
 
-test_that("MEPA rejects incomplete or unsupported sex encodings", {
+test_that("MEPA rejects blank or unsupported sex encodings", {
   malformed_sex <- list(
-    NA_character_,
     "   ",
     "other",
     2,

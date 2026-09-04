@@ -4,10 +4,10 @@
 \alias{score_le8}
 \title{Score Life's Essential 8 cardiovascular health}
 \usage{
-score_le8(data, diet_method = "mepa", mepa_columns = NULL)
+score_le8(data, diet_method = "mepa", mepa_columns = NULL, min_components = 7L)
 }
 \arguments{
-\item{data}{A data frame with one row per adult and the required columns
+\item{data}{A data frame with one row per adult and the input columns
 described below.}
 
 \item{diet_method}{A single diet-scoring method applied to every row in
@@ -18,26 +18,36 @@ calls.}
 \item{mepa_columns}{\code{NULL}, or a named character vector mapping canonical
 MEPA fields to columns in \code{data}. The names are canonical fields and the
 values are actual column names. Unmapped fields use their canonical names.}
+
+\item{min_components}{A single integer from 1 to 8 specifying the minimum
+number of non-missing LE8 component scores required to calculate
+\code{le8_composite_score}. The default is 7. Available component scores are
+averaged without imputation; observations below the threshold receive
+\code{NA_real_}.}
 }
 \value{
 A data frame containing the original columns plus
 \code{mepa_total} (missing for population-percentile rows),
 \code{physical_activity_moderate_equivalent_minutes}, the eight component score
-columns prefixed with \code{le8_}, \code{le8_composite_score}, and \code{le8_category}.
-The composite score is the exact, unrounded mean. Categories are \code{"low"}
-for scores below 50, \code{"moderate"} for scores from 50 to less than 80, and
-\code{"high"} for scores of at least 80.
+columns prefixed with \code{le8_}, \code{le8_n_components}, \code{le8_composite_score},
+\code{le8_complete}, and \code{le8_category}. The component count reports how many
+scores contributed to the exact, unrounded mean; \code{le8_complete} is \code{TRUE}
+only when all eight components are available. Categories are \code{"low"} for
+scores below 50, \code{"moderate"} for scores from 50 to less than 80, and
+\code{"high"} for scores of at least 80. The category is missing when the
+composite score is missing.
 }
 \description{
 Computes the eight adult Life's Essential 8 (LE8) component scores and
 their unweighted mean using the American Heart Association's 2022
-Presidential Advisory. This initial implementation requires complete data
-for every required input and applies only to adults aged 20 years or older.
+Presidential Advisory. Component scores are calculated wherever sufficient
+inputs are available, without imputing missing values. This implementation
+applies only to adults aged 20 years or older.
 }
-\section{Required columns}{
+\section{Input columns}{
 
 \itemize{
-\item \code{age}: Age in years; must be at least 20.
+\item \code{age}: Age in years; must be present, complete, and at least 20.
 \item For \code{diet_method = "mepa"}, the 16 Table C screener-item columns named
 below and \code{sex} (or \code{female} when \code{sex} is absent).
 The item names are matched exactly after case normalization. Supply daily
@@ -49,11 +59,11 @@ of times per week that fast-food meals are consumed in \code{fast_food}.
 Sex may be encoded as \code{"m"}/\code{"f"}, \code{"male"}/\code{"female"}, or \code{0}/\code{1},
 where \code{0} is male and \code{1} is female. Character encodings are matched
 case-insensitively, and character \code{"0"}/\code{"1"} values are also accepted.
-\item \code{diet_value}: Required only when \code{diet_method = "percentile"}. Supply a
-DASH or HEI-2015 percentile from 1 to 100, calculated against the relevant
+\item \code{diet_value}: Used when \code{diet_method = "percentile"}. Supply a DASH or
+HEI-2015 percentile from 1 to 100, calculated against the relevant
 reference distribution. The function does not rank supplied rows against
-one another. If this column is present for MEPA data, all its values must
-be missing.
+one another. If this column is absent or missing, the diet score is
+missing. If it is present for MEPA data, all its values must be missing.
 \item \code{moderate_activity_minutes} and \code{vigorous_activity_minutes}: Weekly
 minutes. Each vigorous minute counts as two moderate-equivalent minutes.
 \item \code{smoking_status}: One of \code{"never"}, \code{"former"}, or \code{"current"}.
@@ -79,6 +89,11 @@ rejected because the AHA scoring table does not assign that combination.
 \item \code{systolic_bp} and \code{diastolic_bp}: Blood pressure in mm Hg.
 \item \code{antihypertensive_treatment}: Whether the blood pressure is treated.
 }
+
+Component input columns may contain missing values or be omitted. A
+component score is \code{NA_real_} when its available inputs are insufficient.
+Missing values are never imputed. A warning is emitted when an entire LE8
+component cannot be calculated for any observation.
 }
 
 \section{Optional clinical-judgment columns}{

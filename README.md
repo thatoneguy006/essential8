@@ -12,8 +12,7 @@
 Association Life's Essential 8 cardiovascular health scoring framework.
 
 The current release implements adult scoring for people aged 20 years or
-older, including transparent scoring when some LE8 component inputs are
-missing. Pediatric scoring is planned but not yet implemented.
+older. Pediatric scoring is planned but not yet implemented.
 
 ## Installation
 
@@ -31,9 +30,10 @@ remotes::install_github("thatoneguy006/essential8")
 ## Background
 
 The American Heart Association Life's Essential 8 (LE8) framework combines
-eight lifestyle and health components into a cardiovascular health score from
-0 to 100. `essential8` applies the published adult scoring bands in one
-validated workflow and returns all eight component scores plus the composite.
+eight lifestyle and health components into a composite cardiovascular health
+score from 0 to 100. `essential8` applies the published adult scoring bands
+in one validated workflow and returns all eight component scores plus the
+composite.
 
 Version 0.2.0 supports incomplete adult records without imputing raw inputs or
 component scores. By default, the composite is calculated when at least seven
@@ -144,7 +144,6 @@ scores[
 ]
 ```
 
-`score_le8()` applies the user-chosen diet method to every row in the call.
 The `diet_method` argument can be specified either as `"mepa"` or
 `"percentile"`, corresponding to the 16 MEPA items seen above or the DASH
 percentile alternative scores. The `min_components` argument defaults to 7.
@@ -168,7 +167,7 @@ implemented. See `?score_le8` for more information.
 
 ## Incomplete component data
 
-`score_le8()` preserves ordinary row-level missingness rather than imputing it.
+`score_le8()` preserves ordinary row-level missingness.
 The composite is the mean of the available component scores when the selected
 threshold is met:
 
@@ -189,9 +188,7 @@ incomplete_scores[
 ```
 
 `le8_n_components` reports how many component scores contributed, while
-`le8_complete` is `TRUE` only when all eight were available. A partial
-composite is therefore distinguishable from a complete eight-component score
-and should not be assumed to be clinically interchangeable with one. If a
+`le8_complete` is `TRUE` only when all eight were available. If a
 component cannot be calculated for any observation, the function emits one
 consolidated warning identifying every structurally unavailable component.
 

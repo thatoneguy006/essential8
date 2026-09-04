@@ -6,6 +6,12 @@
   maintainer, copyright holder.
   [](https://orcid.org/0009-0004-8710-1097)
 
+- **Amrik Khalsa**. Contributor.
+  [](https://orcid.org/0000-0002-4609-5194)
+
+- **Sara Conroy**. Contributor.
+  [](https://orcid.org/0000-0001-9155-9456)
+
 ## Citation
 
 Source:

@@ -13,10 +13,10 @@ for the full input contract and scoring details.
 
 ## Create an adult data frame
 
-Supply one row per person. The example below uses base R and includes
-two adults with raw responses to the 16-item Mediterranean Eating
-Pattern for Americans (MEPA) screener. It also demonstrates both
-possible BMI profiles and both possible glucose measures.
+Supply one row per person. The example below includes two adults with
+raw responses to the 16-item Mediterranean Eating Pattern for Americans
+(MEPA) screener. It also demonstrates both possible BMI profiles and
+both possible glucose measures.
 
 ``` r
 
@@ -234,14 +234,11 @@ incomplete_scores[c(
 ```
 
 `le8_n_components` makes the denominator explicit, and `le8_complete` is
-`TRUE` only when all eight components are available. A composite based
-on fewer than eight components is intentionally distinguishable from a
-complete LE8 composite and should not be assumed to be clinically
-interchangeable with one. Row-level missingness is silent; when a
-component cannot be calculated for any observation, one consolidated
-warning identifies every unavailable component. If structural
-missingness makes `min_components` impossible, the warning also states
-that no composite scores can be calculated.
+`TRUE` only when all eight components are available. Row-level
+missingness is silent; when a component cannot be calculated for any
+observation, one consolidated warning identifies every unavailable
+component. If structural missingness makes `min_components` impossible,
+the warning also states that no composite scores can be calculated.
 
 ## Source-defined inputs
 

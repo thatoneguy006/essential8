@@ -1,7 +1,7 @@
 # Score Life's Essential 8 cardiovascular health
 
 Computes the eight adult Life's Essential 8 (LE8) component scores and
-their unweighted mean using the American Heart Association's 2022
+the composite score using the American Heart Association's 2022
 Presidential Advisory. Component scores are calculated wherever
 sufficient inputs are available, without imputing missing values. This
 implementation applies only to adults aged 20 years or older.
@@ -47,7 +47,7 @@ for population-percentile rows),
 `physical_activity_moderate_equivalent_minutes`, the eight component
 score columns prefixed with `le8_`, `le8_n_components`,
 `le8_composite_score`, `le8_complete`, and `le8_category`. The component
-count reports how many scores contributed to the exact, unrounded mean;
+count reports how many scores contributed to the composite score;
 `le8_complete` is `TRUE` only when all eight components are available.
 Categories are `"low"` for scores below 50, `"moderate"` for scores from
 50 to less than 80, and `"high"` for scores of at least 80. The category
@@ -150,9 +150,8 @@ population; the rows in `data` are not their own reference distribution.
 
 The AHA table applies 20-point treatment decrements to blood-lipid and
 blood-pressure scores. These components are floored at zero, consistent
-with the AHA's 0-to-100 metric definition and the non-negative possible
-scores shown in its applied NHANES implementation. Optional sleep-apnea
-and prediabetes/metformin decrements are applied only through explicit
+with the AHA's 0-to-100 metric definition. Optional sleep-apnea and
+prediabetes/metformin decrements are applied only through explicit
 flags. Inputs are not rounded. The documented MEPA daily/weekly
 equivalences are applied where the source question and criterion use
 different timeframes. Combinations without a source-defined score,

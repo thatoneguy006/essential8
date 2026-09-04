@@ -46,11 +46,14 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="essential8-020">essential8 0.2.0<a class="anchor" aria-label="anchor" href="#essential8-020"></a></h2>
 <div class="section level3">
-<h3 id="missing-data-support-0-2-0">Missing-data support<a class="anchor" aria-label="anchor" href="#missing-data-support-0-2-0"></a></h3>
+<h3 id="major-changes-0-2-0">Major Changes<a class="anchor" aria-label="anchor" href="#major-changes-0-2-0"></a></h3>
 <ul><li>
-<code><a href="../reference/score_le8.html">score_le8()</a></code> now calculates component scores when sufficient component-specific inputs are available and preserves missing inputs as missing scores without imputation.</li>
-<li>Added <code>min_components</code>, which accepts integers from 1 through 8 and defaults to 7, to control how many available components are required for <code>le8_composite_score</code>.</li>
-<li>Added <code>le8_n_components</code> and <code>le8_complete</code> so partial composite scores are distinguishable from complete eight-component scores.</li>
+<code><a href="../reference/score_le8.html">score_le8()</a></code> can now work with data that have missing values (<a href="https://github.com/thatoneguy006/essential8/issues/7" class="external-link">#7</a>).</li>
+<li>Added <code>min_components</code>, an argument to control how many available components are required for <code>le8_composite_score</code>. Valid options range from 1-8.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="minor-changes-0-2-0">Minor Changes<a class="anchor" aria-label="anchor" href="#minor-changes-0-2-0"></a></h3>
+<ul><li>Added <code>le8_n_components</code> and <code>le8_complete</code> outputs for transparent reporting of the available components for LE8 composite scores.</li>
 <li>Added consolidated, classed warnings when one or more LE8 components cannot be calculated for any observation, including a stronger warning when structural missingness makes <code>min_components</code> impossible to reach.</li>
 </ul></div>
 </div>

@@ -89,10 +89,10 @@ details.</p>
 <div class="section level2">
 <h2 id="create-an-adult-data-frame">Create an adult data frame<a class="anchor" aria-label="anchor" href="#create-an-adult-data-frame"></a>
 </h2>
-<p>Supply one row per person. The example below uses base R and includes
-two adults with raw responses to the 16-item Mediterranean Eating
-Pattern for Americans (MEPA) screener. It also demonstrates both
-possible BMI profiles and both possible glucose measures.</p>
+<p>Supply one row per person. The example below includes two adults with
+raw responses to the 16-item Mediterranean Eating Pattern for Americans
+(MEPA) screener. It also demonstrates both possible BMI profiles and
+both possible glucose measures.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://thatoneguy006.github.io/essential8/">essential8</a></span><span class="op">)</span></span>
 <span></span>
@@ -303,14 +303,11 @@ met.</p>
 <span><span class="co">#&gt; 2 patient_2            51.42857                7        FALSE</span></span></code></pre></div>
 <p><code>le8_n_components</code> makes the denominator explicit, and
 <code>le8_complete</code> is <code>TRUE</code> only when all eight
-components are available. A composite based on fewer than eight
-components is intentionally distinguishable from a complete LE8
-composite and should not be assumed to be clinically interchangeable
-with one. Row-level missingness is silent; when a component cannot be
-calculated for any observation, one consolidated warning identifies
-every unavailable component. If structural missingness makes
-<code>min_components</code> impossible, the warning also states that no
-composite scores can be calculated.</p>
+components are available. Row-level missingness is silent; when a
+component cannot be calculated for any observation, one consolidated
+warning identifies every unavailable component. If structural
+missingness makes <code>min_components</code> impossible, the warning
+also states that no composite scores can be calculated.</p>
 </div>
 <div class="section level2">
 <h2 id="source-defined-inputs">Source-defined inputs<a class="anchor" aria-label="anchor" href="#source-defined-inputs"></a>

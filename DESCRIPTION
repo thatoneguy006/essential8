@@ -1,14 +1,28 @@
 Package: essential8
 Title: Reproducible Cardiovascular Health Metric Scoring
 Version: 0.2.0
-Authors@R:
+Authors@R: c(
     person(
       given = "Carson",
       family = "Richardson",
       email = "carson.richardson@outlook.com",
       role = c("aut", "cre", "cph"),
       comment = c(ORCID = "0009-0004-8710-1097")
+    ),
+    person(
+      given = "Amrik",
+      family = "Khalsa",
+      email = "Amrik.Khalsa@nationwidechildrens.org",
+      role = "ctb",
+      comment = c(ORCID = "0000-0002-4609-5194")
+    ),
+    person(
+      given = "Sara",
+      family = "Conroy",
+      role = "ctb",
+      comment = c(ORCID = "0000-0001-9155-9456")
     )
+  )
 Description: Provides a reproducible R implementation of the American Heart
     Association Life's Essential 8 cardiovascular health scoring framework for
     adult records from people aged 20 years or older. Calculates the eight

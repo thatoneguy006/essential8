@@ -28,6 +28,8 @@ test_that("the hand-scored 10-subject example is reproduced", {
     unname(as.matrix(fixture[expected_columns]))
   )
   expect_equal(result$le8_composite_score, fixture$expected_le8_composite_score)
+  expect_identical(result$le8_n_components, rep(8L, nrow(result)))
+  expect_true(all(result$le8_complete))
   expect_true("le8_composite_score" %in% names(result))
   expect_false("le8_score" %in% names(result))
   expect_identical(result$le8_category, fixture$expected_le8_category)

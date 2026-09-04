@@ -1,15 +1,16 @@
 # essential8 0.2.0
 
-## Missing-data support
+## Major Changes
 
-- `score_le8()` now calculates component scores when sufficient
-  component-specific inputs are available and preserves missing inputs as
-  missing scores without imputation.
-- Added `min_components`, which accepts integers from 1 through 8 and defaults
-  to 7, to control how many available components are required for
-  `le8_composite_score`.
-- Added `le8_n_components` and `le8_complete` so partial composite scores are
-  distinguishable from complete eight-component scores.
+- `score_le8()` can now work with data that have missing values (#7).
+- Added `min_components`, an argument to control how many available
+  components are required for `le8_composite_score`. Valid options range from
+  1-8.
+
+## Minor Changes
+
+- Added `le8_n_components` and `le8_complete` outputs for transparent reporting
+  of the available components for LE8 composite scores.
 - Added consolidated, classed warnings when one or more LE8 components cannot
   be calculated for any observation, including a stronger warning when
   structural missingness makes `min_components` impossible to reach.

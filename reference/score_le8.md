@@ -2,21 +2,21 @@
 
 Computes the eight adult Life's Essential 8 (LE8) component scores and
 their unweighted mean using the American Heart Association's 2022
-Presidential Advisory. This initial implementation requires complete
-data for every required input and applies only to adults aged 20 years
-or older.
+Presidential Advisory. Component scores are calculated wherever
+sufficient inputs are available, without imputing missing values. This
+implementation applies only to adults aged 20 years or older.
 
 ## Usage
 
 ``` r
-score_le8(data, diet_method = "mepa", mepa_columns = NULL)
+score_le8(data, diet_method = "mepa", mepa_columns = NULL, min_components = 7L)
 ```
 
 ## Arguments
 
 - data:
 
-  A data frame with one row per adult and the required columns described
+  A data frame with one row per adult and the input columns described
   below.
 
 - diet_method:
@@ -32,19 +32,30 @@ score_le8(data, diet_method = "mepa", mepa_columns = NULL)
   columns in `data`. The names are canonical fields and the values are
   actual column names. Unmapped fields use their canonical names.
 
+- min_components:
+
+  A single integer from 1 to 8 specifying the minimum number of
+  non-missing LE8 component scores required to calculate
+  `le8_composite_score`. The default is 7. Available component scores
+  are averaged without imputation; observations below the threshold
+  receive `NA_real_`.
+
 ## Value
 
 A data frame containing the original columns plus `mepa_total` (missing
 for population-percentile rows),
 `physical_activity_moderate_equivalent_minutes`, the eight component
-score columns prefixed with `le8_`, `le8_composite_score`, and
-`le8_category`. The composite score is the exact, unrounded mean.
+score columns prefixed with `le8_`, `le8_n_components`,
+`le8_composite_score`, `le8_complete`, and `le8_category`. The component
+count reports how many scores contributed to the exact, unrounded mean;
+`le8_complete` is `TRUE` only when all eight components are available.
 Categories are `"low"` for scores below 50, `"moderate"` for scores from
-50 to less than 80, and `"high"` for scores of at least 80.
+50 to less than 80, and `"high"` for scores of at least 80. The category
+is missing when the composite score is missing.
 
-## Required columns
+## Input columns
 
-- `age`: Age in years; must be at least 20.
+- `age`: Age in years; must be present, complete, and at least 20.
 
 - For `diet_method = "mepa"`, the 16 Table C screener-item columns named
   below and `sex` (or `female` when `sex` is absent). The item names are
@@ -59,11 +70,12 @@ Categories are `"low"` for scores below 50, `"moderate"` for scores from
   are matched case-insensitively, and character `"0"`/`"1"` values are
   also accepted.
 
-- `diet_value`: Required only when `diet_method = "percentile"`. Supply
-  a DASH or HEI-2015 percentile from 1 to 100, calculated against the
-  relevant reference distribution. The function does not rank supplied
-  rows against one another. If this column is present for MEPA data, all
-  its values must be missing.
+- `diet_value`: Used when `diet_method = "percentile"`. Supply a DASH or
+  HEI-2015 percentile from 1 to 100, calculated against the relevant
+  reference distribution. The function does not rank supplied rows
+  against one another. If this column is absent or missing, the diet
+  score is missing. If it is present for MEPA data, all its values must
+  be missing.
 
 - `moderate_activity_minutes` and `vigorous_activity_minutes`: Weekly
   minutes. Each vigorous minute counts as two moderate-equivalent
@@ -106,6 +118,11 @@ Categories are `"low"` for scores below 50, `"moderate"` for scores from
 - `systolic_bp` and `diastolic_bp`: Blood pressure in mm Hg.
 
 - `antihypertensive_treatment`: Whether the blood pressure is treated.
+
+Component input columns may contain missing values or be omitted. A
+component score is `NA_real_` when its available inputs are
+insufficient. Missing values are never imputed. A warning is emitted
+when an entire LE8 component cannot be calculated for any observation.
 
 ## Optional clinical-judgment columns
 

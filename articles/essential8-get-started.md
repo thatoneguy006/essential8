@@ -7,7 +7,7 @@ cardiovascular health scores. The current implementation scores adults
 aged 20 years or older using the American Heart Association’s 2022
 definition. Pediatric scoring is not yet available.
 
-This vignette shows the basic complete-data workflow. See
+This vignette shows complete and incomplete-data workflows. See
 [`?score_le8`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
 for the full input contract and scoring details.
 
@@ -69,7 +69,8 @@ adult_data <- data.frame(
 Pass the data frame to
 [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md).
 The returned data frame retains the input columns and appends the
-derived activity measure, eight component scores, composite score, and
+derived activity measure, eight component scores, the number of
+contributing components, composite score, completeness indicator, and
 category.
 
 ``` r
@@ -97,9 +98,9 @@ scored[c(
 
 Each vigorous activity minute counts as two moderate activity minutes
 and is recorded as `physical_activity_moderate_equivalent_minutes`. The
-`le8_composite_score` is the mean of the eight component scores.
-Categories are `"low"` below 50, `"moderate"` from 50 to less than 80,
-and `"high"` at 80 or higher.
+`le8_composite_score` is the mean of the eight component scores for
+complete records. Categories are `"low"` below 50, `"moderate"` from 50
+to less than 80, and `"high"` at 80 or higher.
 
 The component scores are available for analysis and quality checks:
 
@@ -160,11 +161,11 @@ separately for each method.
 
 - For `diet_method = "mepa"`, `diet_value` must be absent or contain
   only missing values.
-- For `diet_method = "percentile"`, `diet_value` is required; MEPA
-  columns are ignored. Supply a DASH or HEI-2015 percentile from 1 to
-  100, calculated against the relevant reference population before
-  calling
+- For `diet_method = "percentile"`, MEPA columns are ignored. Supply
+  `diet_value` as a DASH or HEI-2015 percentile from 1 to 100,
+  calculated against the relevant reference population before calling
   [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md).
+  If it is absent or missing, the diet component cannot be scored.
 - Set `bmi_profile` to either `"general"` or `"asian_pacific"`. The
   function does not infer a BMI profile from race or ethnicity.
 - Set `glucose_measure` to `"fasting_glucose"` for a value in mg/dL or
@@ -194,11 +195,55 @@ adjustments: `apply_lean_muscular_bmi_override`,
 `apply_sleep_apnea_penalty`, and `apply_prediabetes_metformin_penalty`.
 When these columns are absent, their adjustments are not applied.
 
-## Complete and source-defined inputs
+## Work with incomplete component data
 
-The current implementation requires complete, finite values for every
-required input. It does not impute missing data, convert units, or round
-raw measurements before scoring.
+Component inputs may be missing for individual adults.
+Component-specific columns may also be omitted when an entire domain is
+unavailable. The package does not impute missing data, convert units, or
+round raw measurements before scoring. `age` remains required and
+complete because the package must establish that every record is
+eligible for adult scoring.
+
+By default,
+[`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+calculates the composite when at least seven of the eight component
+scores are available. Choose any threshold from 1 through 8 with
+`min_components`. The composite is the mean of the available components
+when the threshold is met.
+
+``` r
+
+incomplete_data <- adult_data
+incomplete_data$sleep_hours[1] <- NA_real_
+incomplete_data$bmi[2] <- NA_real_
+
+incomplete_scores <- score_le8(
+  incomplete_data,
+  min_components = 7
+)
+
+incomplete_scores[c(
+  "id",
+  "le8_composite_score",
+  "le8_n_components",
+  "le8_complete"
+)]
+#>          id le8_composite_score le8_n_components le8_complete
+#> 1 patient_1            97.14286                7        FALSE
+#> 2 patient_2            51.42857                7        FALSE
+```
+
+`le8_n_components` makes the denominator explicit, and `le8_complete` is
+`TRUE` only when all eight components are available. A composite based
+on fewer than eight components is intentionally distinguishable from a
+complete LE8 composite and should not be assumed to be clinically
+interchangeable with one. Row-level missingness is silent; when a
+component cannot be calculated for any observation, one consolidated
+warning identifies every unavailable component. If structural
+missingness makes `min_components` impossible, the warning also states
+that no composite scores can be calculated.
+
+## Source-defined inputs
 
 [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
 also rejects combinations for which the AHA source does not define a

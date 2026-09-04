@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">essential8</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,7 +82,7 @@ Essential 8 (LE8) cardiovascular health scores. The current
 implementation scores adults aged 20 years or older using the American
 Heart Association’s 2022 definition. Pediatric scoring is not yet
 available.</p>
-<p>This vignette shows the basic complete-data workflow. See
+<p>This vignette shows complete and incomplete-data workflows. See
 <code><a href="../reference/score_le8.html">?score_le8</a></code> for the full input contract and scoring
 details.</p>
 </div>
@@ -142,7 +142,8 @@ possible BMI profiles and both possible glucose measures.</p>
 </h2>
 <p>Pass the data frame to <code><a href="../reference/score_le8.html">score_le8()</a></code>. The returned data
 frame retains the input columns and appends the derived activity
-measure, eight component scores, composite score, and category.</p>
+measure, eight component scores, the number of contributing components,
+composite score, completeness indicator, and category.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">scored</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span><span class="va">adult_data</span>, diet_method <span class="op">=</span> <span class="st">"mepa"</span><span class="op">)</span></span>
 <span></span>
@@ -167,7 +168,7 @@ measure, eight component scores, composite score, and category.</p>
 and is recorded as
 <code>physical_activity_moderate_equivalent_minutes</code>. The
 <code>le8_composite_score</code> is the mean of the eight component
-scores. Categories are <code>"low"</code> below 50,
+scores for complete records. Categories are <code>"low"</code> below 50,
 <code>"moderate"</code> from 50 to less than 80, and <code>"high"</code>
 at 80 or higher.</p>
 <p>The component scores are available for analysis and quality
@@ -235,10 +236,11 @@ percentile inputs, split the rows into separate data frames and call
 <ul>
 <li>For <code>diet_method = "mepa"</code>, <code>diet_value</code> must
 be absent or contain only missing values.</li>
-<li>For <code>diet_method = "percentile"</code>, <code>diet_value</code>
-is required; MEPA columns are ignored. Supply a DASH or HEI-2015
-percentile from 1 to 100, calculated against the relevant reference
-population before calling <code><a href="../reference/score_le8.html">score_le8()</a></code>.</li>
+<li>For <code>diet_method = "percentile"</code>, MEPA columns are
+ignored. Supply <code>diet_value</code> as a DASH or HEI-2015 percentile
+from 1 to 100, calculated against the relevant reference population
+before calling <code><a href="../reference/score_le8.html">score_le8()</a></code>. If it is absent or missing, the
+diet component cannot be scored.</li>
 <li>Set <code>bmi_profile</code> to either <code>"general"</code> or
 <code>"asian_pacific"</code>. The function does not infer a BMI profile
 from race or ethnicity.</li>
@@ -267,11 +269,52 @@ adjustments: <code>apply_lean_muscular_bmi_override</code>,
 absent, their adjustments are not applied.</p>
 </div>
 <div class="section level2">
-<h2 id="complete-and-source-defined-inputs">Complete and source-defined inputs<a class="anchor" aria-label="anchor" href="#complete-and-source-defined-inputs"></a>
+<h2 id="work-with-incomplete-component-data">Work with incomplete component data<a class="anchor" aria-label="anchor" href="#work-with-incomplete-component-data"></a>
 </h2>
-<p>The current implementation requires complete, finite values for every
-required input. It does not impute missing data, convert units, or round
-raw measurements before scoring.</p>
+<p>Component inputs may be missing for individual adults.
+Component-specific columns may also be omitted when an entire domain is
+unavailable. The package does not impute missing data, convert units, or
+round raw measurements before scoring. <code>age</code> remains required
+and complete because the package must establish that every record is
+eligible for adult scoring.</p>
+<p>By default, <code><a href="../reference/score_le8.html">score_le8()</a></code> calculates the composite when at
+least seven of the eight component scores are available. Choose any
+threshold from 1 through 8 with <code>min_components</code>. The
+composite is the mean of the available components when the threshold is
+met.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">incomplete_data</span> <span class="op">&lt;-</span> <span class="va">adult_data</span></span>
+<span><span class="va">incomplete_data</span><span class="op">$</span><span class="va">sleep_hours</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA_real_</span></span>
+<span><span class="va">incomplete_data</span><span class="op">$</span><span class="va">bmi</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA_real_</span></span>
+<span></span>
+<span><span class="va">incomplete_scores</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span></span>
+<span>  <span class="va">incomplete_data</span>,</span>
+<span>  min_components <span class="op">=</span> <span class="fl">7</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">incomplete_scores</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"id"</span>,</span>
+<span>  <span class="st">"le8_composite_score"</span>,</span>
+<span>  <span class="st">"le8_n_components"</span>,</span>
+<span>  <span class="st">"le8_complete"</span></span>
+<span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;          id le8_composite_score le8_n_components le8_complete</span></span>
+<span><span class="co">#&gt; 1 patient_1            97.14286                7        FALSE</span></span>
+<span><span class="co">#&gt; 2 patient_2            51.42857                7        FALSE</span></span></code></pre></div>
+<p><code>le8_n_components</code> makes the denominator explicit, and
+<code>le8_complete</code> is <code>TRUE</code> only when all eight
+components are available. A composite based on fewer than eight
+components is intentionally distinguishable from a complete LE8
+composite and should not be assumed to be clinically interchangeable
+with one. Row-level missingness is silent; when a component cannot be
+calculated for any observation, one consolidated warning identifies
+every unavailable component. If structural missingness makes
+<code>min_components</code> impossible, the warning also states that no
+composite scores can be calculated.</p>
+</div>
+<div class="section level2">
+<h2 id="source-defined-inputs">Source-defined inputs<a class="anchor" aria-label="anchor" href="#source-defined-inputs"></a>
+</h2>
 <p><code><a href="../reference/score_le8.html">score_le8()</a></code> also rejects combinations for which the AHA
 source does not define a score. Examples include an underweight BMI that
 requires clinical judgment, a diagnostic-range glucose value paired with

@@ -6,9 +6,9 @@
 Heart Association Life’s Essential 8 cardiovascular health scoring
 framework.
 
-The current release implements complete-data adult scoring for people
-aged 20 years or older. Pediatric scoring is planned but not yet
-implemented.
+The current release implements adult scoring for people aged 20 years or
+older, including transparent scoring when some LE8 component inputs are
+missing. Pediatric scoring is planned but not yet implemented.
 
 ## Installation
 
@@ -33,11 +33,11 @@ health score from 0 to 100. `essential8` applies the published adult
 scoring bands in one validated workflow and returns all eight component
 scores plus the composite.
 
-Version 0.1.0 requires complete data for every component and supports
-adults aged 20 years or older. It does not implement pediatric or
-incomplete-record scoring (yet). Optional AHA clinical-judgment
-adjustments are applied only when the user supplies explicit
-adjudication flags; see
+Version 0.2.0 supports incomplete adult records without imputing raw
+inputs or component scores. By default, the composite is calculated when
+at least seven components are available; `min_components` can set a
+threshold from 1 through 8. Optional AHA clinical-judgment adjustments
+are applied only when the user supplies explicit adjudication flags; see
 [`?score_le8`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
 for details.
 
@@ -49,8 +49,9 @@ before using the package, particularly the input units,
 population-percentile diet requirements, and optional clinical-judgment
 adjustments.
 
-Pass a data frame containing complete adult inputs for all eight AHA
-metrics:
+Pass a data frame containing adult inputs for the eight AHA metrics.
+Missing component values are allowed, and component-specific columns may
+be omitted when a domain is unavailable:
 
 - diet (can be MEPA or percentile based, see below for more info)
 - physical activity (moderate and vigorous activity)
@@ -146,11 +147,12 @@ scores[
 ]
 ```
 
-`score_le8(data, diet_method = "mepa", mepa_columns = NULL)` applies the
-user-chosen diet method to every row in the call. The `diet_method`
-argument can be specified either as `"mepa"` or `"percentile"`
-corresponding to the 16 MEPA items seen above or the DASH percentile
-alternative scores. For `diet_method = "mepa"`, the function calculates
+[`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+applies the user-chosen diet method to every row in the call. The
+`diet_method` argument can be specified either as `"mepa"` or
+`"percentile"`, corresponding to the 16 MEPA items seen above or the
+DASH percentile alternative scores. The `min_components` argument
+defaults to 7. For `diet_method = "mepa"`, the function calculates
 `mepa_total` directly from the 16 screener responses. Their column names
 must be the screener labels shown above. Matching is case-insensitive.
 
@@ -164,13 +166,46 @@ where `0` is male and `1` is female.
 For data that use both diet methods, split the rows into separate data
 frames and call
 [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
-separately. Percentile calls require `diet_value`, containing a DASH or
+separately. Percentile calls use `diet_value`, containing a DASH or
 HEI-2015 percentile from 1 to 100. The result appends all eight
-component scores, the composite score, and its cardiovascular health
-category. Future versions will allow the calculation of these DASH/HEI
-percentiles, similar to how the MEPA is currently implemented. See
+component scores, `le8_n_components`, `le8_complete`, the composite
+score, and its cardiovascular health category. Future versions will
+allow the calculation of these DASH/HEI percentiles, similar to how the
+MEPA is currently implemented. See
 [`?score_le8`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
 for more information.
+
+## Incomplete component data
+
+[`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+preserves ordinary row-level missingness rather than imputing it. The
+composite is the mean of the available component scores when the
+selected threshold is met:
+
+``` r
+
+incomplete <- rbind(patient, patient)
+incomplete$id <- c("complete", "sleep_missing")
+incomplete$sleep_hours[2] <- NA_real_
+
+incomplete_scores <- score_le8(incomplete, min_components = 7)
+incomplete_scores[
+  c(
+    "id",
+    "le8_composite_score",
+    "le8_n_components",
+    "le8_complete"
+  )
+]
+```
+
+`le8_n_components` reports how many component scores contributed, while
+`le8_complete` is `TRUE` only when all eight were available. A partial
+composite is therefore distinguishable from a complete eight-component
+score and should not be assumed to be clinically interchangeable with
+one. If a component cannot be calculated for any observation, the
+function emits one consolidated warning identifying every structurally
+unavailable component.
 
 ## Learn more
 

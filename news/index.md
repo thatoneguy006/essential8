@@ -1,5 +1,23 @@
 # Changelog
 
+## essential8 0.2.0
+
+### Missing-data support
+
+- [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+  now calculates component scores when sufficient component-specific
+  inputs are available and preserves missing inputs as missing scores
+  without imputation.
+- Added `min_components`, which accepts integers from 1 through 8 and
+  defaults to 7, to control how many available components are required
+  for `le8_composite_score`.
+- Added `le8_n_components` and `le8_complete` so partial composite
+  scores are distinguishable from complete eight-component scores.
+- Added consolidated, classed warnings when one or more LE8 components
+  cannot be calculated for any observation, including a stronger warning
+  when structural missingness makes `min_components` impossible to
+  reach.
+
 ## essential8 0.1.0
 
 ### Adult Life’s Essential 8 scoring

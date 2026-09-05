@@ -35,7 +35,7 @@ test_that("the hand-scored 10-subject example is reproduced", {
   expect_identical(result$le8_category, fixture$expected_le8_category)
 })
 
-test_that("manual fixture arithmetic is internally consistent", {
+test_that("hand-scored validation fixture is internally consistent", {
   fixture <- adult_example_fixture()
   expected_columns <- c(
     "expected_diet_score",

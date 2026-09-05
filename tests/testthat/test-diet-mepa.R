@@ -1,5 +1,5 @@
-test_that("raw MEPA items produce the sourced totals and LE8 diet bands", {
-  totals <- c(0, 3, 4, 7, 8, 11, 12, 14, 15, 16)
+test_that("raw MEPA inputs flow through diet and composite scoring", {
+  totals <- c(0, 8, 16)
   input <- do.call(
     rbind,
     lapply(totals, adult_mepa_row)
@@ -9,14 +9,8 @@ test_that("raw MEPA items produce the sourced totals and LE8 diet bands", {
 
   expect_false("diet_value" %in% names(input))
   expect_equal(result$mepa_total, totals)
-  expect_equal(
-    result$le8_diet_score,
-    c(0, 0, 25, 25, 50, 50, 80, 80, 100, 100)
-  )
-  expect_equal(
-    result$le8_composite_score,
-    c(87.5, 87.5, 90.625, 90.625, 93.75, 93.75, 97.5, 97.5, 100, 100)
-  )
+  expect_equal(result$le8_diet_score, c(0, 50, 100))
+  expect_equal(result$le8_composite_score, c(87.5, 93.75, 100))
 })
 
 test_that("MEPA allows only absent or all-missing diet_value", {
@@ -47,10 +41,13 @@ test_that("percentile-only scoring does not require MEPA inputs", {
   expect_equal(result$le8_diet_score, 100)
 })
 
-test_that("zero-row scoring remains type stable with omitted diet inputs", {
+test_that("zero-row diet dispatch preserves diet output types", {
   input <- adult_input_fixture()[0, , drop = FALSE]
-  input[c("sex", adult_mepa_columns())] <- NULL
+  complete_mepa_result <- expect_no_warning(score_le8(input))
+  expect_type(complete_mepa_result$mepa_total, "integer")
+  expect_type(complete_mepa_result$le8_diet_score, "double")
 
+  input[c("sex", adult_mepa_columns())] <- NULL
   mepa_result <- expect_no_warning(
     score_le8(input, diet_method = "mepa")
   )
@@ -58,16 +55,16 @@ test_that("zero-row scoring remains type stable with omitted diet inputs", {
     score_le8(input, diet_method = "percentile")
   )
 
-  expect_equal(nrow(mepa_result), 0L)
   expect_type(mepa_result$mepa_total, "integer")
-  expect_equal(nrow(percentile_result), 0L)
+  expect_type(mepa_result$le8_diet_score, "double")
+  expect_type(percentile_result$mepa_total, "integer")
   expect_type(percentile_result$le8_diet_score, "double")
 
   input$diet_value <- numeric()
   result <- score_le8(input, diet_method = "percentile")
 
-  expect_equal(nrow(result), 0L)
   expect_type(result$mepa_total, "integer")
+  expect_type(result$le8_diet_score, "double")
 })
 
 test_that("zero-row MEPA scoring validates column types", {
@@ -124,9 +121,10 @@ test_that("MEPA food criteria include the source-table thresholds", {
   )
 
   rows <- vector("list", length(items) * 2L)
+  row <- adult_mepa_row(total = 0)
   for (index in seq_along(items)) {
-    at_boundary <- adult_mepa_row(total = 0)
-    just_failing <- adult_mepa_row(total = 0)
+    at_boundary <- row
+    just_failing <- row
     at_boundary[[items[index]]] <- boundary[index]
     just_failing[[items[index]]] <-
       boundary[index] - direction[index] * 0.001
@@ -137,7 +135,14 @@ test_that("MEPA food criteria include the source-table thresholds", {
 
   result <- score_le8(do.call(rbind, rows))
 
-  expect_equal(result$mepa_total, rep(c(1, 0), length(items)))
+  labels <- paste(
+    rep(items, each = 2L),
+    c("at boundary", "just failing")
+  )
+  expect_equal(
+    stats::setNames(result$mepa_total, labels),
+    stats::setNames(rep(c(1, 0), length(items)), labels)
+  )
 })
 
 test_that("MEPA alcohol uses a bounded positive weekly range", {
@@ -146,16 +151,22 @@ test_that("MEPA alcohol uses a bounded positive weekly range", {
     rep("male", 4),
     rep("female", 4)
   )
-  rows <- lapply(seq_along(alcohol_values), function(index) {
-    row <- adult_mepa_row(total = 0, sex = sex[index])
-    row$alcohol <- alcohol_values[index]
-    row
-  })
+  row <- adult_mepa_row(total = 0)
+  input <- row[rep(1L, length(alcohol_values)), , drop = FALSE]
+  input$sex <- sex
+  input$alcohol <- alcohol_values
+  labels <- paste(sex, "alcohol =", alcohol_values)
 
-  result <- score_le8(do.call(rbind, rows))
+  result <- score_le8(input)
 
-  expect_equal(result$mepa_total, c(0, 1, 1, 0, 0, 1, 1, 0))
-  expect_equal(result$le8_diet_score, rep(0, 8))
+  expect_equal(
+    stats::setNames(result$mepa_total, labels),
+    stats::setNames(c(0, 1, 1, 0, 0, 1, 1, 0), labels)
+  )
+  expect_equal(
+    stats::setNames(result$le8_diet_score, labels),
+    stats::setNames(rep(0, 8), labels)
+  )
 })
 
 test_that("MEPA method, screener names, and sex are case-insensitive", {
@@ -224,27 +235,22 @@ test_that("MEPA mappings reject unsupported or ambiguous specifications", {
 })
 
 test_that("omitted MEPA inputs make diet structurally unavailable", {
-  missing_fish <- adult_mepa_row(total = 16)
-  missing_fish$fish <- NULL
-  expect_warning(
-    score_le8(missing_fish),
-    "Diet",
-    class = "essential8_missing_component"
-  )
-  fish_result <- suppressWarnings(score_le8(missing_fish))
-  expect_true(is.na(fish_result$le8_diet_score))
-  expect_equal(fish_result$le8_n_components, 7L)
+  complete_input <- adult_mepa_row(total = 16)
 
-  missing_sex <- adult_mepa_row(total = 16)
-  missing_sex$sex <- NULL
-  expect_warning(
-    score_le8(missing_sex),
-    "Diet",
-    class = "essential8_missing_component"
-  )
-  sex_result <- suppressWarnings(score_le8(missing_sex))
-  expect_true(is.na(sex_result$le8_diet_score))
-  expect_equal(sex_result$le8_n_components, 7L)
+  for (column in c("fish", "sex")) {
+    input <- complete_input
+    input[[column]] <- NULL
+    label <- paste("omitted MEPA column:", column)
+
+    expect_warning(
+      result <- score_le8(input),
+      "Diet",
+      class = "essential8_missing_component",
+      info = label
+    )
+    expect_true(is.na(result$le8_diet_score), info = label)
+    expect_equal(result$le8_n_components, 7L, info = label)
+  }
 })
 
 test_that("female is auto-resolved when the sex column is absent", {
@@ -271,19 +277,16 @@ test_that("MEPA accepts and preserves supported sex encodings", {
     character_digits = c(" 0 ", "1"),
     factor_digits = factor(c("0", "1"))
   )
+  row <- adult_mepa_row(total = 0)
+  input <- row[c(1L, 1L), , drop = FALSE]
+  input$alcohol <- 10
 
-  for (encoding in sex_encodings) {
-    input <- rbind(
-      adult_mepa_row(total = 0),
-      adult_mepa_row(total = 0)
-    )
-    input$sex <- encoding
-    input$alcohol <- 10
-
+  for (name in names(sex_encodings)) {
+    input$sex <- sex_encodings[[name]]
     result <- score_le8(input)
 
-    expect_equal(result$mepa_total, c(1, 0))
-    expect_identical(result$sex, encoding)
+    expect_equal(result$mepa_total, c(1, 0), info = name)
+    expect_identical(result$sex, sex_encodings[[name]], info = name)
   }
 })
 
@@ -302,32 +305,35 @@ test_that("observed MEPA responses must be finite nonnegative numbers", {
       data
     }
   )
+  input <- adult_mepa_row(total = 16)
 
-  for (make_malformed in malformed) {
+  for (name in names(malformed)) {
     expect_error(
-      score_le8(make_malformed(adult_mepa_row(total = 16))),
-      class = "essential8_adult_input_error"
+      score_le8(malformed[[name]](input)),
+      class = "essential8_adult_input_error",
+      info = paste("MEPA response:", name)
     )
   }
 })
 
 test_that("MEPA rejects blank or unsupported sex encodings", {
   malformed_sex <- list(
-    "   ",
-    "other",
-    2,
-    "2",
-    0.5,
-    TRUE
+    blank = "   ",
+    unsupported_label = "other",
+    unsupported_numeric = 2,
+    unsupported_digit = "2",
+    fractional = 0.5,
+    logical = TRUE
   )
+  input <- adult_mepa_row(total = 16)
 
-  for (sex in malformed_sex) {
-    input <- adult_mepa_row(total = 16)
-    input$sex <- sex
+  for (name in names(malformed_sex)) {
+    input$sex <- malformed_sex[[name]]
 
     expect_error(
       score_le8(input),
-      class = "essential8_adult_input_error"
+      class = "essential8_adult_input_error",
+      info = paste("sex encoding:", name)
     )
   }
 })

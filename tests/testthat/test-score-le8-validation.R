@@ -55,7 +55,8 @@ test_that("adult scoring rejects dimensioned input columns", {
     expect_error(
       score_le8(input),
       "one-dimensional",
-      class = "essential8_adult_input_error"
+      class = "essential8_adult_input_error",
+      info = paste("dimensioned column:", column)
     )
   }
 
@@ -79,54 +80,67 @@ test_that("adult scoring rejects dimensioned input columns", {
 })
 
 test_that("adult age and source-defined measurement domains are enforced", {
-  expect_error(
-    score_le8(adult_example_row(age = 19.999)),
-    class = "essential8_adult_input_error"
-  )
-  expect_error(
-    score_le8(adult_example_row(bmi = 18.499)),
-    class = "essential8_adult_input_error"
-  )
-  expect_error(
-    score_le8(
-      adult_example_row(diet_value = 0.999),
+  cases <- list(
+    list(
+      name = "age below adult range",
+      changes = list(age = 19.999),
+      diet_method = "mepa"
+    ),
+    list(
+      name = "BMI below source-defined scored range",
+      changes = list(bmi = 18.499),
+      diet_method = "mepa"
+    ),
+    list(
+      name = "percentile below source-defined scored range",
+      changes = list(diet_value = 0.999),
       diet_method = "percentile"
     ),
-    class = "essential8_adult_input_error"
+    list(
+      name = "negative physical activity",
+      changes = list(moderate_activity_minutes = -1),
+      diet_method = "mepa"
+    )
   )
+  valid_input <- adult_example_row()
+
+  for (case in cases) {
+    input <- valid_input
+    input[names(case$changes)] <- case$changes
+    expect_error(
+      score_le8(input, diet_method = case$diet_method),
+      class = "essential8_adult_input_error",
+      info = case$name
+    )
+  }
 })
 
 test_that("undefined AHA blood-glucose combinations are not guessed", {
-  expect_error(
-    score_le8(
-      adult_example_row(
-        diabetes = TRUE,
-        glucose_measure = "fasting_glucose",
-        glucose_value = 110
-      )
+  cases <- data.frame(
+    name = c(
+      "diabetes with fasting glucose",
+      "no diabetes with fasting glucose at 126",
+      "no diabetes with HbA1c at 6.5"
     ),
-    class = "essential8_adult_input_error"
+    diabetes = c(TRUE, FALSE, FALSE),
+    glucose_measure = c("fasting_glucose", "fasting_glucose", "hba1c"),
+    glucose_value = c(110, 126, 6.5)
   )
-  expect_error(
-    score_le8(
-      adult_example_row(
-        diabetes = FALSE,
-        glucose_measure = "fasting_glucose",
-        glucose_value = 126
-      )
-    ),
-    class = "essential8_adult_input_error"
-  )
-  expect_error(
-    score_le8(
-      adult_example_row(
-        diabetes = FALSE,
-        glucose_measure = "hba1c",
-        glucose_value = 6.5
-      )
-    ),
-    class = "essential8_adult_input_error"
-  )
+  valid_input <- adult_example_row()
+
+  for (i in seq_len(nrow(cases))) {
+    case <- cases[i, ]
+    input <- valid_input
+    input$diabetes <- case$diabetes
+    input$glucose_measure <- case$glucose_measure
+    input$glucose_value <- case$glucose_value
+
+    expect_error(
+      score_le8(input),
+      class = "essential8_adult_input_error",
+      info = case$name
+    )
+  }
 })
 
 test_that("undefined current combustible and inhaled-NDS dual use is not guessed", {
@@ -180,19 +194,21 @@ test_that("diet_method is a scalar, case-insensitive call-level argument", {
 
 test_that("diet_method rejects non-scalar and unsupported values", {
   invalid_methods <- list(
-    character(),
-    c("mepa", "percentile"),
-    NA_character_,
-    "",
-    "unknown",
-    1,
-    TRUE
+    empty = character(),
+    multiple = c("mepa", "percentile"),
+    missing = NA_character_,
+    blank = "",
+    unsupported = "unknown",
+    numeric = 1,
+    logical = TRUE
   )
+  input <- adult_example_row()
 
-  for (method in invalid_methods) {
+  for (name in names(invalid_methods)) {
     expect_error(
-      score_le8(adult_example_row(), diet_method = method),
-      class = "essential8_adult_input_error"
+      score_le8(input, diet_method = invalid_methods[[name]]),
+      class = "essential8_adult_input_error",
+      info = paste("diet_method:", name)
     )
   }
 })
@@ -212,20 +228,21 @@ test_that("matching legacy diet_method columns are accepted unchanged", {
 
 test_that("legacy diet_method conflicts and mixed methods are rejected", {
   legacy_values <- list(
-    c("percentile", "percentile"),
-    c("mepa", "percentile")
+    conflicting = c("percentile", "percentile"),
+    mixed = c("mepa", "percentile")
+  )
+  input <- rbind(
+    adult_mepa_row(total = 16),
+    adult_mepa_row(total = 15)
   )
 
-  for (values in legacy_values) {
-    input <- rbind(
-      adult_mepa_row(total = 16),
-      adult_mepa_row(total = 15)
-    )
-    input$diet_method <- values
+  for (name in names(legacy_values)) {
+    input$diet_method <- legacy_values[[name]]
 
     expect_error(
       score_le8(input, diet_method = "mepa"),
-      class = "essential8_adult_input_error"
+      class = "essential8_adult_input_error",
+      info = paste("legacy diet_method:", name)
     )
   }
 })
@@ -237,7 +254,8 @@ test_that("existing current or legacy composite columns are rejected", {
 
     expect_error(
       score_le8(input),
-      class = "essential8_adult_input_error"
+      class = "essential8_adult_input_error",
+      info = paste("existing output column:", column)
     )
   }
 })
@@ -260,4 +278,35 @@ test_that("zero-row adult input has type-stable output", {
   expect_equal(nrow(result), 0L)
   expect_type(result$le8_composite_score, "double")
   expect_type(result$le8_category, "character")
+})
+
+test_that("min_components accepts only one whole number from 1 to 8", {
+  invalid_values <- list(
+    below_range = 0,
+    above_range = 9,
+    missing = NA_real_,
+    fractional = 7.5,
+    multiple = c(7, 8),
+    character = "7"
+  )
+  input <- adult_mepa_row(total = 16)
+
+  for (name in names(invalid_values)) {
+    expect_error(
+      score_le8(input, min_components = invalid_values[[name]]),
+      "single integer between 1 and 8",
+      class = "essential8_adult_input_error",
+      info = paste("min_components:", name)
+    )
+  }
+
+  for (value in 1:8) {
+    warnings <- testthat::capture_warnings(
+      score_le8(input, min_components = value)
+    )
+    expect_equal(
+      length(warnings), 0L,
+      info = paste("valid min_components:", value)
+    )
+  }
 })

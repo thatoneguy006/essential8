@@ -1,26 +1,34 @@
-adult_example_fixture <- function() {
-  path <- system.file(
-    "extdata",
-    "le8-adult-example.csv",
-    package = "essential8"
-  )
+adult_example_fixture <- local({
+  fixture <- NULL
 
-  if (!nzchar(path)) {
-    path <- testthat::test_path(
-      "..",
-      "..",
-      "inst",
-      "extdata",
-      "le8-adult-example.csv"
-    )
+  function() {
+    if (is.null(fixture)) {
+      path <- system.file(
+        "extdata",
+        "le8-adult-example.csv",
+        package = "essential8"
+      )
+
+      if (!nzchar(path)) {
+        path <- testthat::test_path(
+          "..",
+          "..",
+          "inst",
+          "extdata",
+          "le8-adult-example.csv"
+        )
+      }
+
+      fixture <<- utils::read.csv(
+        path,
+        check.names = FALSE,
+        stringsAsFactors = FALSE
+      )
+    }
+
+    fixture
   }
-
-  utils::read.csv(
-    path,
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-  )
-}
+})
 
 adult_input_fixture <- function() {
   fixture <- adult_example_fixture()

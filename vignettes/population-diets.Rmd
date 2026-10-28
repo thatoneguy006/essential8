@@ -1,8 +1,8 @@
 ---
-title: "Adult DASH and HEI-2015 scoring"
+title: "Population diet percentiles and references"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Adult DASH and HEI-2015 scoring}
+  %\VignetteIndexEntry{Population diet percentiles and references}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,183 +12,165 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 library(essential8)
 ```
 
-`score_le8()` accepts raw adult diet intakes with `diet_method = "dash"` or
-`"hei2015"`. These methods first calculate the raw diet index, then use a fixed
-reference population to assign LE8 diet points. An HEI-2015 total of 80 is not
-an 80th percentile or necessarily an LE8 diet score of 80.
+Use MEPA for the existing individual assessment pathway. DASH and HEI-2015
+percentiles support population research and use distinct measurement
+instruments. An HEI-2015 total is not itself a percentile or an LE8 diet score.
 
-The reference cutpoints below are **synthetic teaching examples**, not NHANES
-estimates or clinical recommendations. Replace them with validated cutpoints
-for your analysis. The AHA advisory specifies NHANES 2015-2018 as the reference;
-survey weights, strata, food definitions, and units must be handled when
-deriving those cutpoints. Score groups separately when their cutpoints differ.
-The package never ranks the submitted patients against one another.
+This extension accepts **already-computed** DASH/HEI indices or percentiles.
+Construct dietary indices with an established method appropriate for the
+scientific question before supplying them to `score_le8()`. The package's
+existing explicit raw-intake calls remain available for compatibility, as
+described at the end of this article.
 
-## DASH
+## Already-computed percentiles
 
-The Fung DASH index has eight components. Higher quintiles of fruits,
-vegetables, nuts/legumes, whole grains, and low-fat dairy earn more points.
-Sodium, red/processed meat, and sweetened beverages are reverse scored.
-Each component earns 1-5 points; `dash_total` ranges from 8 to 40.
+Supply percentile points in `diet_value`, on the 0-100 scale. The selected
+instrument remains explicit in `diet_method`. Percentiles bypass all
+reference lookup, so externally weighted, international, or site-specific
+references can be used.
 
-Supply servings/day for food groups and mg/day for sodium. Fruits include
-juice; vegetables exclude potatoes and legumes. Apply the same serving and
-food-group definitions to patients and the reference population. The default
-input names have a `dash_` prefix so that MEPA's weekly inputs cannot be
-accidentally reused.
-
-```{r dash}
-dash_patient <- data.frame(
-  age = 55,
-  dash_fruits = 5,
-  dash_vegetables = 5,
-  dash_nuts_and_legumes = 5,
-  dash_whole_grains = 5,
-  dash_low_fat_dairy = 5,
-  dash_sodium = 900,
-  dash_red_and_processed_meat = 0,
-  dash_sweetened_beverages = 0
-)
-
-dash_reference <- list(
-  fruits = c(1, 2, 3, 4),
-  vegetables = c(1, 2, 3, 4),
-  nuts_and_legumes = c(1, 2, 3, 4),
-  whole_grains = c(1, 2, 3, 4),
-  low_fat_dairy = c(1, 2, 3, 4),
-  sodium = c(1000, 2000, 3000, 4000),
-  red_and_processed_meat = c(1, 2, 3, 4),
-  sweetened_beverages = c(1, 2, 3, 4),
-  total = c(16, 24, 32, 39)
-)
-```
-
-Each intake vector holds the 20th, 40th, 60th, and 80th percentile boundaries.
-An intake equal to a boundary stays in the lower quintile. `total` holds the
-25th, 50th, 75th, and 95th percentile boundaries of the reference DASH totals,
-calculated using the same intake quintiles. Total-score equality enters the
-higher LE8 band. Repeated boundaries are allowed and do not split tied intakes
-across quintiles; these are explicit implementation conventions.
-
-```{r score-dash}
-# Only the diet component is available in this teaching example, so the
-# function warns about unavailable components. We retain only that component.
-dash_scores <- suppressWarnings(score_le8(
-  dash_patient,
-  diet_method = "dash",
-  dash_cutpoints = dash_reference,
-  min_components = 1
+```{r direct}
+# Include a second LE8 component to demonstrate a usable composite.
+patients <- data.frame(age = c(45, 65), sleep_hours = c(7.5, 7.5),
+                       diet_value = c(35, 98))
+scores <- suppressWarnings(score_le8(
+  patients, diet_method = "dash", min_components = 2
 ))
-dash_scores[c("dash_total", "le8_diet_score", "le8_n_components")]
-stopifnot(dash_scores$dash_total == 40, dash_scores$le8_diet_score == 100)
+scores[c("diet_value", "le8_diet_score", "le8_n_components")]
+stopifnot(identical(scores$le8_diet_score, c(25, 100)))
 ```
 
-## HEI-2015
+The warnings suppressed in these teaching examples identify the other six
+unavailable LE8 components. Selecting a population diet method itself does
+not produce a warning. Missing diet values propagate to missing scores and
+are never imputed. Normal package warnings about entirely unavailable
+components remain in effect.
 
-HEI-2015 uses eight food-group adequacy components, a fatty-acid-ratio
-component, and four moderation components. Amounts are converted to densities
-per 1,000 kcal, except the fat ratio and percentages of energy from added
-sugars and saturated fat. Values between the published endpoints receive
-proportional points, capped at the component maximum. The total is 0-100.
+Values such as `0.95` are never multiplied by 100. To catch common proportion
+errors, a batch confined to 0-1 with any fractional value is rejected with a
+scale message. That heuristic also rejects genuine fractional percentiles
+below 1 when they constitute the whole batch; 0 and 1 endpoints alone are
+accepted. All other observed values must be finite numeric values in 0-100.
 
-Inputs are daily totals, rather than already calculated densities:
+## Already-computed index scores
 
-- Cup equivalents: total fruits, whole fruits, total vegetables, greens/beans,
-  and dairy (including fortified soy beverages).
-- Ounce equivalents: whole grains, total protein foods, seafood/plant proteins,
-  and refined grains.
-- Grams: polyunsaturated, monounsaturated, and saturated fats.
-- Milligrams: sodium. Teaspoon equivalents: added sugars.
-- Kilocalories: total energy, including alcohol; observed energy must be positive.
+Supply an index in `dash` or `hei2015`, matching `diet_method`, and select an
+explicit reference. The built-in `nhanes_2015_2018` reference is packaged
+locally; scoring performs no downloads. Its four derived cutpoints identify
+percentile categories. They cannot establish an exact percentile.
 
-Map foods to these groups before scoring, using FPED/FNDDS or another suitable
-food database. Include legumes in both vegetable groups and both protein
-groups, using each group's appropriate equivalents. Whole fruits exclude
-juice; total fruits include juice. Do not enter legumes again after constructing
-these component totals. When multiple recalls are used, aggregate all intake
-constituents and energy over the same days before scoring; do not average daily
-component scores.
+```{r built-in}
+patients <- data.frame(age = c(45, 65), sleep_hours = c(7.5, 7.5),
+                       hei2015 = c(45, 80))
+scores <- suppressWarnings(score_le8(
+  patients, diet_method = "hei2015", reference = "nhanes_2015_2018",
+  min_components = 2
+))
+scores[c("hei2015", "le8_diet_score")]
+```
 
-```{r hei2015}
-hei_patient <- data.frame(
-  age = 55,
-  hei2015_energy_kcal = 2000,
-  hei2015_total_fruits = 1.6,
-  hei2015_whole_fruits = 0.8,
-  hei2015_total_vegetables = 2.2,
-  hei2015_greens_and_beans = 0.4,
-  hei2015_whole_grains = 3,
-  hei2015_dairy = 2.6,
-  hei2015_total_protein_foods = 5,
-  hei2015_seafood_and_plant_proteins = 1.6,
-  hei2015_polyunsaturated_fat = 30,
-  hei2015_monounsaturated_fat = 20,
-  hei2015_saturated_fat = 16,
-  hei2015_refined_grains = 3.6,
-  hei2015_sodium = 2200,
-  hei2015_added_sugars = 8
+Use either the index column or `diet_value`, not both, even when the latter
+is entirely missing. The generic legacy `diet_method = "percentile"` route
+also remains available. MEPA continues to require its original screener
+inputs and has no reference-distribution dependency.
+
+## What the built-in reference represents
+
+Both built-in references were derived from public CDC NHANES 2015-2016 and
+2017-2018 files and the corresponding USDA FPED releases. They describe
+**8,241 nonpregnant adults aged at least 20** with two reliable recalls,
+positive energy and two-day dietary weights, and complete required inputs.
+Unknown pregnancy status is not treated as known pregnancy.
+
+The builder combines the same two days' constituents and energy before
+calculating indices. It divides `WTDR2D` by two to combine the two survey
+cycles, nests `SDMVSTRA` within cycle, and specifies `SDMVPSU` in a survey
+design. Adult/nonpregnant eligibility is a domain restriction. Weighted
+quantiles use `survey::svyquantile(qrule = "math", ci = FALSE)`.
+
+The HEI-2015 reference uses individual scoring of the two-recall mean inputs,
+following NCI component standards, units, and legume allocation. It is not an
+estimate of the usual-intake distribution or a population-ratio score.
+Indices constructed using materially different methods need a suitable
+custom reference.
+
+The DASH reference is specifically `essential8_fung_fped_v1`, an eight-component
+Fung-style index on the 8-40 scale. Its FPED serving conversions and food-code
+definitions are documented in `data-raw/README.md`. They use the numeric food
+codes from a pinned revision of the published dietaryindex implementation.
+We replace that implementation's unweighted quintiles with pooled weighted
+adult quintiles and calculate the index after averaging intakes, rather than
+averaging separately scored days. The package's pre-existing lower-quintile
+tie convention is retained. Thus **an arbitrary score labeled DASH is not
+automatically compatible**, even if it also ranges from 8 to 40. Its reference
+must match its index definition and intake quintiles.
+
+These references are independently derived estimates, not published AHA
+cutpoint tables or a claim to reproduce a particular published prevalence
+estimate exactly. The AHA advisory identifies NHANES 2015-2018 as the initial
+reference period; other populations or future methods can use custom
+references. The percentile mapping helper is age-independent, but the adult
+reference supplied here is not a pediatric reference.
+
+The repository's `data-raw/build_diet_references.R` rebuilds the references.
+It records input URLs and SHA-256 hashes, software versions, sample counts,
+index definitions, and design details. Only compact derived references and
+their provenance are packaged; no participant records or raw downloads are
+included. A second build verifies stored cutpoints, sample counts, and source
+hashes. CRAN examples and tests never rebuild or download reference data.
+
+## Custom references
+
+Construct method-tagged cutpoints at the 25th, 50th, 75th, and 95th percentiles
+of the appropriate index distribution. They must be finite numeric scalars
+in nondecreasing order. Repeated values are permitted; equality enters the
+higher category, and all tied scores receive the same result.
+
+```{r custom}
+# Synthetic teaching values, not an empirical reference.
+custom <- diet_reference(
+  p25 = 40, p50 = 55, p75 = 65, p95 = 80,
+  method = "hei2015", label = "Synthetic study reference",
+  source = "Teaching example"
 )
-hei_reference <- c(40, 60, 80, 95) # Synthetic total-score percentile cutpoints.
-hei_scores <- suppressWarnings(score_le8(
-  hei_patient,
-  diet_method = "hei2015",
-  hei2015_cutpoints = hei_reference,
-  min_components = 1
+custom
+scores <- suppressWarnings(score_le8(
+  patients, diet_method = "hei2015", reference = custom,
+  min_components = 2
 ))
-hei_scores[c("hei2015_total", "le8_diet_score", "le8_n_components")]
-stopifnot(hei_scores$hei2015_total == 100, hei_scores$le8_diet_score == 100)
-
-# Audit the 13 individual HEI-2015 component scores.
-hei_scores[grep("^hei2015_.*_score$", names(hei_scores))]
+scores[c("hei2015", "le8_diet_score")]
 ```
 
-`hei2015_cutpoints` contains the reference total's 25th, 50th, 75th, and 95th
-percentile boundaries. These produce LE8 scores of 0, 25, 50, 80, and 100,
-respectively, with equality entering the higher band. The cutpoints are not
-the fixed component standards used to calculate the raw HEI-2015 total.
+A reference tagged as HEI-2015 cannot be used for DASH, or vice versa.
+HEI-2015 is bounded by 0-100. Custom DASH references have no assumed global
+index range; use `score_range` when the chosen index has known bounds.
+Labels and source metadata do not change scores. References are revalidated
+when used, including after an object is modified.
 
-## Column mappings and missing data
+Always name the reference explicitly in published analysis scripts. Adding
+or removing patients cannot change other patients' scores. To use your own
+cohort intentionally, construct its reference separately and explicitly.
 
-Mappings name the canonical field without its diet prefix and specify an
-actual data column. For example:
+## Compatibility with the existing raw-intake routes
 
-```{r mapping}
-names(hei_patient)[names(hei_patient) == "hei2015_energy_kcal"] <- "calories"
-mapped <- suppressWarnings(score_le8(
-  hei_patient,
-  diet_method = "hei2015",
-  hei2015_columns = c(energy_kcal = "calories"),
-  hei2015_cutpoints = hei_reference,
-  min_components = 1
-))
-stopifnot(mapped$hei2015_total == 100)
-```
+The raw calculations introduced in PR #15 already existed on `dev` when this
+extension was written. Existing calls with `dash_columns`/`dash_cutpoints` or
+`hei2015_columns`/`hei2015_cutpoints` continue to use their original helpers,
+units, outputs, and user-supplied cutpoints. Their matching prefixed raw input
+columns are also recognized. See `?score_le8` for the full input contract.
 
-Input names and mappings are case-insensitive. Explicit mappings must point
-to distinct, existing columns. Unmapped fields retain their default names.
-Absent or missing diet fields propagate to a missing total and LE8 diet
-score. Observed inputs must be numeric, finite, and nonnegative. For HEI-2015,
-other available diet component scores remain auditable, but no partial total
-is used. `min_components` controls the number of complete **LE8** components
-needed for the composite; it does not relax DASH or HEI completeness.
-
-The NCI convention assigns zero fatty-acid points when all three fats are
-zero, and ten when saturated fat is zero and unsaturated fat is positive.
-Missing fat inputs remain missing. The package rejects zero-energy records
-because this workflow scores adult dietary intake with a defined energy density.
-
-The existing `diet_method = "percentile"` pathway remains available for
-externally calculated diet percentiles. Do not also supply a non-missing
-`diet_value` when using a raw-intake method.
+Those explicit compatibility routes bypass the new built-in reference; they
+must not be combined with an already-computed index or observed percentile.
+No new recall parser, usual-intake model, or index-processing public API is
+introduced. Index and percentile calls add no new provenance or component
+columns beyond the existing output schema. The 13 detailed HEI components
+remain specific to raw-intake compatibility calls.
 
 ## Sources
 
-- Fung et al. (2008), Table 1 and Methods, "Dietary assessment":
-  <https://doi.org/10.1001/archinte.168.7.713>.
-- Lloyd-Jones et al. (2022), adult diet metric and reference population:
-  <https://doi.org/10.1161/CIR.0000000000001078>.
-- Krebs-Smith et al. (2018), HEI-2015 components and scoring standards:
-  <https://doi.org/10.1016/j.jand.2018.05.021>.
-- NCI [HEI standards](https://epi.grants.cancer.gov/hei/developing.html),
-  [scoring algorithm](https://epi.grants.cancer.gov/hei/hei-scoring-method.html),
-  and [reference SAS macro](https://epi.grants.cancer.gov/hei/sas-code.html).
+- [AHA LE8 advisory and its supplementary Appendix 1](https://doi.org/10.1161/CIR.0000000000001078).
+- [NHANES dietary data and documentation](https://wwwn.cdc.gov/Nchs/Nhanes/Search/DataPage.aspx?Component=Dietary).
+- [USDA FPED releases](https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/beltsville-human-nutrition-research-center/food-surveys-research-group/docs/fped-databases/).
+- [Fung et al. (2008)](https://doi.org/10.1001/archinte.168.7.713).
+- [NCI HEI scoring standards](https://epi.grants.cancer.gov/hei/developing.html)
+  and [algorithm](https://epi.grants.cancer.gov/hei/hei-scoring-method.html).

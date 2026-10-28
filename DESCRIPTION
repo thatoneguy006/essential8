@@ -32,13 +32,18 @@ Description: Provides a reproducible R implementation of the American Heart
     al. (2022)
     <doi:10.1161/CIR.0000000000001078>.
 License: MIT + file LICENSE
+Depends:
+    R (>= 3.4.0)
 Encoding: UTF-8
 Language: en-US
 Imports:
     cli (>= 3.6.0)
 Suggests:
+    digest,
+    haven,
     knitr,
     rmarkdown,
+    survey,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Config/testthat/edition: 3

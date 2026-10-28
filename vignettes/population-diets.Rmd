@@ -1,0 +1,194 @@
+---
+title: "Adult DASH and HEI-2015 scoring"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Adult DASH and HEI-2015 scoring}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(essential8)
+```
+
+`score_le8()` accepts raw adult diet intakes with `diet_method = "dash"` or
+`"hei2015"`. These methods first calculate the raw diet index, then use a fixed
+reference population to assign LE8 diet points. An HEI-2015 total of 80 is not
+an 80th percentile or necessarily an LE8 diet score of 80.
+
+The reference cutpoints below are **synthetic teaching examples**, not NHANES
+estimates or clinical recommendations. Replace them with validated cutpoints
+for your analysis. The AHA advisory specifies NHANES 2015-2018 as the reference;
+survey weights, strata, food definitions, and units must be handled when
+deriving those cutpoints. Score groups separately when their cutpoints differ.
+The package never ranks the submitted patients against one another.
+
+## DASH
+
+The Fung DASH index has eight components. Higher quintiles of fruits,
+vegetables, nuts/legumes, whole grains, and low-fat dairy earn more points.
+Sodium, red/processed meat, and sweetened beverages are reverse scored.
+Each component earns 1-5 points; `dash_total` ranges from 8 to 40.
+
+Supply servings/day for food groups and mg/day for sodium. Fruits include
+juice; vegetables exclude potatoes and legumes. Apply the same serving and
+food-group definitions to patients and the reference population. The default
+input names have a `dash_` prefix so that MEPA's weekly inputs cannot be
+accidentally reused.
+
+```{r dash}
+dash_patient <- data.frame(
+  age = 55,
+  dash_fruits = 5,
+  dash_vegetables = 5,
+  dash_nuts_and_legumes = 5,
+  dash_whole_grains = 5,
+  dash_low_fat_dairy = 5,
+  dash_sodium = 900,
+  dash_red_and_processed_meat = 0,
+  dash_sweetened_beverages = 0
+)
+
+dash_reference <- list(
+  fruits = c(1, 2, 3, 4),
+  vegetables = c(1, 2, 3, 4),
+  nuts_and_legumes = c(1, 2, 3, 4),
+  whole_grains = c(1, 2, 3, 4),
+  low_fat_dairy = c(1, 2, 3, 4),
+  sodium = c(1000, 2000, 3000, 4000),
+  red_and_processed_meat = c(1, 2, 3, 4),
+  sweetened_beverages = c(1, 2, 3, 4),
+  total = c(16, 24, 32, 39)
+)
+```
+
+Each intake vector holds the 20th, 40th, 60th, and 80th percentile boundaries.
+An intake equal to a boundary stays in the lower quintile. `total` holds the
+25th, 50th, 75th, and 95th percentile boundaries of the reference DASH totals,
+calculated using the same intake quintiles. Total-score equality enters the
+higher LE8 band. Repeated boundaries are allowed and do not split tied intakes
+across quintiles; these are explicit implementation conventions.
+
+```{r score-dash}
+# Only the diet component is available in this teaching example, so the
+# function warns about unavailable components. We retain only that component.
+dash_scores <- suppressWarnings(score_le8(
+  dash_patient,
+  diet_method = "dash",
+  dash_cutpoints = dash_reference,
+  min_components = 1
+))
+dash_scores[c("dash_total", "le8_diet_score", "le8_n_components")]
+stopifnot(dash_scores$dash_total == 40, dash_scores$le8_diet_score == 100)
+```
+
+## HEI-2015
+
+HEI-2015 uses eight food-group adequacy components, a fatty-acid-ratio
+component, and four moderation components. Amounts are converted to densities
+per 1,000 kcal, except the fat ratio and percentages of energy from added
+sugars and saturated fat. Values between the published endpoints receive
+proportional points, capped at the component maximum. The total is 0-100.
+
+Inputs are daily totals, rather than already calculated densities:
+
+- Cup equivalents: total fruits, whole fruits, total vegetables, greens/beans,
+  and dairy (including fortified soy beverages).
+- Ounce equivalents: whole grains, total protein foods, seafood/plant proteins,
+  and refined grains.
+- Grams: polyunsaturated, monounsaturated, and saturated fats.
+- Milligrams: sodium. Teaspoon equivalents: added sugars.
+- Kilocalories: total energy, including alcohol; observed energy must be positive.
+
+Map foods to these groups before scoring, using FPED/FNDDS or another suitable
+food database. Include legumes in both vegetable groups and both protein
+groups, using each group's appropriate equivalents. Whole fruits exclude
+juice; total fruits include juice. Do not enter legumes again after constructing
+these component totals. When multiple recalls are used, aggregate all intake
+constituents and energy over the same days before scoring; do not average daily
+component scores.
+
+```{r hei2015}
+hei_patient <- data.frame(
+  age = 55,
+  hei2015_energy_kcal = 2000,
+  hei2015_total_fruits = 1.6,
+  hei2015_whole_fruits = 0.8,
+  hei2015_total_vegetables = 2.2,
+  hei2015_greens_and_beans = 0.4,
+  hei2015_whole_grains = 3,
+  hei2015_dairy = 2.6,
+  hei2015_total_protein_foods = 5,
+  hei2015_seafood_and_plant_proteins = 1.6,
+  hei2015_polyunsaturated_fat = 30,
+  hei2015_monounsaturated_fat = 20,
+  hei2015_saturated_fat = 16,
+  hei2015_refined_grains = 3.6,
+  hei2015_sodium = 2200,
+  hei2015_added_sugars = 8
+)
+hei_reference <- c(40, 60, 80, 95) # Synthetic total-score percentile cutpoints.
+hei_scores <- suppressWarnings(score_le8(
+  hei_patient,
+  diet_method = "hei2015",
+  hei2015_cutpoints = hei_reference,
+  min_components = 1
+))
+hei_scores[c("hei2015_total", "le8_diet_score", "le8_n_components")]
+stopifnot(hei_scores$hei2015_total == 100, hei_scores$le8_diet_score == 100)
+
+# Audit the 13 individual HEI-2015 component scores.
+hei_scores[grep("^hei2015_.*_score$", names(hei_scores))]
+```
+
+`hei2015_cutpoints` contains the reference total's 25th, 50th, 75th, and 95th
+percentile boundaries. These produce LE8 scores of 0, 25, 50, 80, and 100,
+respectively, with equality entering the higher band. The cutpoints are not
+the fixed component standards used to calculate the raw HEI-2015 total.
+
+## Column mappings and missing data
+
+Mappings name the canonical field without its diet prefix and specify an
+actual data column. For example:
+
+```{r mapping}
+names(hei_patient)[names(hei_patient) == "hei2015_energy_kcal"] <- "calories"
+mapped <- suppressWarnings(score_le8(
+  hei_patient,
+  diet_method = "hei2015",
+  hei2015_columns = c(energy_kcal = "calories"),
+  hei2015_cutpoints = hei_reference,
+  min_components = 1
+))
+stopifnot(mapped$hei2015_total == 100)
+```
+
+Input names and mappings are case-insensitive. Explicit mappings must point
+to distinct, existing columns. Unmapped fields retain their default names.
+Absent or missing diet fields propagate to a missing total and LE8 diet
+score. Observed inputs must be numeric, finite, and nonnegative. For HEI-2015,
+other available diet component scores remain auditable, but no partial total
+is used. `min_components` controls the number of complete **LE8** components
+needed for the composite; it does not relax DASH or HEI completeness.
+
+The NCI convention assigns zero fatty-acid points when all three fats are
+zero, and ten when saturated fat is zero and unsaturated fat is positive.
+Missing fat inputs remain missing. The package rejects zero-energy records
+because this workflow scores adult dietary intake with a defined energy density.
+
+The existing `diet_method = "percentile"` pathway remains available for
+externally calculated diet percentiles. Do not also supply a non-missing
+`diet_value` when using a raw-intake method.
+
+## Sources
+
+- Fung et al. (2008), Table 1 and Methods, "Dietary assessment":
+  <https://doi.org/10.1001/archinte.168.7.713>.
+- Lloyd-Jones et al. (2022), adult diet metric and reference population:
+  <https://doi.org/10.1161/CIR.0000000000001078>.
+- Krebs-Smith et al. (2018), HEI-2015 components and scoring standards:
+  <https://doi.org/10.1016/j.jand.2018.05.021>.
+- NCI [HEI standards](https://epi.grants.cancer.gov/hei/developing.html),
+  [scoring algorithm](https://epi.grants.cancer.gov/hei/hei-scoring-method.html),
+  and [reference SAS macro](https://epi.grants.cancer.gov/hei/sas-code.html).

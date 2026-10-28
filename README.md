@@ -35,7 +35,8 @@ score from 0 to 100. `essential8` applies the published adult scoring bands
 in one validated workflow and returns all eight component scores plus the
 composite.
 
-Version 0.2.0 supports incomplete adult records without imputing raw inputs or
+Version 0.3.0 adds adult DASH and HEI-2015 diet calculations alongside MEPA.
+It supports incomplete adult records without imputing raw inputs or
 component scores. By default, the composite is calculated when at least seven
 components are available; `min_components` can set a threshold from 1 through
 8. Optional AHA clinical-judgment adjustments are applied only when the user
@@ -51,7 +52,7 @@ Pass a data frame containing adult inputs for the eight AHA metrics. Missing
 component values are allowed, and component-specific columns may be omitted
 when a domain is unavailable:
 
-- diet (can be MEPA or percentile based, see below for more info)
+- diet (MEPA, DASH, HEI-2015, or externally supplied percentiles)
 - physical activity (moderate and vigorous activity)
 - smoking
 - sleep
@@ -144,9 +145,8 @@ scores[
 ]
 ```
 
-The `diet_method` argument can be specified either as `"mepa"` or
-`"percentile"`, corresponding to the 16 MEPA items seen above or the DASH
-percentile alternative scores. The `min_components` argument defaults to 7.
+The `diet_method` argument accepts `"mepa"`, `"dash"`, `"hei2015"`, or
+`"percentile"`. The `min_components` argument defaults to 7.
 For `diet_method = "mepa"`, the function calculates `mepa_total` directly from
 the 16 screener responses. Their column names must be the screener labels shown
 above. Matching is case-insensitive.
@@ -157,13 +157,39 @@ recognized automatically. Map any other field with, for example,
 trimmed and matched case-insensitively as `m`/`f` or `male`/`female`.
 Numeric or character `0`/`1` values are also accepted, where `0` is male and `1` is female.
 
-For data that use both diet methods, split the rows into separate data frames
+For data that use different diet methods, split the rows into separate data frames
 and call `score_le8()` separately. Percentile calls use `diet_value`, containing
 a DASH or HEI-2015 percentile from 1 to 100. The result appends all eight
 component scores, `le8_n_components`, `le8_complete`, the composite score, and
-its cardiovascular health category. Future versions will allow the
-calculation of these DASH/HEI percentiles, similar to how the MEPA is currently
-implemented. See `?score_le8` for more information.
+its cardiovascular health category. See `?score_le8` for more information.
+
+## DASH and HEI-2015 from raw intakes
+
+`diet_method = "dash"` computes the eight-component Fung DASH index (8-40)
+from seven daily food-group serving amounts and sodium in mg/day. The default
+columns use the `dash_` prefix. Supply `dash_cutpoints`, a list with four
+reference intake quintile boundaries for each component and four total-score
+boundaries in `total` (25th, 50th, 75th, and 95th percentiles).
+
+`diet_method = "hei2015"` computes all 13 HEI-2015 components and their total
+(0-100) from daily food-pattern equivalents, nutrients, and energy. Its
+default columns use the `hei2015_` prefix. Supply `hei2015_cutpoints`, the four
+reference total-score boundaries at the same percentiles. Food groups use
+cup/ounce equivalents, sodium uses mg, fats use grams, and added sugars use
+**teaspoon equivalents**. Include legumes in both vegetable and protein totals
+as required by HEI-2015. A raw HEI total is not an LE8 diet score or percentile.
+
+Both methods convert raw totals to LE8 diet points using the supplied
+reference boundaries. Cutpoints must come from a suitable fixed population
+(the AHA advisory specifies NHANES 2015-2018), with applicable survey weighting
+and stratification. No reference cutpoints are bundled or calculated from the
+submitted rows. Custom field names can be mapped with `dash_columns` or
+`hei2015_columns`. Missing diet inputs leave the raw total and LE8 diet score
+missing; available non-diet LE8 components are still scored.
+
+See `vignette("population-diets", package = "essential8")` for executable
+examples with synthetic cutpoints, and `?score_le8` for the complete input
+contract and tie conventions.
 
 ## Incomplete component data
 

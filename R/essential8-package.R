@@ -7,10 +7,11 @@
 #' available through [score_le8()].
 #'
 #' @section Scientific status:
-#' The adult scoring rules in version 0.2.0 are implemented from the cited AHA
-#' publications and covered by boundary and input-validation tests. Users remain
+#' The adult scoring rules in version 0.3.0 are implemented from the cited AHA,
+#' DASH, and HEI-2015 sources and covered by boundary and input-validation tests.
+#' Users remain
 #' responsible for verifying measurement protocols, population-specific diet
-#' percentiles, and caller-adjudicated clinical-judgment flags. The package is
+#' cutpoints or percentiles, and caller-adjudicated clinical-judgment flags. The package is
 #' research software and is not intended for clinical decision support.
 #'
 #' @keywords internal

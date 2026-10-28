@@ -4,14 +4,24 @@
 \alias{score_le8}
 \title{Score Life's Essential 8 cardiovascular health}
 \usage{
-score_le8(data, diet_method = "mepa", mepa_columns = NULL, min_components = 7L)
+score_le8(
+  data,
+  diet_method = "mepa",
+  mepa_columns = NULL,
+  min_components = 7L,
+  dash_columns = NULL,
+  dash_cutpoints = NULL,
+  hei2015_columns = NULL,
+  hei2015_cutpoints = NULL
+)
 }
 \arguments{
 \item{data}{A data frame with one row per adult and the input columns
 described below.}
 
 \item{diet_method}{A single diet-scoring method applied to every row in
-\code{data}: \code{"mepa"} (the default) or \code{"percentile"}. Values are matched
+\code{data}: \code{"mepa"} (the default), \code{"dash"}, \code{"hei2015"}, or \code{"percentile"}.
+Values are matched
 case-insensitively. Score data that use different methods in separate
 calls.}
 
@@ -24,10 +34,27 @@ number of non-missing LE8 component scores required to calculate
 \code{le8_composite_score}. The default is 7. Available component scores are
 averaged without imputation; observations below the threshold receive
 \code{NA_real_}.}
+
+\item{dash_columns, hei2015_columns}{\code{NULL}, or named character vectors
+mapping canonical DASH or HEI-2015 fields to columns in \code{data}. Unmapped
+fields default to the canonical name prefixed with \code{dash_} or \code{hei2015_}.
+Names and input column names are matched case-insensitively.}
+
+\item{dash_cutpoints}{Required for \code{diet_method = "dash"}: a named list
+containing the eight canonical DASH fields and \code{total}. Each intake
+vector contains four nondecreasing reference quintile cutpoints (20th,
+40th, 60th, 80th percentiles), in the same units as the inputs. \code{total}
+contains four nondecreasing reference DASH-total cutpoints (25th, 50th,
+75th, 95th percentiles), each from 8 to 40. Tied cutpoints are allowed.}
+
+\item{hei2015_cutpoints}{Required for \code{diet_method = "hei2015"}: four
+nondecreasing reference HEI-2015-total cutpoints (25th, 50th, 75th, 95th
+percentiles), each from 0 to 100. Tied cutpoints are allowed.}
 }
 \value{
 A data frame containing the original columns plus
-\code{mepa_total} (missing for population-percentile rows),
+\code{mepa_total}, \code{dash_total}, and \code{hei2015_total} (missing when that method
+is not selected),
 \code{physical_activity_moderate_equivalent_minutes}, the eight component score
 columns prefixed with \code{le8_}, \code{le8_n_components}, \code{le8_composite_score},
 \code{le8_complete}, and \code{le8_category}. The component count reports how many
@@ -36,6 +63,8 @@ only when all eight components are available. Categories are \code{"low"} for
 scores below 50, \code{"moderate"} for scores from 50 to less than 80, and
 \code{"high"} for scores of at least 80. The category is missing when the
 composite score is missing.
+For HEI-2015 calls only, the 13 component scores are also appended as
+\verb{hei2015_<component>_score}, including \code{fatty_acids} and \code{saturated_fats}.
 }
 \description{
 Computes the eight adult Life's Essential 8 (LE8) component scores and
@@ -59,11 +88,30 @@ of times per week that fast-food meals are consumed in \code{fast_food}.
 Sex may be encoded as \code{"m"}/\code{"f"}, \code{"male"}/\code{"female"}, or \code{0}/\code{1},
 where \code{0} is male and \code{1} is female. Character encodings are matched
 case-insensitively, and character \code{"0"}/\code{"1"} values are also accepted.
+\item For \code{diet_method = "dash"}, supply daily servings in \code{dash_fruits},
+\code{dash_vegetables}, \code{dash_nuts_and_legumes}, \code{dash_whole_grains},
+\code{dash_low_fat_dairy}, \code{dash_red_and_processed_meat}, and
+\code{dash_sweetened_beverages}; supply sodium in mg/day in \code{dash_sodium}.
+Canonical mapping fields omit the \code{dash_} prefix. Fruits include juice;
+vegetables exclude potatoes and legumes. Food groups and serving
+definitions must match those used to derive \code{dash_cutpoints}.
+\item For \code{diet_method = "hei2015"}, supply \code{hei2015_energy_kcal} (positive
+kcal/day, including alcohol); cup equivalents/day in
+\code{hei2015_total_fruits}, \code{hei2015_whole_fruits},
+\code{hei2015_total_vegetables}, \code{hei2015_greens_and_beans}, and
+\code{hei2015_dairy}; ounce equivalents/day in \code{hei2015_whole_grains},
+\code{hei2015_total_protein_foods}, \code{hei2015_seafood_and_plant_proteins}, and
+\code{hei2015_refined_grains}; grams/day in \code{hei2015_polyunsaturated_fat},
+\code{hei2015_monounsaturated_fat}, and \code{hei2015_saturated_fat}; mg/day in
+\code{hei2015_sodium}; and teaspoon equivalents/day in \code{hei2015_added_sugars}.
+Canonical mapping fields omit the \code{hei2015_} prefix. Food-group totals
+must already include legumes in both vegetable and protein components
+as specified by HEI-2015. Total fruits include juice; whole fruits do not.
 \item \code{diet_value}: Used when \code{diet_method = "percentile"}. Supply a DASH or
 HEI-2015 percentile from 1 to 100, calculated against the relevant
 reference distribution. The function does not rank supplied rows against
 one another. If this column is absent or missing, the diet score is
-missing. If it is present for MEPA data, all its values must be missing.
+missing. For the other diet methods, all its values must be missing.
 \item \code{moderate_activity_minutes} and \code{vigorous_activity_minutes}: Weekly
 minutes. Each vigorous minute counts as two moderate-equivalent minutes.
 \item \code{smoking_status}: One of \code{"never"}, \code{"former"}, or \code{"current"}.
@@ -117,9 +165,30 @@ discretionary penalty is applied.
 \section{Source-constrained behavior}{
 
 The function derives the 0-to-16 MEPA total from the 16 raw screener
-responses. For population scoring, callers must supply a
-DASH or HEI-2015 percentile calculated against the relevant reference
-population; the rows in \code{data} are not their own reference distribution.
+responses. DASH uses the eight-component Fung index: five beneficial food
+groups receive 1 to 5 points by intake quintile; sodium, red/processed meat,
+and sweetened beverages receive 5 to 1. Intakes equal to a quintile cutpoint
+stay in the lower quintile. Their sum is \code{dash_total} (8 to 40).
+
+HEI-2015 computes 13 density, fatty-acid-ratio, and energy-percentage
+components with proportional scoring between the published standards.
+Added sugars use 16 kcal per teaspoon equivalent; saturated fat uses
+9 kcal per gram. Scores are capped at each component's maximum. Their sum
+is \code{hei2015_total} (0 to 100), which is distinct from the LE8 diet score.
+With zero saturated fat and positive unsaturated fat, the fatty-acid
+component receives 10 points; with all three fats zero it receives zero,
+following the NCI scoring macro. Missing inputs are never treated as zero;
+a total requires all of its diet components, regardless of \code{min_components}.
+
+DASH and HEI-2015 totals are converted to LE8 scores of 0, 25, 50, 80, or
+100 using the supplied total-score cutpoints. Equality enters the higher
+LE8 band. Callers must derive these cutpoints from a suitable fixed reference
+population, using appropriate survey weights and strata where applicable;
+the AHA advisory specifies NHANES 2015-2018 as the reference. No NHANES
+cutpoints are bundled or inferred from \code{data}. For references requiring
+different cutpoints by stratum, score strata in separate calls. Alternatively,
+\code{diet_method = "percentile"} accepts externally calculated DASH or HEI-2015
+percentiles. The rows in \code{data} are never ranked against one another.
 
 The AHA table applies 20-point treatment decrements to blood-lipid and
 blood-pressure scores. These components are floored at zero, consistent
@@ -196,4 +265,16 @@ Lloyd-Jones DM, Ning H, Labarthe D, et al. (2022). Status of Cardiovascular
 Health in US Adults and Children Using the American Heart Association's New
 Life's Essential 8 Metrics. \emph{Circulation}, 146(11), 822-835.
 \doi{10.1161/CIRCULATIONAHA.122.060911}
+
+Fung TT, Chiuve SE, McCullough ML, et al. (2008). Adherence to a DASH-Style
+Diet and Risk of Coronary Heart Disease and Stroke in Women.
+\emph{Archives of Internal Medicine}, 168(7), 713-720.
+\doi{10.1001/archinte.168.7.713}
+
+Krebs-Smith SM, Pannucci TE, Subar AF, et al. (2018). Update of the Healthy
+Eating Index: HEI-2015. \emph{Journal of the Academy of Nutrition and Dietetics},
+118(9), 1591-1602. \doi{10.1016/j.jand.2018.05.021}
+See also the National Cancer Institute's
+\href{https://epi.grants.cancer.gov/hei/developing.html}{scoring standards}
+and \href{https://epi.grants.cancer.gov/hei/hei-scoring-method.html}{algorithm}.
 }

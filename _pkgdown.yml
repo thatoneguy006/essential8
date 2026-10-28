@@ -38,6 +38,8 @@ navbar:
       menu:
         - text: Get Started
           href: articles/essential8-get-started.html
+        - text: DASH and HEI-2015
+          href: articles/population-diets.html
     news:
       text: Changelog
       href: news/index.html
@@ -51,6 +53,7 @@ articles:
     navbar: ~
     contents:
       - essential8-get-started
+      - population-diets
 
 footer:
   structure:

@@ -169,6 +169,13 @@ percentile_scores[
 ]
 ```
 
+To compute DASH or HEI-2015 from raw intakes, use `diet_method = "dash"` or
+`diet_method = "hei2015"` with explicit reference-population cutpoints. These
+methods return `dash_total` or `hei2015_total`, and HEI-2015 also returns its
+13 component scores. See `vignette("population-diets", package = "essential8")`
+for input units and worked examples. Raw diet totals are distinct from LE8
+diet points; no reference distribution is inferred from the supplied records.
+
 Three optional, caller-adjudicated flags control clinical-judgment adjustments:
 `apply_lean_muscular_bmi_override`, `apply_sleep_apnea_penalty`, and
 `apply_prediabetes_metformin_penalty`. When these columns are absent, their

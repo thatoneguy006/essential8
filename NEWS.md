@@ -1,3 +1,28 @@
+# essential8 0.3.0
+
+## New features
+
+- Added adult `diet_method = "dash"` scoring from eight daily intake fields
+  using the Fung quintile index, with an auditable 8-to-40 `dash_total` (#9).
+- Added adult `diet_method = "hei2015"` scoring from food-pattern equivalents,
+  energy, and nutrients. Returns all 13 component scores and the 0-to-100
+  `hei2015_total` (#9).
+- Both methods use explicit reference-population total-score cutpoints to
+  calculate LE8 diet points. DASH additionally requires intake quintile
+  cutpoints. The package never estimates reference cutpoints from the rows
+  being scored or treats an HEI-2015 total as a percentile.
+- Added `dash_columns` and `hei2015_columns` for custom input column mappings.
+  New inputs support the existing missing-data and `min_components` behavior;
+  incomplete diets do not produce partial raw totals.
+- Added source notes, worked synthetic examples, and boundary/validation tests.
+
+## Output changes
+
+- `score_le8()` now always appends `dash_total` and `hei2015_total`, with typed
+  missing values when the corresponding method is not selected. HEI-2015 calls
+  also append `hei2015_<component>_score` columns. These names are reserved
+  against input collisions. Existing positional arguments retain their order.
+
 # essential8 0.2.0
 
 ## Major Changes

@@ -2,6 +2,20 @@
 
 ## New features
 
+- Added DASH and HEI-2015 pathways for already-computed indices or direct
+  percentiles through `score_le8()`. Index inputs use the explicit default
+  `reference = "nhanes_2015_2018"`, or a validated, method-tagged
+  `diet_reference()` object. Direct percentiles bypass reference lookup (#9).
+- Built and reproduced compact references for both indices from public
+  NHANES 2015-2018/FPED data using the survey design and combined-cycle two-day
+  dietary weights. The maintainer pipeline records source hashes, sample
+  counts, index definitions, software versions, and exclusions; runtime scoring
+  uses no downloads or cohort ranking.
+- Shared percentile mapping accepts 0-100 points, preserves missing/empty
+  numeric outputs, and rejects apparent fractional proportions in 0-1.
+  MEPA results, argument order, and existing explicit raw-intake routes are
+  preserved; the new index/percentile routes add no output columns.
+
 - Added adult `diet_method = "dash"` scoring from eight daily intake fields
   using the Fung quintile index, with an auditable 8-to-40 `dash_total` (#9).
 - Added adult `diet_method = "hei2015"` scoring from food-pattern equivalents,

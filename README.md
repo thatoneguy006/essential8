@@ -35,7 +35,7 @@ score from 0 to 100. `essential8` applies the published adult scoring bands
 in one validated workflow and returns all eight component scores plus the
 composite.
 
-Version 0.3.0 adds adult DASH and HEI-2015 diet calculations alongside MEPA.
+Version 0.3.0 supports adult DASH and HEI-2015 diet scoring alongside MEPA.
 It supports incomplete adult records without imputing raw inputs or
 component scores. By default, the composite is calculated when at least seven
 components are available; `min_components` can set a threshold from 1 through
@@ -159,37 +159,54 @@ Numeric or character `0`/`1` values are also accepted, where `0` is male and `1`
 
 For data that use different diet methods, split the rows into separate data frames
 and call `score_le8()` separately. Percentile calls use `diet_value`, containing
-a DASH or HEI-2015 percentile from 1 to 100. The result appends all eight
+a DASH or HEI-2015 percentile from 0 to 100. The result appends all eight
 component scores, `le8_n_components`, `le8_complete`, the composite score, and
 its cardiovascular health category. See `?score_le8` for more information.
 
-## DASH and HEI-2015 from raw intakes
+## DASH and HEI-2015 population pathways
 
-`diet_method = "dash"` computes the eight-component Fung DASH index (8-40)
-from seven daily food-group serving amounts and sodium in mg/day. The default
-columns use the `dash_` prefix. Supply `dash_cutpoints`, a list with four
-reference intake quintile boundaries for each component and four total-score
-boundaries in `total` (25th, 50th, 75th, and 95th percentiles).
+Use `diet_method = "dash"` or `"hei2015"` for population research with an
+already-computed index or percentile. Calculate the index with an established
+method appropriate for your analysis before passing it to `essential8`.
+MEPA remains the existing individual assessment pathway shown above.
 
-`diet_method = "hei2015"` computes all 13 HEI-2015 components and their total
-(0-100) from daily food-pattern equivalents, nutrients, and energy. Its
-default columns use the `hei2015_` prefix. Supply `hei2015_cutpoints`, the four
-reference total-score boundaries at the same percentiles. Food groups use
-cup/ounce equivalents, sodium uses mg, fats use grams, and added sugars use
-**teaspoon equivalents**. Include legumes in both vegetable and protein totals
-as required by HEI-2015. A raw HEI total is not an LE8 diet score or percentile.
+```r
+# Already-computed HEI-2015 index, with the fixed packaged reference.
+hei_data <- patient
+hei_data$hei2015 <- 70
+score_le8(hei_data, diet_method = "hei2015",
+          reference = "nhanes_2015_2018")
 
-Both methods convert raw totals to LE8 diet points using the supplied
-reference boundaries. Cutpoints must come from a suitable fixed population
-(the AHA advisory specifies NHANES 2015-2018), with applicable survey weighting
-and stratification. No reference cutpoints are bundled or calculated from the
-submitted rows. Custom field names can be mapped with `dash_columns` or
-`hei2015_columns`. Missing diet inputs leave the raw total and LE8 diet score
-missing; available non-diet LE8 components are still scored.
+# Already-computed DASH percentile; no reference lookup is needed.
+dash_data <- patient
+dash_data$diet_value <- 82
+score_le8(dash_data, diet_method = "dash")
 
-See `vignette("population-diets", package = "essential8")` for executable
-examples with synthetic cutpoints, and `?score_le8` for the complete input
-contract and tie conventions.
+# A synthetic custom reference for an already-computed HEI-2015 index.
+custom <- diet_reference(40, 55, 65, 80, method = "hei2015",
+                         label = "Synthetic example")
+score_le8(hei_data, diet_method = "hei2015", reference = custom)
+```
+
+Index columns are named `dash` or `hei2015`. Direct percentiles use
+`diet_value` on the **0-100 scale**, and must not be supplied together with an
+index column. A proportion such as `0.95` is never rescaled to 95.
+
+Both methods have compact, locally packaged NHANES 2015-2018 references,
+derived using the complex survey design and two-day dietary weights. The
+built-in DASH reference requires the specific Fung-style FPED index and
+weighted intake quintiles documented in the diet vignette; another DASH
+definition needs its own reference. The HEI-2015 reference uses individual
+scoring of two-recall mean constituents and energy. These adult references
+are derived estimates with provenance, not AHA-published cutpoint tables or
+usual-intake distributions. They never rank the current cohort or download
+data during scoring. Name the reference explicitly for reproducibility.
+
+Missing values remain missing. Existing explicit raw-intake workflows and
+their column mappings/cutpoints remain supported for compatibility with
+PR #15; the new pathway adds no dietary-recall processing API.
+See `vignette("population-diets", package = "essential8")` and `?score_le8`
+for reference definitions, units, provenance, validation, and compatibility.
 
 ## Incomplete component data
 

@@ -1,6 +1,6 @@
 Package: essential8
 Title: Reproducible Cardiovascular Health Metric Scoring
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: c(
     person(
       given = "Carson",
@@ -27,17 +27,24 @@ Description: Provides a reproducible R implementation of the American Heart
     Association Life's Essential 8 cardiovascular health scoring framework for
     adult records from people aged 20 years or older. Calculates the eight
     component scores and their unweighted composite score from available
-    component data using the 2022 adult definition described by Lloyd-Jones et
+    component data, including raw MEPA, DASH, and HEI-2015 diet inputs, using
+    the 2022 adult definition described by Lloyd-Jones et
     al. (2022)
     <doi:10.1161/CIR.0000000000001078>.
 License: MIT + file LICENSE
+Depends:
+    R (>= 3.4.0)
 Encoding: UTF-8
 Language: en-US
 Imports:
     cli (>= 3.6.0)
 Suggests:
+    digest,
+    dplyr,
+    haven,
     knitr,
     rmarkdown,
+    survey,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Config/testthat/edition: 3
@@ -45,4 +52,4 @@ Config/Needs/website: pkgdown
 URL: https://thatoneguy006.github.io/essential8/, https://github.com/thatoneguy006/essential8
 BugReports: https://github.com/thatoneguy006/essential8/issues
 Roxygen: list(markdown = TRUE)
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1

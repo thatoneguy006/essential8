@@ -11,3 +11,6 @@
 ^pkgdown$
 ^tmp$
 ^CRAN-SUBMISSION$
+^data-raw$
+^\.git$
+^NEWS\.html$

@@ -10,7 +10,8 @@
 #' @param data A data frame with one row per adult and the input columns
 #'   described below.
 #' @param diet_method A single diet-scoring method applied to every row in
-#'   `data`: `"mepa"` (the default) or `"percentile"`. Values are matched
+#'   `data`: `"mepa"` (the default), `"dash"`, `"hei2015"`, or `"percentile"`.
+#'   Values are matched
 #'   case-insensitively. Score data that use different methods in separate
 #'   calls.
 #' @param mepa_columns `NULL`, or a named character vector mapping canonical
@@ -21,6 +22,69 @@
 #'   `le8_composite_score`. The default is 7. Available component scores are
 #'   averaged without imputation; observations below the threshold receive
 #'   `NA_real_`.
+#' @param dash_columns,hei2015_columns `NULL`, or named character vectors
+#'   mapping canonical DASH or HEI-2015 fields to columns in `data`. Unmapped
+#'   fields default to the canonical name prefixed with `dash_` or `hei2015_`.
+#'   Names and input column names are matched case-insensitively.
+#' @param dash_cutpoints `NULL` to use the packaged DASH intake quintiles and
+#'   total-score cutpoints, or a named list
+#'   containing the eight canonical DASH fields and `total`. Each intake
+#'   vector contains four nondecreasing reference quintile cutpoints (20th,
+#'   40th, 60th, 80th percentiles), in the same units as the inputs. `total`
+#'   contains four nondecreasing reference DASH-total cutpoints (25th, 50th,
+#'   75th, 95th percentiles), each from 8 to 40. Tied cutpoints are allowed.
+#'   Explicit cutpoints bypass `reference` and use inputs in their supplied
+#'   units, without energy standardization, preserving existing calls.
+#' @param hei2015_cutpoints `NULL` to use `reference`, or four
+#'   nondecreasing reference HEI-2015-total cutpoints (25th, 50th, 75th, 95th
+#'   percentiles), each from 0 to 100. Tied cutpoints are allowed.
+#' @param reference `"nhanes_2015_2018"` (the default), or a method-matched
+#'   [diet_reference()] object. Used for already-computed indices and raw
+#'   intake scoring when explicit cutpoints are absent. Raw DASH requires the
+#'   packaged reference's intake quintiles; for other DASH definitions, supply
+#'   `dash_cutpoints`. Direct percentiles and explicit raw cutpoints bypass
+#'   reference lookup.
+#'   The built-in references describe nonpregnant adults aged 20+ with two
+#'   reliable recalls; they are derived estimates, not AHA-published cutpoints.
+#'
+#' @section Diet scoring methods:
+#' MEPA retains the individual assessment pathway. For population research,
+#' `diet_method = "dash"` accepts an already-computed index in `dash`, and
+#' `diet_method = "hei2015"` accepts an already-computed index in `hei2015`.
+#' Either method alternatively accepts a percentile in `diet_value` (0 to 100).
+#' Both methods also calculate raw totals from the intake fields below, using
+#' the packaged reference by default. Raw HEI-2015 also accepts a custom
+#' `diet_reference()`; raw DASH supports custom definitions via `dash_cutpoints`.
+#' Do not supply both the index column and the percentile column. Data with
+#' no diet inputs retain the package's usual missing-component behavior.
+#'
+#' An index is compared with fixed reference cutpoints to identify its
+#' percentile category. The package does not estimate an exact percentile
+#' from four cutpoints, or rank the current cohort against itself. Specify
+#' `reference = "nhanes_2015_2018"` explicitly in reproducible analyses.
+#'
+#' The built-in DASH reference is specifically the 8-to-40 Fung-style FPED
+#' construction identified as `essential8_fung_fped_v1`; it requires matching
+#' food definitions, pooled weighted intake quintiles, and tie handling.
+#' Other DASH definitions need a custom reference. HEI-2015 indices must be
+#' constructed using an appropriate established method; the built-in reference
+#' uses individual scoring after averaging the same two recalls' constituents
+#' and energy. It is not a usual-intake or population-ratio estimate. Both
+#' references use NHANES 2015-2016 and 2017-2018, two-day dietary weights divided
+#' by two, and the NHANES strata and PSU design. Detailed methodology, source
+#' URLs, hashes, sample counts, and index definitions accompany the references
+#' and the maintainer script `data-raw/build_diet_references.R` in the repository.
+#'
+#' Fractional inputs confined to 0-1 (other than endpoints alone) are rejected
+#' as apparent proportions; supply percentile points, such as 95, not 0.95.
+#' This safeguard also rejects a batch consisting only of genuine fractional
+#' percentiles below 1. Values are never automatically multiplied by 100.
+#'
+#' Supply one input pathway per call: raw intake, a precomputed index, or a
+#' percentile. Raw intake fields cannot be combined with a precomputed index
+#' or observed percentile. Raw fields are food-group and nutrient summaries,
+#' prepared before scoring; the function does not parse dietary-recall files.
+#' See `vignette("population-diets")` for executable examples and units.
 #'
 #' @section Input columns:
 #' * `age`: Age in years; must be present, complete, and at least 20.
@@ -35,11 +99,42 @@
 #'   Sex may be encoded as `"m"`/`"f"`, `"male"`/`"female"`, or `0`/`1`,
 #'   where `0` is male and `1` is female. Character encodings are matched
 #'   case-insensitively, and character `"0"`/`"1"` values are also accepted.
-#' * `diet_value`: Used when `diet_method = "percentile"`. Supply a DASH or
-#'   HEI-2015 percentile from 1 to 100, calculated against the relevant
+#' * `dash` or `hei2015`: An already-computed index for the selected population
+#'   diet method. HEI-2015 is bounded by 0 to 100. The built-in DASH reference
+#'   requires its documented 8-to-40 definition; custom DASH references can
+#'   specify other index ranges. These columns are unrelated to MEPA.
+#' * For raw DASH scoring, supply daily intakes in `dash_fruits`,
+#'   `dash_vegetables`, `dash_nuts_and_legumes`, `dash_whole_grains`,
+#'   `dash_low_fat_dairy`, `dash_red_and_processed_meat`, and
+#'   `dash_sweetened_beverages`; supply sodium in mg/day in `dash_sodium`.
+#'   Canonical mapping fields omit the `dash_` prefix. Fruits include juice;
+#'   vegetables exclude potatoes and legumes. Food groups and serving
+#'   definitions must match the reference. With the packaged reference, also
+#'   supply positive kcal/day in `dash_energy_kcal`; sodium is standardized to
+#'   2,000 kcal before scoring. Other fields must use the FPED-derived units
+#'   and definitions in `vignette("population-diets")`, including fruit cup
+#'   equivalents, whole-grain ounce equivalents, and the specified vegetable,
+#'   dairy, protein, and beverage conversions. With explicit `dash_cutpoints`,
+#'   energy is not required and no standardization is applied.
+#' * For raw HEI-2015 scoring, supply `hei2015_energy_kcal` (positive
+#'   kcal/day, including alcohol); cup equivalents/day in
+#'   `hei2015_total_fruits`, `hei2015_whole_fruits`,
+#'   `hei2015_total_vegetables`, `hei2015_greens_and_beans`, and
+#'   `hei2015_dairy`; ounce equivalents/day in `hei2015_whole_grains`,
+#'   `hei2015_total_protein_foods`, `hei2015_seafood_and_plant_proteins`, and
+#'   `hei2015_refined_grains`; grams/day in `hei2015_polyunsaturated_fat`,
+#'   `hei2015_monounsaturated_fat`, and `hei2015_saturated_fat`; mg/day in
+#'   `hei2015_sodium`; and teaspoon equivalents/day in `hei2015_added_sugars`.
+#'   Canonical mapping fields omit the `hei2015_` prefix. Food-group totals
+#'   must already include legumes in both vegetable and protein components
+#'   as specified by HEI-2015. Total fruits include juice; whole fruits do not.
+#' * `diet_value`: A direct percentile for `"dash"`, `"hei2015"`, or the
+#'   backward-compatible generic `"percentile"` method. Supply a DASH or
+#'   HEI-2015 percentile from 0 to 100, calculated against the relevant
 #'   reference distribution. The function does not rank supplied rows against
 #'   one another. If this column is absent or missing, the diet score is
-#'   missing. If it is present for MEPA data, all its values must be missing.
+#'   missing. MEPA and raw-intake calls require it to be absent
+#'   or entirely missing.
 #' * `moderate_activity_minutes` and `vigorous_activity_minutes`: Weekly
 #'   minutes. Each vigorous minute counts as two moderate-equivalent minutes.
 #' * `smoking_status`: One of `"never"`, `"former"`, or `"current"`.
@@ -86,9 +181,30 @@
 #'
 #' @section Source-constrained behavior:
 #' The function derives the 0-to-16 MEPA total from the 16 raw screener
-#' responses. For population scoring, callers must supply a
-#' DASH or HEI-2015 percentile calculated against the relevant reference
-#' population; the rows in `data` are not their own reference distribution.
+#' responses. Raw DASH scoring uses the eight-component Fung index: five food
+#' groups receive 1 to 5 points by intake quintile; sodium, red/processed meat,
+#' and sweetened beverages receive 5 to 1. Intakes equal to a quintile cutpoint
+#' stay in the lower quintile. Their sum is `dash_total` (8 to 40).
+#'
+#' Raw HEI-2015 calls compute 13 density, fatty-acid-ratio, and energy-percentage
+#' components with proportional scoring between the published standards.
+#' Added sugars use 16 kcal per teaspoon equivalent; saturated fat uses
+#' 9 kcal per gram. Scores are capped at each component's maximum. Their sum
+#' is `hei2015_total` (0 to 100), which is distinct from the LE8 diet score.
+#' With zero saturated fat and positive unsaturated fat, the fatty-acid
+#' component receives 10 points; with all three fats zero it receives zero,
+#' following the NCI scoring macro. Missing inputs are never treated as zero;
+#' a total requires all of its diet components, regardless of `min_components`.
+#'
+#' Raw DASH and HEI-2015 totals are converted to LE8 scores of 0, 25, 50, 80,
+#' or 100 using fixed reference total-score cutpoints. Equality enters the
+#' higher LE8 band. Explicit cutpoints override the packaged reference and
+#' must come from a suitable fixed reference population, using appropriate
+#' survey weights and strata where applicable. Cutpoints are never inferred
+#' from `data`. For references requiring
+#' different cutpoints by stratum, score strata in separate calls. Alternatively,
+#' `diet_method = "percentile"` accepts externally calculated DASH or HEI-2015
+#' percentiles. The rows in `data` are never ranked against one another.
 #'
 #' The AHA table applies 20-point treatment decrements to blood-lipid and
 #' blood-pressure scores. These components are floored at zero, consistent
@@ -101,7 +217,8 @@
 #'
 #' @return
 #' A data frame containing the original columns plus
-#' `mepa_total` (missing for population-percentile rows),
+#' `mepa_total`, `dash_total`, and `hei2015_total` (missing unless calculated
+#' from the corresponding raw inputs),
 #' `physical_activity_moderate_equivalent_minutes`, the eight component score
 #' columns prefixed with `le8_`, `le8_n_components`, `le8_composite_score`,
 #' `le8_complete`, and `le8_category`. The component count reports how many
@@ -110,6 +227,8 @@
 #' scores below 50, `"moderate"` for scores from 50 to less than 80, and
 #' `"high"` for scores of at least 80. The category is missing when the
 #' composite score is missing.
+#' For raw HEI-2015 calls, the 13 component scores are also appended as
+#' `hei2015_<component>_score`, including `fatty_acids` and `saturated_fats`.
 #'
 #' @references
 #' Lloyd-Jones DM, Allen NB, Anderson CAM, et al. (2022). Life's Essential 8:
@@ -122,8 +241,22 @@
 #' Life's Essential 8 Metrics. *Circulation*, 146(11), 822-835.
 #' \doi{10.1161/CIRCULATIONAHA.122.060911}
 #'
-#' @examples
-#' patient <- data.frame(
+#' Fung TT, Chiuve SE, McCullough ML, et al. (2008). Adherence to a DASH-Style
+#' Diet and Risk of Coronary Heart Disease and Stroke in Women.
+#' *Archives of Internal Medicine*, 168(7), 713-720.
+#' \doi{10.1001/archinte.168.7.713}
+#'
+#' Krebs-Smith SM, Pannucci TE, Subar AF, et al. (2018). Update of the Healthy
+#' Eating Index: HEI-2015. *Journal of the Academy of Nutrition and Dietetics*,
+#' 118(9), 1591-1602. \doi{10.1016/j.jand.2018.05.021}
+#' See also the National Cancer Institute's
+#' \href{https://epi.grants.cancer.gov/hei/developing.html}{scoring standards}
+#' and \href{https://epi.grants.cancer.gov/hei/hei-scoring-method.html}{algorithm}.
+#'
+#' @examplesIf requireNamespace("dplyr", quietly = TRUE)
+#' library(dplyr)
+#'
+#' patient <- tibble(
 #'   id = "patient_1",
 #'   age = 55,
 #'   sex = "female",
@@ -166,28 +299,41 @@
 #' )
 #'
 #' scores <- score_le8(patient, diet_method = "mepa")
-#' scores[
-#'   c(
-#'     "id",
-#'     "mepa_total",
-#'     "le8_diet_score",
-#'     "le8_composite_score",
-#'     "le8_category"
-#'   )
-#' ]
+#' select(scores, id, mepa_total, le8_diet_score, le8_composite_score,
+#'        le8_category)
 #'
 #' @export
 score_le8 <- function(
   data,
   diet_method = "mepa",
   mepa_columns = NULL,
-  min_components = 7L
+  min_components = 7L,
+  dash_columns = NULL,
+  dash_cutpoints = NULL,
+  hei2015_columns = NULL,
+  hei2015_cutpoints = NULL,
+  reference = "nhanes_2015_2018"
 ) {
   min_components <- .validate_min_components(min_components)
   diet_method <- .normalize_adult_diet_method(diet_method)
+  if (diet_method != "dash" &&
+      (!is.null(dash_columns) || !is.null(dash_cutpoints))) {
+    .abort_adult_scoring(
+      "DASH arguments require {.code diet_method = 'dash'}."
+    )
+  }
+  if (diet_method != "hei2015" &&
+      (!is.null(hei2015_columns) || !is.null(hei2015_cutpoints))) {
+    .abort_adult_scoring(
+      "HEI-2015 arguments require {.code diet_method = 'hei2015'}."
+    )
+  }
   input_columns <- names(data)
   data <- .validate_le8_adult_data(data, diet_method)
   input_data <- data[input_columns]
+  if (diet_method == "mepa" && any(c("dash", "hei2015") %in% input_columns)) {
+    .abort_adult_scoring("DASH and HEI-2015 index inputs cannot be used with MEPA.")
+  }
 
   sleep_apnea_penalty <- .optional_adult_flag(
     data,
@@ -224,6 +370,50 @@ score_le8 <- function(
     diet_value[percentile_rows] <- data$diet_value[percentile_rows]
   }
   diet_score <- .score_adult_diet(method = diet_methods, value = diet_value)
+  dash_total <- rep(NA_integer_, nrow(data))
+  hei2015_total <- rep(NA_real_, nrow(data))
+  raw_dash <- diet_method == "dash" && (
+    !is.null(dash_columns) || !is.null(dash_cutpoints) ||
+      any(tolower(input_columns) %in%
+          paste0("dash_", c(.adult_dash_fields(), "energy_kcal")))
+  )
+  raw_hei2015 <- diet_method == "hei2015" && (
+    !is.null(hei2015_columns) || !is.null(hei2015_cutpoints) ||
+      any(tolower(input_columns) %in%
+          paste0("hei2015_", .adult_hei2015_fields()))
+  )
+  if (diet_method %in% c("dash", "hei2015")) {
+    other_method <- if (diet_method == "dash") "hei2015" else "dash"
+    if (other_method %in% input_columns) {
+      .abort_adult_scoring(
+        "{.field {other_method}} is unrelated to {.arg diet_method}."
+      )
+    }
+  }
+  if ((raw_dash || raw_hei2015) && (
+    diet_method %in% input_columns || any(!is.na(data$diet_value))
+  )) {
+    .abort_adult_scoring(
+      "Supply either raw intake inputs or a precomputed index/percentile; do not combine them."
+    )
+  }
+  if (raw_dash) {
+    dash <- .compute_adult_dash(data, dash_columns, dash_cutpoints, reference)
+    dash_total <- dash$total
+    diet_score <- dash$score
+  }
+  if (raw_hei2015) {
+    hei2015 <- .compute_adult_hei2015(
+      data, hei2015_columns, hei2015_cutpoints, reference
+    )
+    hei2015_total <- hei2015$total
+    diet_score <- hei2015$score
+  }
+  if (diet_method %in% c("dash", "hei2015") && !raw_dash && !raw_hei2015) {
+    diet_score <- .score_supplied_population_diet(
+      data, diet_method, reference, input_columns
+    )
+  }
   physical_activity_score <- .score_adult_physical_activity(
     activity_minutes
   )
@@ -260,6 +450,8 @@ score_le8 <- function(
 
   scores <- data.frame(
     mepa_total = mepa_total,
+    dash_total = dash_total,
+    hei2015_total = hei2015_total,
     physical_activity_moderate_equivalent_minutes = activity_minutes,
     le8_diet_score = diet_score,
     le8_physical_activity_score = physical_activity_score,
@@ -272,6 +464,12 @@ score_le8 <- function(
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
+
+  if (raw_hei2015) {
+    components <- as.data.frame(hei2015$components)
+    names(components) <- paste0("hei2015_", names(components), "_score")
+    scores <- cbind(scores, components)
+  }
 
   scores <- .add_le8_composite(scores, min_components)
   le8_category <- rep(NA_character_, nrow(scores))
@@ -453,6 +651,9 @@ score_le8 <- function(
 .le8_adult_output_columns <- function() {
   c(
     "mepa_total",
+    "dash_total",
+    "hei2015_total",
+    paste0("hei2015_", .hei2015_component_names(), "_score"),
     "physical_activity_moderate_equivalent_minutes",
     "le8_diet_score",
     "le8_physical_activity_score",
@@ -476,7 +677,7 @@ score_le8 <- function(
   if (!supported_type || length(diet_method) != 1L || anyNA(diet_method)) {
     .abort_adult_scoring(c(
       "{.arg diet_method} must be one complete string.",
-      "i" = "Choose {.val mepa} or {.val percentile}."
+      "i" = "Choose {.val mepa}, {.val dash}, {.val hei2015}, or {.val percentile}."
     ))
   }
 
@@ -490,7 +691,7 @@ score_le8 <- function(
   .validate_adult_choices(
     normalized,
     "diet_method",
-    c("mepa", "percentile")
+    c("mepa", "dash", "hei2015", "percentile")
   )
   normalized
 }
@@ -515,7 +716,7 @@ score_le8 <- function(
   .validate_adult_choices(
     legacy_method,
     column,
-    c("mepa", "percentile")
+    c("mepa", "dash", "hei2015", "percentile")
   )
 
   if (any(legacy_method != diet_method)) {
@@ -722,14 +923,7 @@ score_le8 <- function(
     }
     if (percentile) {
       .validate_adult_numeric_column(data, "diet_value")
-      if (any(
-        data$diet_value < 1 | data$diet_value > 100,
-        na.rm = TRUE
-      )) {
-        .abort_adult_scoring(
-          "Percentile {.field diet_value} must be from 1 to 100."
-        )
-      }
+      .validate_diet_percentile(data$diet_value)
     }
   }
 
@@ -871,19 +1065,7 @@ score_le8 <- function(
   )
 
   percentile <- method == "percentile"
-  score[percentile] <- ifelse(
-    value[percentile] >= 95,
-    100,
-    ifelse(
-      value[percentile] >= 75,
-      80,
-      ifelse(
-        value[percentile] >= 50,
-        50,
-        ifelse(value[percentile] >= 25, 25, 0)
-      )
-    )
-  )
+  score[percentile] <- .score_diet_percentile(value[percentile])
 
   score
 }

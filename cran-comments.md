@@ -4,14 +4,12 @@
 
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
-
-- This is a new submission.
+- `R CMD check essential8_0.2.0.tar.gz --as-cran`
+- Status: OK
+0 errors | 0 warnings | 0 notes
 
 ## Submission notes
 
-- Version 0.2.0 supports adult scoring for people aged 20 years or older when
-  some LE8 component inputs are unavailable. Missing values are not imputed,
-  and partial composites report their number of contributing components.
-  Pediatric scoring is not yet implemented.
+- This is an update release
+- There are no known reverse dependencies to check
 

@@ -1,13 +1,13 @@
 # Contributing to essential8
 
-Thank you for helping build reliable cardiovascular health scoring software.
+Thank you for helping improve essential8!
 
 ## Ways to contribute
 
 - Report a suspected reference-rule discrepancy.
 - Add or review independently derived validation fixtures.
 - Improve input validation, documentation, or package infrastructure.
-- Propose a reference adapter with a documented provider and source profile.
+- Propose a reference-rule change.
 
 ## Reference rule changes
 

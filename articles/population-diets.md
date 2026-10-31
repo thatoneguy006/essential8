@@ -1,0 +1,405 @@
+# Diet scoring in Life's Essential 8
+
+Diet is one of the eight components of the American Heart Association’s
+(AHA) Life’s Essential 8 (LE8). `essential8` supports three diet
+measures: MEPA, DASH, and HEI-2015. Each describes diet quality in a
+different way. The package first calculates or accepts a diet score,
+then applies the LE8 scoring rules.
+
+This article explains where the measures came from, how they become LE8
+points, and which inputs to use. Examples apply to adults aged 20 or
+older.
+
+## Where the diet measures came from
+
+### MEPA: a short dietary screener
+
+The Mediterranean Eating Pattern for Americans (MEPA) tool asks about
+foods associated with a Mediterranean-style eating pattern. It was
+evaluated by [Cerwinske and colleagues in
+2017](https://doi.org/10.1111/jhn.12451). The AHA adapted it for rapid
+individual assessment in its [2022 LE8
+advisory](https://pmc.ncbi.nlm.nih.gov/articles/PMC10503546/).
+
+`essential8` implements the advisory’s modified 16-item version. Each
+item earns zero or one point, giving a total from 0 to 16. Fixed bands
+convert that total to LE8 points. No population comparison is needed.
+The [Get Started
+vignette](https://thatoneguy006.github.io/essential8/articles/essential8-get-started.md)
+covers the MEPA inputs.
+
+### DASH: an eating pattern and a research score
+
+DASH stands for Dietary Approaches to Stop Hypertension. The eating
+pattern was tested in an [NHLBI-supported feeding
+trial](https://biolincc.nhlbi.nih.gov/studies/dash/) to study its
+effects on blood pressure. It emphasizes fruits, vegetables, and low-fat
+dairy, with less saturated and total fat.
+
+Researchers later developed scores to measure how closely a person’s
+diet follows that pattern. `essential8` uses an adaptation of the
+eight-component score described by [Fung and colleagues in
+2008](https://doi.org/10.1001/archinte.168.7.713). Its total ranges from
+8 to 40. Other DASH scores exist, so the name “DASH” alone does not
+establish that two scores use the same definition.
+
+### HEI-2015: alignment with dietary guidelines
+
+The Healthy Eating Index (HEI) measures how closely a diet follows the
+Dietary Guidelines for Americans. USDA released the first HEI in 1995;
+later versions were developed with the National Cancer Institute (NCI).
+HEI-2015 reflects the 2015-2020 guidelines and has 13 components that
+sum to a score from 0 to 100. See the [NCI history and
+standards](https://epi.grants.cancer.gov/hei/developing.html).
+
+HEI-2015 rewards foods and nutrients to include, such as whole grains
+and vegetables, and limits others, such as sodium and added sugars. Most
+components use intake per 1,000 kcal, so eating more food does not by
+itself produce a higher score. The package uses HEI-2015 because that is
+the version specified in the 2022 LE8 definition.
+
+## How diet scores become LE8 points
+
+The AHA advisory uses modified MEPA for individual assessment and DASH
+or HEI-2015 for population assessment. These are alternative ways to
+score the **same LE8 diet component**. They do not add extra components
+to LE8.
+
+| Diet measure | Original score | How it becomes an LE8 diet score |
+|:---|:---|:---|
+| Modified MEPA | 0-16 | Apply fixed MEPA bands |
+| Fung-style DASH | 8-40 | Compare the total with a reference population |
+| HEI-2015 | 0-100 | Compare the total with a reference population |
+
+A raw diet score, also called an index, is the total before conversion
+to LE8 points.
+
+For DASH and HEI-2015, a percentile describes a score’s position in the
+reference population. For example, the 75th percentile marks the upper
+quarter of that distribution. The advisory assigns LE8 points as
+follows:
+
+| MEPA total | DASH or HEI-2015 percentile | LE8 diet points |
+|:-----------|:----------------------------|----------------:|
+| 0-3        | Below 25                    |               0 |
+| 4-7        | 25 to below 50              |              25 |
+| 8-11       | 50 to below 75              |              50 |
+| 12-14      | 75 to below 95              |              80 |
+| 15-16      | 95 or higher                |             100 |
+
+These bands come from the [AHA LE8 advisory, Table
+1](https://pmc.ncbi.nlm.nih.gov/articles/PMC10503546/). A raw HEI-2015
+score of 70 is therefore different from the 70th percentile or an LE8
+diet score of 70. The reference determines which LE8 band contains that
+raw score.
+
+The resulting `le8_diet_score` contributes to the LE8 composite in the
+same way as the other seven components.
+[`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+averages available component scores when at least `min_components` are
+present; the default is seven.
+
+## What the packaged reference represents
+
+The advisory initially recommends NHANES 2015-2018 as the reference for
+population diet scoring. NHANES is the National Health and Nutrition
+Examination Survey. `essential8` includes references derived from those
+survey years and the matching USDA Food Patterns Equivalents Database
+(FPED), which converts foods into common food-group units.
+
+The package references describe 8,241 adults aged 20 or older, excluding
+known pregnancy, with two reliable dietary recalls and complete required
+inputs. The builder averages the same two days’ foods, nutrients, and
+energy before scoring. It uses the combined dietary weight
+(`WTDR2D / 2`), survey strata, and sampling units to calculate weighted
+cutpoints: the score values that mark the percentile boundaries.
+
+These are estimates calculated for this package, rather than cutpoint
+tables published by the AHA. They describe scores based on two recalls,
+rather than each person’s long-term usual intake. Scoring uses the
+stored cutpoints; it does not download data or rank the people in your
+input against each other.
+
+The DASH reference uses the package’s specific FPED adaptation,
+`essential8_fung_fped_v1`. It uses pooled intake quintiles across sexes
+and the food definitions listed below. An existing DASH score must match
+these definitions to use this reference. HEI-2015 inputs should also
+match the reference’s method of combining recalls.
+
+## Choose the inputs you have
+
+Use one diet method and one type of diet input per call:
+
+| Available data | What to supply |
+|:---|:---|
+| MEPA responses | The 16 screener items with `diet_method = "mepa"` |
+| DASH or HEI-2015 food and nutrient summaries | The raw input columns described below |
+| An existing DASH or HEI-2015 score | A column named `dash` or `hei2015` |
+| An existing percentile | A column named `diet_value`, using 0-100 percentile points |
+
+The examples use `dplyr` and the native pipe (`|>`, available in R
+4.1+). We start with two packaged example adults so the other LE8
+components are available. All records and added diet values are
+illustrative. The selected method ignores the unused MEPA columns in
+these records.
+
+``` r
+
+library(essential8)
+library(dplyr)
+#> 
+#> Attaching package: 'dplyr'
+#> The following objects are masked from 'package:stats':
+#> 
+#>     filter, lag
+#> The following objects are masked from 'package:base':
+#> 
+#>     intersect, setdiff, setequal, union
+
+example_file <- system.file(
+  "extdata", "le8-adult-example.csv", package = "essential8"
+)
+
+adults <- read.csv(example_file) |>
+  as_tibble() |>
+  slice_head(n = 2) |>
+  select(-starts_with("expected_")) |>
+  mutate(id = c("adult_1", "adult_2"))
+```
+
+### An existing diet score
+
+Add an HEI-2015 score and name the reference explicitly:
+
+``` r
+
+adults |>
+  mutate(hei2015 = c(45, 70)) |>
+  score_le8(diet_method = "hei2015", reference = "nhanes_2015_2018") |>
+  select(id, hei2015, le8_diet_score)
+#>        id hei2015 le8_diet_score
+#> 1 adult_1      45             25
+#> 2 adult_2      70             80
+```
+
+The raw scores of 45 and 70 receive 25 and 80 LE8 points with this
+reference. For an existing DASH score, use a `dash` column and
+`diet_method = "dash"`. The original score stays in its input column;
+`dash_total` and `hei2015_total` are filled only when calculated from
+raw inputs.
+
+### An existing percentile
+
+A percentile already contains the population comparison, so no reference
+lookup is needed:
+
+``` r
+
+adults |>
+  mutate(diet_value = c(35, 98)) |>
+  score_le8(diet_method = "dash") |>
+  select(id, diet_value, le8_diet_score)
+#>        id diet_value le8_diet_score
+#> 1 adult_1         35             25
+#> 2 adult_2         98            100
+```
+
+These percentiles receive 25 and 100 LE8 points. Supply `95` for the
+95th percentile, rather than `0.95`. The package rejects a batch that
+looks like fractional proportions and does not rescale it. This check
+can also reject genuine fractional percentiles below 1 when they make up
+the whole batch. The generic `diet_method = "percentile"` option uses
+the same LE8 bands.
+
+## Calculate DASH from raw inputs
+
+The Fung-style score compares each of eight intakes with reference
+quintiles: five intake groups, each containing about one fifth of the
+reference population. Fruit, vegetables, nuts and legumes, whole grains,
+and low-fat dairy earn 1-5 points as intake increases. Sodium, red and
+processed meat, and sweetened beverages earn 5-1 points. The eight
+scores sum to `dash_total`.
+
+There are two population comparisons here: intake quintiles create the
+DASH total, then total-score cutpoints assign the LE8 band. Both come
+from the packaged reference by default.
+
+### Prepare the daily inputs
+
+For the packaged reference, use these FPED-based definitions. Cup and
+ounce equivalents are standardized food-group amounts, not necessarily
+the volume or weight of the food as eaten.
+
+| Column | Daily input |
+|:---|:---|
+| `dash_fruits` | Total fruit cup equivalents, including juice |
+| `dash_vegetables` | Dark-green cup equivalents plus twice the sum of red/orange, other, and other-starchy vegetable cup equivalents; exclude white potatoes and legumes |
+| `dash_nuts_and_legumes` | Protein ounce equivalents from legumes, nuts/seeds, and soy |
+| `dash_whole_grains` | Whole-grain ounce equivalents |
+| `dash_low_fat_dairy` | Skim-milk cup equivalents plus four times low-fat cheese cup equivalents, plus yogurt cup equivalents, using the reference’s food-code lists |
+| `dash_sodium` | Sodium in mg/day |
+| `dash_red_and_processed_meat` | Cured-meat ounce equivalents divided by 1.5 plus meat/organ ounce equivalents divided by 4 |
+| `dash_sweetened_beverages` | Added-sugar teaspoon equivalents from the reference’s beverage codes, multiplied by 4/26 |
+| `dash_energy_kcal` | Positive kcal/day, including alcohol |
+
+The package standardizes sodium to 2,000 kcal using
+`sodium / energy_kcal * 2000`. Supply unadjusted mg/day; do not apply
+this adjustment twice. Average the same recalls’ daily inputs before
+scoring.
+
+### Score the inputs
+
+``` r
+
+dash_inputs <- tibble(
+  dash_fruits = c(1, 2),
+  dash_vegetables = c(2, 3),
+  dash_nuts_and_legumes = c(0.5, 1),
+  dash_whole_grains = c(1, 2),
+  dash_low_fat_dairy = c(1, 2),
+  dash_sodium = c(3000, 2000),
+  dash_red_and_processed_meat = c(1, 0.5),
+  dash_sweetened_beverages = c(1, 0),
+  dash_energy_kcal = c(2000, 2000)
+)
+
+adults |>
+  bind_cols(dash_inputs) |>
+  score_le8(diet_method = "dash", reference = "nhanes_2015_2018") |>
+  select(id, dash_total, le8_diet_score)
+#>        id dash_total le8_diet_score
+#> 1 adult_1         27             80
+#> 2 adult_2         36            100
+```
+
+## Calculate HEI-2015 from raw inputs
+
+HEI-2015 uses fixed nutrition standards to calculate its raw score. Its
+nine adequacy components cover fruit, vegetables, whole grains, dairy,
+protein foods, and the balance of unsaturated to saturated fats. Its
+four moderation components cover refined grains, sodium, added sugars,
+and saturated fats. Each component contributes up to 5 or 10 points, for
+a maximum total of 100. See the [NCI scoring
+standards](https://epi.grants.cancer.gov/hei/developing.html).
+
+Scores between the minimum and maximum standards are proportional. For
+example, 0.8 cup equivalents of total fruit per 1,000 kcal earns all 5
+fruit points; 0.4 earns 2.5. Higher intake beyond a component’s maximum
+standard does not add points. After summing the 13 components, the
+package compares the total with the reference to assign LE8 points.
+
+### Prepare the daily inputs
+
+| Columns, all prefixed with `hei2015_` | Units |
+|:---|:---|
+| `energy_kcal` | Positive kcal/day, including alcohol |
+| `total_fruits`, `whole_fruits`, `total_vegetables`, `greens_and_beans`, `dairy` | Cup equivalents/day |
+| `whole_grains`, `total_protein_foods`, `seafood_and_plant_proteins`, `refined_grains` | Ounce equivalents/day |
+| `polyunsaturated_fat`, `monounsaturated_fat`, `saturated_fat` | Grams/day |
+| `sodium` | mg/day |
+| `added_sugars` | Teaspoon equivalents/day |
+
+Include juice in total fruit but exclude it from whole fruit. Count
+legumes in both vegetable and protein groups, using the appropriate
+equivalents. Average the same recalls’ inputs before scoring. The
+package calculates the densities, fat ratio, and energy percentages from
+these amounts, following the [NCI
+algorithm](https://epi.grants.cancer.gov/hei/hei-scoring-method.html).
+
+### Score the inputs
+
+``` r
+
+hei_inputs <- tibble(
+  hei2015_energy_kcal = c(2000, 2000),
+  hei2015_total_fruits = c(1, 2),
+  hei2015_whole_fruits = c(0.5, 1),
+  hei2015_total_vegetables = c(2, 3),
+  hei2015_greens_and_beans = c(0.2, 0.5),
+  hei2015_whole_grains = c(1, 3),
+  hei2015_dairy = c(2, 3),
+  hei2015_total_protein_foods = c(5, 5),
+  hei2015_seafood_and_plant_proteins = c(1, 2),
+  hei2015_polyunsaturated_fat = c(15, 20),
+  hei2015_monounsaturated_fat = c(20, 25),
+  hei2015_saturated_fat = c(25, 15),
+  hei2015_refined_grains = c(5, 3),
+  hei2015_sodium = c(3000, 2000),
+  hei2015_added_sugars = c(12, 8)
+)
+
+adults |>
+  bind_cols(hei_inputs) |>
+  score_le8(diet_method = "hei2015", reference = "nhanes_2015_2018") |>
+  select(id, hei2015_total, le8_diet_score)
+#>        id hei2015_total le8_diet_score
+#> 1 adult_1      61.08787             50
+#> 2 adult_2     100.00000            100
+```
+
+Raw HEI-2015 scoring also returns all 13 component scores, such as
+`hei2015_total_fruits_score` and `hei2015_sodium_score`.
+
+## Use a different reference when needed
+
+For existing scores or raw HEI-2015 inputs,
+[`diet_reference()`](https://thatoneguy006.github.io/essential8/reference/diet_reference.md)
+defines total-score cutpoints at the 25th, 50th, 75th, and 95th
+percentiles:
+
+``` r
+
+# Teaching values only; derive real cutpoints from a suitable population.
+custom <- diet_reference(
+  p25 = 40, p50 = 55, p75 = 65, p95 = 80,
+  method = "hei2015", label = "Example reference"
+)
+
+adults |>
+  mutate(hei2015 = c(45, 70)) |>
+  score_le8(diet_method = "hei2015", reference = custom) |>
+  select(id, hei2015, le8_diet_score)
+#>        id hei2015 le8_diet_score
+#> 1 adult_1      45             25
+#> 2 adult_2      70             80
+```
+
+A reference must match the diet method, score definition, and
+population. For raw DASH with a different definition, supply
+`dash_cutpoints`: a list with four intake-quintile cutpoints for each of
+the eight fields and four total-score cutpoints in `total`. A reference
+containing only total-score cutpoints cannot define the intake
+quintiles.
+
+Explicit `dash_cutpoints` or `hei2015_cutpoints` bypass `reference`.
+With explicit DASH cutpoints, input units must match those used to
+derive the cutpoints. Energy is not required and sodium is not
+standardized. For raw HEI-2015, `hei2015_cutpoints` is a vector of four
+total-score cutpoints.
+
+Tied cutpoints are allowed. Equality with an intake-quintile cutpoint
+stays in the lower quintile; equality with a total-score cutpoint enters
+the higher LE8 band. The four total cutpoints identify bands, not an
+exact percentile for every possible score.
+
+## Practical details
+
+- Choose one method per call. Do not combine raw inputs with an existing
+  index or observed percentile. An index and a `diet_value` column
+  cannot be supplied together, even if that percentile column is all
+  missing.
+- For custom column names, use mappings such as
+  `dash_columns = c(fruits = "fruit_intake", energy_kcal = "calories")`.
+  `hei2015_columns` works the same way. Names are matched without regard
+  to case.
+- Missing inputs stay missing. A raw total requires all its components;
+  `min_components` controls the LE8 composite, not a partial diet total.
+  Available HEI component scores are still returned.
+
+See
+[`?score_le8`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+for the full input rules. The repository’s [reference
+documentation](https://github.com/thatoneguy006/essential8/blob/HEAD/data-raw/README.md)
+records the FPED conversions, food-code lists, sample selection, and
+survey methods. Its build script and source manifest record how the
+packaged references were produced.

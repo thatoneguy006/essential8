@@ -1,6 +1,29 @@
 # Changelog
 
+## essential8 0.3.0
+
+### Major Changes
+
+- Added DASH and HEI-2015 support to
+  [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md).
+  Both methods accept raw food and nutrient inputs, existing diet
+  scores, or percentiles
+  ([\#9](https://github.com/thatoneguy006/essential8/issues/9)).
+- Added packaged NHANES 2015-2018 references to convert diet scores to
+  LE8 points, with options to supply a custom reference or scoring
+  cutpoints.
+- Raw scoring returns `dash_total` or `hei2015_total`. HEI-2015 also
+  returns all 13 component scores.
+
+### Minor Changes
+
+- Expanded the diet vignette to explain MEPA, DASH, and HEI-2015, their
+  role in LE8, and how their scores are calculated.
+- Simplified the README and examples, using consistent tidy workflows.
+
 ## essential8 0.2.0
+
+CRAN release: 2026-10-10
 
 ### Major Changes
 
@@ -22,7 +45,9 @@
 
 ## essential8 0.1.0
 
-### Adult Life’s Essential 8 scoring
+CRAN release: 2026-09-03
+
+### Major Changes
 
 - Added
   [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)

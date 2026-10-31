@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">essential8</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/essential8-get-started.html">Get Started</a></li>
+    <li><a class="dropdown-item" href="../articles/population-diets.html">Diet scoring</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -82,21 +83,31 @@ Essential 8 (LE8) cardiovascular health scores. The current
 implementation scores adults aged 20 years or older using the American
 Heart Association’s 2022 definition. Pediatric scoring is not yet
 available.</p>
-<p>This vignette shows complete and incomplete-data workflows. See
-<code><a href="../reference/score_le8.html">?score_le8</a></code> for the full input contract and scoring
-details.</p>
+<p>This vignette shows how to score complete and incomplete data. The
+examples use <code>dplyr</code> and the native pipe (<code>|&gt;</code>,
+available in R 4.1+). See <code><a href="../reference/score_le8.html">?score_le8</a></code> for all input
+requirements and scoring details.</p>
 </div>
 <div class="section level2">
 <h2 id="create-an-adult-data-frame">Create an adult data frame<a class="anchor" aria-label="anchor" href="#create-an-adult-data-frame"></a>
 </h2>
-<p>Supply one row per person. The example below includes two adults with
-raw responses to the 16-item Mediterranean Eating Pattern for Americans
-(MEPA) screener. It also demonstrates both possible BMI profiles and
-both possible glucose measures.</p>
+<p>Supply one row per person. The example includes two adults with
+responses to the 16-item Mediterranean Eating Pattern for Americans
+(MEPA) screener. It shows both BMI profiles and both glucose
+measures.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://thatoneguy006.github.io/essential8/">essential8</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Attaching package: 'dplyr'</span></span>
+<span><span class="co">#&gt; The following objects are masked from 'package:stats':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     filter, lag</span></span>
+<span><span class="co">#&gt; The following objects are masked from 'package:base':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     intersect, setdiff, setequal, union</span></span>
 <span></span>
-<span><span class="va">adult_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span><span class="va">adult_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"patient_1"</span>, <span class="st">"patient_2"</span><span class="op">)</span>,</span>
 <span>  age <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">42</span>, <span class="fl">61</span><span class="op">)</span>,</span>
 <span>  sex <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"female"</span>, <span class="st">"male"</span><span class="op">)</span>,</span>
@@ -145,25 +156,14 @@ frame retains the input columns and appends the derived activity
 measure, eight component scores, the number of contributing components,
 composite score, completeness indicator, and category.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">scored</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span><span class="va">adult_data</span>, diet_method <span class="op">=</span> <span class="st">"mepa"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">scored</span> <span class="op">&lt;-</span> <span class="va">adult_data</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span>diet_method <span class="op">=</span> <span class="st">"mepa"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">scored</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>  <span class="st">"id"</span>,</span>
-<span>  <span class="st">"mepa_total"</span>,</span>
-<span>  <span class="st">"le8_diet_score"</span>,</span>
-<span>  <span class="st">"physical_activity_moderate_equivalent_minutes"</span>,</span>
-<span>  <span class="st">"le8_composite_score"</span>,</span>
-<span>  <span class="st">"le8_category"</span></span>
-<span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;          id mepa_total le8_diet_score</span></span>
-<span><span class="co">#&gt; 1 patient_1         14             80</span></span>
-<span><span class="co">#&gt; 2 patient_2          4             25</span></span>
-<span><span class="co">#&gt;   physical_activity_moderate_equivalent_minutes le8_composite_score</span></span>
-<span><span class="co">#&gt; 1                                           150              97.500</span></span>
-<span><span class="co">#&gt; 2                                            60              54.375</span></span>
-<span><span class="co">#&gt;   le8_category</span></span>
-<span><span class="co">#&gt; 1         high</span></span>
-<span><span class="co">#&gt; 2     moderate</span></span></code></pre></div>
+<span><span class="va">scored</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">mepa_total</span>, <span class="va">le8_diet_score</span>, <span class="va">le8_composite_score</span>, <span class="va">le8_category</span><span class="op">)</span></span>
+<span><span class="co">#&gt;          id mepa_total le8_diet_score le8_composite_score le8_category</span></span>
+<span><span class="co">#&gt; 1 patient_1         14             80              97.500         high</span></span>
+<span><span class="co">#&gt; 2 patient_2          4             25              54.375     moderate</span></span></code></pre></div>
 <p>Each vigorous activity minute counts as two moderate activity minutes
 and is recorded as
 <code>physical_activity_moderate_equivalent_minutes</code>. The
@@ -174,12 +174,8 @@ at 80 or higher.</p>
 <p>The component scores are available for analysis and quality
 checks:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">component_columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^le8_.*_score$"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">scored</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>  <span class="st">"le8_composite_score"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">scored</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="va">component_columns</span><span class="op">)</span><span class="op">]</span></span>
+<code class="sourceCode R"><span><span class="va">scored</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"le8_"</span><span class="op">)</span> <span class="op">&amp;</span> <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">ends_with</a></span><span class="op">(</span><span class="st">"_score"</span><span class="op">)</span>, <span class="op">-</span><span class="va">le8_composite_score</span><span class="op">)</span></span>
 <span><span class="co">#&gt;          id le8_diet_score le8_physical_activity_score le8_nicotine_score</span></span>
 <span><span class="co">#&gt; 1 patient_1             80                         100                100</span></span>
 <span><span class="co">#&gt; 2 patient_2             25                          60                 75</span></span>
@@ -193,9 +189,9 @@ checks:</p>
 <div class="section level2">
 <h2 id="understand-the-mepa-inputs">Understand the MEPA inputs<a class="anchor" aria-label="anchor" href="#understand-the-mepa-inputs"></a>
 </h2>
-<p>The MEPA response columns use the 16 screener-item labels in snake
-case. The column names should reflect as seen below, but you can map
-custom columns using <code>mepa_columns = c()</code>.</p>
+<p>The MEPA response columns use the 16 screener-item labels shown
+above. Use <code>mepa_columns</code> to map different column names to
+these labels.</p>
 <ul>
 <li>
 <code>olive_oil</code>, <code>green_leafy_vegetables</code>,
@@ -238,7 +234,7 @@ percentile inputs, split the rows into separate data frames and call
 be absent or contain only missing values.</li>
 <li>For <code>diet_method = "percentile"</code>, MEPA columns are
 ignored. Supply <code>diet_value</code> as a DASH or HEI-2015 percentile
-from 1 to 100, calculated against the relevant reference population
+from 0 to 100, calculated against the relevant reference population
 before calling <code><a href="../reference/score_le8.html">score_le8()</a></code>. If it is absent or missing, the
 diet component cannot be scored.</li>
 <li>Set <code>bmi_profile</code> to either <code>"general"</code> or
@@ -251,19 +247,19 @@ diabetes requires HbA1c for scoring.</li>
 <p>The percentile workflow is executable without removing the unused
 MEPA columns:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">percentile_data</span> <span class="op">&lt;-</span> <span class="va">adult_data</span><span class="op">[</span><span class="fl">1</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
-<span><span class="va">percentile_data</span><span class="op">$</span><span class="va">diet_value</span> <span class="op">&lt;-</span> <span class="fl">95</span></span>
-<span><span class="va">percentile_scores</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span></span>
-<span>  <span class="va">percentile_data</span>,</span>
-<span>  diet_method <span class="op">=</span> <span class="st">"percentile"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">percentile_scores</span><span class="op">[</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"diet_value"</span>, <span class="st">"le8_diet_score"</span>, <span class="st">"le8_composite_score"</span><span class="op">)</span></span>
-<span><span class="op">]</span></span>
-<span><span class="co">#&gt;   diet_value le8_diet_score le8_composite_score</span></span>
-<span><span class="co">#&gt; 1         95            100                 100</span></span></code></pre></div>
-<p>Three optional, caller-adjudicated flags control clinical-judgment
-adjustments: <code>apply_lean_muscular_bmi_override</code>,
+<code class="sourceCode R"><span><span class="va">adult_data</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>diet_value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">35</span>, <span class="fl">95</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span>diet_method <span class="op">=</span> <span class="st">"percentile"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">diet_value</span>, <span class="va">le8_diet_score</span>, <span class="va">le8_composite_score</span><span class="op">)</span></span>
+<span><span class="co">#&gt;          id diet_value le8_diet_score le8_composite_score</span></span>
+<span><span class="co">#&gt; 1 patient_1         35             25              90.625</span></span>
+<span><span class="co">#&gt; 2 patient_2         95            100              63.750</span></span></code></pre></div>
+<p>Use <code>diet_method = "dash"</code> or <code>"hei2015"</code> with
+raw food and nutrient inputs, an existing diet score, or a percentile.
+See <code><a href="../articles/population-diets.html">vignette("population-diets", package = "essential8")</a></code>
+for the background, scoring rules, and examples.</p>
+<p>Three optional flags apply adjustments that require clinical
+judgment: <code>apply_lean_muscular_bmi_override</code>,
 <code>apply_sleep_apnea_penalty</code>, and
 <code>apply_prediabetes_metformin_penalty</code>. When these columns are
 absent, their adjustments are not applied.</p>
@@ -271,53 +267,39 @@ absent, their adjustments are not applied.</p>
 <div class="section level2">
 <h2 id="work-with-incomplete-component-data">Work with incomplete component data<a class="anchor" aria-label="anchor" href="#work-with-incomplete-component-data"></a>
 </h2>
-<p>Component inputs may be missing for individual adults.
-Component-specific columns may also be omitted when an entire domain is
-unavailable. The package does not impute missing data, convert units, or
-round raw measurements before scoring. <code>age</code> remains required
-and complete because the package must establish that every record is
-eligible for adult scoring.</p>
+<p>Component inputs may be missing or their columns may be omitted.
+Missing values are not filled in, and measurements are not rounded.
+Supply values in the documented units. <code>age</code> must be complete
+and at least 20 for every row.</p>
 <p>By default, <code><a href="../reference/score_le8.html">score_le8()</a></code> calculates the composite when at
 least seven of the eight component scores are available. Choose any
 threshold from 1 through 8 with <code>min_components</code>. The
 composite is the mean of the available components when the threshold is
 met.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">incomplete_data</span> <span class="op">&lt;-</span> <span class="va">adult_data</span></span>
-<span><span class="va">incomplete_data</span><span class="op">$</span><span class="va">sleep_hours</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA_real_</span></span>
-<span><span class="va">incomplete_data</span><span class="op">$</span><span class="va">bmi</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA_real_</span></span>
-<span></span>
-<span><span class="va">incomplete_scores</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span></span>
-<span>  <span class="va">incomplete_data</span>,</span>
-<span>  min_components <span class="op">=</span> <span class="fl">7</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">incomplete_scores</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>  <span class="st">"id"</span>,</span>
-<span>  <span class="st">"le8_composite_score"</span>,</span>
-<span>  <span class="st">"le8_n_components"</span>,</span>
-<span>  <span class="st">"le8_complete"</span></span>
-<span><span class="op">)</span><span class="op">]</span></span>
+<code class="sourceCode R"><span><span class="va">adult_data</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>sleep_hours <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA_real_</span>, <span class="fl">6.5</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span>min_components <span class="op">=</span> <span class="fl">7</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">le8_composite_score</span>, <span class="va">le8_n_components</span>, <span class="va">le8_complete</span><span class="op">)</span></span>
 <span><span class="co">#&gt;          id le8_composite_score le8_n_components le8_complete</span></span>
 <span><span class="co">#&gt; 1 patient_1            97.14286                7        FALSE</span></span>
-<span><span class="co">#&gt; 2 patient_2            51.42857                7        FALSE</span></span></code></pre></div>
-<p><code>le8_n_components</code> makes the denominator explicit, and
-<code>le8_complete</code> is <code>TRUE</code> only when all eight
-components are available. Row-level missingness is silent; when a
-component cannot be calculated for any observation, one consolidated
-warning identifies every unavailable component. If structural
-missingness makes <code>min_components</code> impossible, the warning
-also states that no composite scores can be calculated.</p>
+<span><span class="co">#&gt; 2 patient_2            54.37500                8         TRUE</span></span></code></pre></div>
+<p><code>le8_n_components</code> reports how many components were
+scored. <code>le8_complete</code> is <code>TRUE</code> when all eight
+are available. Missing values in individual rows do not trigger
+warnings. If a component cannot be scored for anyone, a warning names
+it. The warning also explains when too few components are available to
+calculate any composite scores.</p>
 </div>
 <div class="section level2">
 <h2 id="source-defined-inputs">Source-defined inputs<a class="anchor" aria-label="anchor" href="#source-defined-inputs"></a>
 </h2>
-<p><code><a href="../reference/score_le8.html">score_le8()</a></code> also rejects combinations for which the AHA
-source does not define a score. Examples include an underweight BMI that
-requires clinical judgment, a diagnostic-range glucose value paired with
-no diabetes diagnosis, and simultaneous current combustible smoking and
-inhaled nicotine-delivery-system use. Reconcile these records before
-scoring.</p>
+<p><code><a href="../reference/score_le8.html">score_le8()</a></code> returns an error when the AHA definition
+does not assign a score. Examples include a BMI below 18.5, which
+requires clinical judgment; a glucose value in the diabetes range with
+no recorded diabetes diagnosis; and current use of both combustible
+tobacco and an inhaled nicotine-delivery system. Review these records
+before scoring.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

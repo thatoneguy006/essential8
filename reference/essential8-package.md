@@ -9,12 +9,12 @@ definition and is available through
 
 ## Scientific status
 
-The adult scoring rules in version 0.2.0 are implemented from the cited
-AHA publications and covered by boundary and input-validation tests.
-Users remain responsible for verifying measurement protocols,
-population-specific diet percentiles, and caller-adjudicated
-clinical-judgment flags. The package is research software and is not
-intended for clinical decision support.
+The adult scoring rules in version 0.3.0 are implemented from the cited
+AHA, DASH, and HEI-2015 sources and covered by boundary and
+input-validation tests. Users remain responsible for verifying
+measurement protocols, population-specific diet cutpoints or
+percentiles, and caller-adjudicated clinical-judgment flags. The package
+is research software and is not intended for clinical decision support.
 
 ## See also
 
@@ -35,3 +35,11 @@ Authors:
 
 - Carson Richardson <carson.richardson@outlook.com>
   ([ORCID](https://orcid.org/0009-0004-8710-1097)) \[copyright holder\]
+
+Other contributors:
+
+- Amrik Khalsa <Amrik.Khalsa@nationwidechildrens.org>
+  ([ORCID](https://orcid.org/0000-0002-4609-5194)) \[contributor\]
+
+- Sara Conroy ([ORCID](https://orcid.org/0000-0001-9155-9456))
+  \[contributor\]

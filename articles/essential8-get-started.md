@@ -7,22 +7,32 @@ cardiovascular health scores. The current implementation scores adults
 aged 20 years or older using the American Heart Association’s 2022
 definition. Pediatric scoring is not yet available.
 
-This vignette shows complete and incomplete-data workflows. See
+This vignette shows how to score complete and incomplete data. The
+examples use `dplyr` and the native pipe (`|>`, available in R 4.1+).
+See
 [`?score_le8`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
-for the full input contract and scoring details.
+for all input requirements and scoring details.
 
 ## Create an adult data frame
 
-Supply one row per person. The example below includes two adults with
-raw responses to the 16-item Mediterranean Eating Pattern for Americans
-(MEPA) screener. It also demonstrates both possible BMI profiles and
-both possible glucose measures.
+Supply one row per person. The example includes two adults with
+responses to the 16-item Mediterranean Eating Pattern for Americans
+(MEPA) screener. It shows both BMI profiles and both glucose measures.
 
 ``` r
 
 library(essential8)
+library(dplyr)
+#> 
+#> Attaching package: 'dplyr'
+#> The following objects are masked from 'package:stats':
+#> 
+#>     filter, lag
+#> The following objects are masked from 'package:base':
+#> 
+#>     intersect, setdiff, setequal, union
 
-adult_data <- data.frame(
+adult_data <- tibble(
   id = c("patient_1", "patient_2"),
   age = c(42, 61),
   sex = c("female", "male"),
@@ -75,25 +85,14 @@ category.
 
 ``` r
 
-scored <- score_le8(adult_data, diet_method = "mepa")
+scored <- adult_data |>
+  score_le8(diet_method = "mepa")
 
-scored[c(
-  "id",
-  "mepa_total",
-  "le8_diet_score",
-  "physical_activity_moderate_equivalent_minutes",
-  "le8_composite_score",
-  "le8_category"
-)]
-#>          id mepa_total le8_diet_score
-#> 1 patient_1         14             80
-#> 2 patient_2          4             25
-#>   physical_activity_moderate_equivalent_minutes le8_composite_score
-#> 1                                           150              97.500
-#> 2                                            60              54.375
-#>   le8_category
-#> 1         high
-#> 2     moderate
+scored |>
+  select(id, mepa_total, le8_diet_score, le8_composite_score, le8_category)
+#>          id mepa_total le8_diet_score le8_composite_score le8_category
+#> 1 patient_1         14             80              97.500         high
+#> 2 patient_2          4             25              54.375     moderate
 ```
 
 Each vigorous activity minute counts as two moderate activity minutes
@@ -106,12 +105,8 @@ The component scores are available for analysis and quality checks:
 
 ``` r
 
-component_columns <- setdiff(
-  grep("^le8_.*_score$", names(scored), value = TRUE),
-  "le8_composite_score"
-)
-
-scored[c("id", component_columns)]
+scored |>
+  select(id, starts_with("le8_") & ends_with("_score"), -le8_composite_score)
 #>          id le8_diet_score le8_physical_activity_score le8_nicotine_score
 #> 1 patient_1             80                         100                100
 #> 2 patient_2             25                          60                 75
@@ -125,9 +120,8 @@ scored[c("id", component_columns)]
 
 ## Understand the MEPA inputs
 
-The MEPA response columns use the 16 screener-item labels in snake case.
-The column names should reflect as seen below, but you can map custom
-columns using `mepa_columns = c()`.
+The MEPA response columns use the 16 screener-item labels shown above.
+Use `mepa_columns` to map different column names to these labels.
 
 - `olive_oil`, `green_leafy_vegetables`, `other_vegetables`, and
   `whole_grains` are servings per day.
@@ -162,7 +156,7 @@ separately for each method.
 - For `diet_method = "mepa"`, `diet_value` must be absent or contain
   only missing values.
 - For `diet_method = "percentile"`, MEPA columns are ignored. Supply
-  `diet_value` as a DASH or HEI-2015 percentile from 1 to 100,
+  `diet_value` as a DASH or HEI-2015 percentile from 0 to 100,
   calculated against the relevant reference population before calling
   [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md).
   If it is absent or missing, the diet component cannot be scored.
@@ -177,32 +171,31 @@ columns:
 
 ``` r
 
-percentile_data <- adult_data[1, , drop = FALSE]
-percentile_data$diet_value <- 95
-percentile_scores <- score_le8(
-  percentile_data,
-  diet_method = "percentile"
-)
-percentile_scores[
-  c("diet_value", "le8_diet_score", "le8_composite_score")
-]
-#>   diet_value le8_diet_score le8_composite_score
-#> 1         95            100                 100
+adult_data |>
+  mutate(diet_value = c(35, 95)) |>
+  score_le8(diet_method = "percentile") |>
+  select(id, diet_value, le8_diet_score, le8_composite_score)
+#>          id diet_value le8_diet_score le8_composite_score
+#> 1 patient_1         35             25              90.625
+#> 2 patient_2         95            100              63.750
 ```
 
-Three optional, caller-adjudicated flags control clinical-judgment
-adjustments: `apply_lean_muscular_bmi_override`,
-`apply_sleep_apnea_penalty`, and `apply_prediabetes_metformin_penalty`.
-When these columns are absent, their adjustments are not applied.
+Use `diet_method = "dash"` or `"hei2015"` with raw food and nutrient
+inputs, an existing diet score, or a percentile. See
+[`vignette("population-diets", package = "essential8")`](https://thatoneguy006.github.io/essential8/articles/population-diets.md)
+for the background, scoring rules, and examples.
+
+Three optional flags apply adjustments that require clinical judgment:
+`apply_lean_muscular_bmi_override`, `apply_sleep_apnea_penalty`, and
+`apply_prediabetes_metformin_penalty`. When these columns are absent,
+their adjustments are not applied.
 
 ## Work with incomplete component data
 
-Component inputs may be missing for individual adults.
-Component-specific columns may also be omitted when an entire domain is
-unavailable. The package does not impute missing data, convert units, or
-round raw measurements before scoring. `age` remains required and
-complete because the package must establish that every record is
-eligible for adult scoring.
+Component inputs may be missing or their columns may be omitted. Missing
+values are not filled in, and measurements are not rounded. Supply
+values in the documented units. `age` must be complete and at least 20
+for every row.
 
 By default,
 [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
@@ -213,38 +206,26 @@ when the threshold is met.
 
 ``` r
 
-incomplete_data <- adult_data
-incomplete_data$sleep_hours[1] <- NA_real_
-incomplete_data$bmi[2] <- NA_real_
-
-incomplete_scores <- score_le8(
-  incomplete_data,
-  min_components = 7
-)
-
-incomplete_scores[c(
-  "id",
-  "le8_composite_score",
-  "le8_n_components",
-  "le8_complete"
-)]
+adult_data |>
+  mutate(sleep_hours = c(NA_real_, 6.5)) |>
+  score_le8(min_components = 7) |>
+  select(id, le8_composite_score, le8_n_components, le8_complete)
 #>          id le8_composite_score le8_n_components le8_complete
 #> 1 patient_1            97.14286                7        FALSE
-#> 2 patient_2            51.42857                7        FALSE
+#> 2 patient_2            54.37500                8         TRUE
 ```
 
-`le8_n_components` makes the denominator explicit, and `le8_complete` is
-`TRUE` only when all eight components are available. Row-level
-missingness is silent; when a component cannot be calculated for any
-observation, one consolidated warning identifies every unavailable
-component. If structural missingness makes `min_components` impossible,
-the warning also states that no composite scores can be calculated.
+`le8_n_components` reports how many components were scored.
+`le8_complete` is `TRUE` when all eight are available. Missing values in
+individual rows do not trigger warnings. If a component cannot be scored
+for anyone, a warning names it. The warning also explains when too few
+components are available to calculate any composite scores.
 
 ## Source-defined inputs
 
 [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
-also rejects combinations for which the AHA source does not define a
-score. Examples include an underweight BMI that requires clinical
-judgment, a diagnostic-range glucose value paired with no diabetes
-diagnosis, and simultaneous current combustible smoking and inhaled
-nicotine-delivery-system use. Reconcile these records before scoring.
+returns an error when the AHA definition does not assign a score.
+Examples include a BMI below 18.5, which requires clinical judgment; a
+glucose value in the diabetes range with no recorded diabetes diagnosis;
+and current use of both combustible tobacco and an inhaled
+nicotine-delivery system. Review these records before scoring.

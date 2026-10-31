@@ -147,8 +147,8 @@ test_that("HEI-2015 uses fixed reference thresholds with inclusive equality", {
   expect_equal(singleton$le8_diet_score, result$le8_diet_score[2])
 })
 
-test_that("HEI-2015 reference cutpoints are required and validated", {
-  for (reference in list(NULL, numeric(), c(0, 50, 101, 101),
+test_that("explicit HEI-2015 reference cutpoints are validated", {
+  for (reference in list(numeric(), c(0, 50, 101, 101),
                          c(0, 50, NA, 100), c(0, 70, 50, 100),
                          c(0, 50, 80, Inf), letters[1:4])) {
     expect_error(

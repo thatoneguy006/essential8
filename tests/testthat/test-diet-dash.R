@@ -90,7 +90,7 @@ test_that("DASH missing inputs preserve composite missing-data semantics", {
 })
 
 test_that("DASH validates all reference cutpoints", {
-  invalid <- list(NULL, list(), 1, data.frame(fruits = 1:4))
+  invalid <- list(list(), 1, data.frame(fruits = 1:4))
   reference <- dash_reference_fixture()
   for (field in names(reference)) {
     for (value in list(1:3, c(1, 3, 2, 4), c(1, 2, NA, 4),

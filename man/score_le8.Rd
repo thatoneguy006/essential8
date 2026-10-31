@@ -36,33 +36,38 @@ number of non-missing LE8 component scores required to calculate
 averaged without imputation; observations below the threshold receive
 \code{NA_real_}.}
 
-\item{dash_columns, hei2015_columns}{Compatibility arguments for the existing
-raw-intake workflow: \code{NULL}, or named character vectors
+\item{dash_columns, hei2015_columns}{\code{NULL}, or named character vectors
 mapping canonical DASH or HEI-2015 fields to columns in \code{data}. Unmapped
 fields default to the canonical name prefixed with \code{dash_} or \code{hei2015_}.
 Names and input column names are matched case-insensitively.}
 
-\item{dash_cutpoints}{Only for the existing raw DASH workflow: a named list
+\item{dash_cutpoints}{\code{NULL} to use the packaged DASH intake quintiles and
+total-score cutpoints, or a named list
 containing the eight canonical DASH fields and \code{total}. Each intake
 vector contains four nondecreasing reference quintile cutpoints (20th,
 40th, 60th, 80th percentiles), in the same units as the inputs. \code{total}
 contains four nondecreasing reference DASH-total cutpoints (25th, 50th,
-75th, 95th percentiles), each from 8 to 40. Tied cutpoints are allowed.}
+75th, 95th percentiles), each from 8 to 40. Tied cutpoints are allowed.
+Explicit cutpoints bypass \code{reference} and use inputs in their supplied
+units, without energy standardization, preserving existing calls.}
 
-\item{hei2015_cutpoints}{Only for the existing raw HEI-2015 workflow: four
+\item{hei2015_cutpoints}{\code{NULL} to use \code{reference}, or four
 nondecreasing reference HEI-2015-total cutpoints (25th, 50th, 75th, 95th
 percentiles), each from 0 to 100. Tied cutpoints are allowed.}
 
 \item{reference}{\code{"nhanes_2015_2018"} (the default), or a method-matched
-\code{\link[=diet_reference]{diet_reference()}} object. Used only for already-computed \code{dash} or
-\code{hei2015} index scores. Direct percentiles bypass reference lookup.
+\code{\link[=diet_reference]{diet_reference()}} object. Used for already-computed indices and raw
+intake scoring when explicit cutpoints are absent. Raw DASH requires the
+packaged reference's intake quintiles; for other DASH definitions, supply
+\code{dash_cutpoints}. Direct percentiles and explicit raw cutpoints bypass
+reference lookup.
 The built-in references describe nonpregnant adults aged 20+ with two
 reliable recalls; they are derived estimates, not AHA-published cutpoints.}
 }
 \value{
 A data frame containing the original columns plus
-\code{mepa_total}, \code{dash_total}, and \code{hei2015_total} (missing when that method
-is not selected),
+\code{mepa_total}, \code{dash_total}, and \code{hei2015_total} (missing unless calculated
+from the corresponding raw inputs),
 \code{physical_activity_moderate_equivalent_minutes}, the eight component score
 columns prefixed with \code{le8_}, \code{le8_n_components}, \code{le8_composite_score},
 \code{le8_complete}, and \code{le8_category}. The component count reports how many
@@ -71,7 +76,7 @@ only when all eight components are available. Categories are \code{"low"} for
 scores below 50, \code{"moderate"} for scores from 50 to less than 80, and
 \code{"high"} for scores of at least 80. The category is missing when the
 composite score is missing.
-For compatibility raw-intake HEI-2015 calls only, the 13 component scores are also appended as
+For raw HEI-2015 calls, the 13 component scores are also appended as
 \verb{hei2015_<component>_score}, including \code{fatty_acids} and \code{saturated_fats}.
 }
 \description{
@@ -87,6 +92,9 @@ MEPA retains the individual assessment pathway. For population research,
 \code{diet_method = "dash"} accepts an already-computed index in \code{dash}, and
 \code{diet_method = "hei2015"} accepts an already-computed index in \code{hei2015}.
 Either method alternatively accepts a percentile in \code{diet_value} (0 to 100).
+Both methods also calculate raw totals from the intake fields below, using
+the packaged reference by default. Raw HEI-2015 also accepts a custom
+\code{diet_reference()}; raw DASH supports custom definitions via \code{dash_cutpoints}.
 Do not supply both the index column and the percentile column. Data with
 no diet inputs retain the package's usual missing-component behavior.
 
@@ -112,11 +120,11 @@ as apparent proportions; supply percentile points, such as 95, not 0.95.
 This safeguard also rejects a batch consisting only of genuine fractional
 percentiles below 1. Values are never automatically multiplied by 100.
 
-Existing explicit raw-intake workflows from version 0.3.0 remain available
-for compatibility, using the columns and cutpoints below. They are separate
-from the default index-to-reference pathway and cannot be combined with a
-precomputed index or observed percentile. This extension adds no new
-dietary-recall processing API. See \code{vignette("population-diets")}.
+Supply one input pathway per call: raw intake, a precomputed index, or a
+percentile. Raw intake fields cannot be combined with a precomputed index
+or observed percentile. Raw fields are food-group and nutrient summaries,
+prepared before scoring; the function does not parse dietary-recall files.
+See \code{vignette("population-diets")} for executable examples and units.
 }
 
 \section{Input columns}{
@@ -138,14 +146,20 @@ case-insensitively, and character \code{"0"}/\code{"1"} values are also accepted
 diet method. HEI-2015 is bounded by 0 to 100. The built-in DASH reference
 requires its documented 8-to-40 definition; custom DASH references can
 specify other index ranges. These columns are unrelated to MEPA.
-\item For the compatibility raw DASH pathway, supply daily servings in \code{dash_fruits},
+\item For raw DASH scoring, supply daily intakes in \code{dash_fruits},
 \code{dash_vegetables}, \code{dash_nuts_and_legumes}, \code{dash_whole_grains},
 \code{dash_low_fat_dairy}, \code{dash_red_and_processed_meat}, and
 \code{dash_sweetened_beverages}; supply sodium in mg/day in \code{dash_sodium}.
 Canonical mapping fields omit the \code{dash_} prefix. Fruits include juice;
 vegetables exclude potatoes and legumes. Food groups and serving
-definitions must match those used to derive \code{dash_cutpoints}.
-\item For the compatibility raw HEI-2015 pathway, supply \code{hei2015_energy_kcal} (positive
+definitions must match the reference. With the packaged reference, also
+supply positive kcal/day in \code{dash_energy_kcal}; sodium is standardized to
+2,000 kcal before scoring. Other fields must use the FPED-derived units
+and definitions in \code{vignette("population-diets")}, including fruit cup
+equivalents, whole-grain ounce equivalents, and the specified vegetable,
+dairy, protein, and beverage conversions. With explicit \code{dash_cutpoints},
+energy is not required and no standardization is applied.
+\item For raw HEI-2015 scoring, supply \code{hei2015_energy_kcal} (positive
 kcal/day, including alcohol); cup equivalents/day in
 \code{hei2015_total_fruits}, \code{hei2015_whole_fruits},
 \code{hei2015_total_vegetables}, \code{hei2015_greens_and_beans}, and
@@ -162,7 +176,7 @@ backward-compatible generic \code{"percentile"} method. Supply a DASH or
 HEI-2015 percentile from 0 to 100, calculated against the relevant
 reference distribution. The function does not rank supplied rows against
 one another. If this column is absent or missing, the diet score is
-missing. MEPA and compatibility raw-intake calls require it to be absent
+missing. MEPA and raw-intake calls require it to be absent
 or entirely missing.
 \item \code{moderate_activity_minutes} and \code{vigorous_activity_minutes}: Weekly
 minutes. Each vigorous minute counts as two moderate-equivalent minutes.
@@ -217,13 +231,12 @@ discretionary penalty is applied.
 \section{Source-constrained behavior}{
 
 The function derives the 0-to-16 MEPA total from the 16 raw screener
-responses. In compatibility raw-intake calls, DASH uses the eight-component
-Fung index: five beneficial food
+responses. Raw DASH scoring uses the eight-component Fung index: five food
 groups receive 1 to 5 points by intake quintile; sodium, red/processed meat,
 and sweetened beverages receive 5 to 1. Intakes equal to a quintile cutpoint
 stay in the lower quintile. Their sum is \code{dash_total} (8 to 40).
 
-Compatibility raw HEI-2015 calls compute 13 density, fatty-acid-ratio, and energy-percentage
+Raw HEI-2015 calls compute 13 density, fatty-acid-ratio, and energy-percentage
 components with proportional scoring between the published standards.
 Added sugars use 16 kcal per teaspoon equivalent; saturated fat uses
 9 kcal per gram. Scores are capped at each component's maximum. Their sum
@@ -233,13 +246,12 @@ component receives 10 points; with all three fats zero it receives zero,
 following the NCI scoring macro. Missing inputs are never treated as zero;
 a total requires all of its diet components, regardless of \code{min_components}.
 
-In the compatibility raw-intake workflow, DASH and HEI-2015 totals are
-converted to LE8 scores of 0, 25, 50, 80, or
-100 using the supplied total-score cutpoints. Equality enters the higher
-LE8 band. Callers must derive these cutpoints from a suitable fixed reference
-population, using appropriate survey weights and strata where applicable;
-the AHA advisory specifies NHANES 2015-2018 as the reference. These
-compatibility cutpoints are never inferred from \code{data}. For references requiring
+Raw DASH and HEI-2015 totals are converted to LE8 scores of 0, 25, 50, 80,
+or 100 using fixed reference total-score cutpoints. Equality enters the
+higher LE8 band. Explicit cutpoints override the packaged reference and
+must come from a suitable fixed reference population, using appropriate
+survey weights and strata where applicable. Cutpoints are never inferred
+from \code{data}. For references requiring
 different cutpoints by stratum, score strata in separate calls. Alternatively,
 \code{diet_method = "percentile"} accepts externally calculated DASH or HEI-2015
 percentiles. The rows in \code{data} are never ranked against one another.
@@ -255,7 +267,10 @@ combustible smoking and current inhaled-NDS use, produce a structured error.
 }
 
 \examples{
-patient <- data.frame(
+\dontshow{if (requireNamespace("dplyr", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+library(dplyr)
+
+patient <- tibble(
   id = "patient_1",
   age = 55,
   sex = "female",
@@ -298,16 +313,9 @@ patient <- data.frame(
 )
 
 scores <- score_le8(patient, diet_method = "mepa")
-scores[
-  c(
-    "id",
-    "mepa_total",
-    "le8_diet_score",
-    "le8_composite_score",
-    "le8_category"
-  )
-]
-
+select(scores, id, mepa_total, le8_diet_score, le8_composite_score,
+       le8_category)
+\dontshow{\}) # examplesIf}
 }
 \references{
 Lloyd-Jones DM, Allen NB, Anderson CAM, et al. (2022). Life's Essential 8:

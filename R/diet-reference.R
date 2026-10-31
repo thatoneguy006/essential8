@@ -1,7 +1,9 @@
 #' Construct a reference for population diet scoring
 #'
-#' Creates a small, method-specific reference for already-computed DASH or
-#' HEI-2015 indices. The four values are index-score cutpoints at the indicated
+#' Creates a small, method-specific reference for DASH or HEI-2015 indices,
+#' including HEI-2015 totals calculated from raw inputs. Raw DASH with custom
+#' definitions requires explicit `dash_cutpoints` in [score_le8()] to specify
+#' intake quintiles as well. The four values are index-score cutpoints at the indicated
 #' percentiles, not percentiles themselves. No observations are stored or ranked.
 #'
 #' @param p25,p50,p75,p95 Single finite numeric cutpoints, in nondecreasing order.

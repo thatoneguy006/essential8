@@ -33,8 +33,10 @@ cutpoints, optional metadata, and index range. It identifies percentile
 bands, not an exact continuous percentile distribution.
 }
 \description{
-Creates a small, method-specific reference for already-computed DASH or
-HEI-2015 indices. The four values are index-score cutpoints at the indicated
+Creates a small, method-specific reference for DASH or HEI-2015 indices,
+including HEI-2015 totals calculated from raw inputs. Raw DASH with custom
+definitions requires explicit \code{dash_cutpoints} in \code{\link[=score_le8]{score_le8()}} to specify
+intake quintiles as well. The four values are index-score cutpoints at the indicated
 percentiles, not percentiles themselves. No observations are stored or ranked.
 }
 \examples{

@@ -29,11 +29,44 @@
   dash_cutpoints
 }
 
-.compute_adult_dash <- function(data, dash_columns, dash_cutpoints) {
+.compute_adult_dash <- function(
+  data,
+  dash_columns,
+  dash_cutpoints,
+  reference = "nhanes_2015_2018"
+) {
+  use_reference <- is.null(dash_cutpoints)
+  fields <- .adult_dash_fields()
+  if (use_reference) {
+    reference <- .resolve_diet_reference("dash", reference)
+    if (!identical(reference$provenance$index_definition,
+                   "essential8_fung_fped_v1") ||
+        is.null(reference$provenance$component_cutpoints)) {
+      .abort_adult_scoring(c(
+        "Raw DASH scoring requires reference intake quintiles.",
+        "i" = "Use {.val nhanes_2015_2018} or supply {.arg dash_cutpoints} with all eight intake quintiles and total-score cutpoints."
+      ))
+    }
+    dash_cutpoints <- c(
+      reference$provenance$component_cutpoints,
+      list(total = unlist(reference[c("p25", "p50", "p75", "p95")]))
+    )
+    fields <- c(fields, "energy_kcal")
+  }
   cutpoints <- .validate_dash_cutpoints(dash_cutpoints)
   inputs <- .population_diet_inputs(
-    data, dash_columns, .adult_dash_fields(), "dash"
+    data, dash_columns, fields, "dash"
   )
+  if (use_reference) {
+    if (any(inputs$energy_kcal <= 0, na.rm = TRUE)) {
+      .abort_adult_scoring(
+        "DASH {.field energy_kcal} must be greater than zero when observed."
+      )
+    }
+    # The packaged FPED definition uses sodium standardized to 2,000 kcal.
+    inputs$sodium <- inputs$sodium / inputs$energy_kcal * 2000
+    inputs$energy_kcal <- NULL
+  }
   reverse <- c("sodium", "red_and_processed_meat", "sweetened_beverages")
   item_scores <- lapply(names(inputs), function(field) {
     value <- inputs[[field]]

@@ -17,7 +17,16 @@
   )
 }
 
-.compute_adult_hei2015 <- function(data, hei2015_columns, hei2015_cutpoints) {
+.compute_adult_hei2015 <- function(
+  data,
+  hei2015_columns,
+  hei2015_cutpoints,
+  reference = "nhanes_2015_2018"
+) {
+  if (is.null(hei2015_cutpoints)) {
+    reference <- .resolve_diet_reference("hei2015", reference)
+    hei2015_cutpoints <- unlist(reference[c("p25", "p50", "p75", "p95")])
+  }
   cutpoints <- .validate_diet_cutpoints(
     hei2015_cutpoints, "hei2015_cutpoints", 0, 100
   )

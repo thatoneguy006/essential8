@@ -8,7 +8,7 @@
 
 ## Overview
 
-`essential8` provides reproducible R implementations of the American Heart
+`essential8` provides a reproducible R implementation of the American Heart
 Association Life's Essential 8 cardiovascular health scoring framework.
 
 The current release implements adult scoring for people aged 20 years or
@@ -16,12 +16,12 @@ older. Pediatric scoring is planned but not yet implemented.
 
 ## Installation
 
+### CRAN
 ```r
 install.packages("essential8")
 ```
 
-Install the development version from GitHub with:
-
+### Development
 ```r
 # install.packages("remotes")
 remotes::install_github("thatoneguy006/essential8")
@@ -36,11 +36,9 @@ in one validated workflow and returns all eight component scores plus the
 composite.
 
 Version 0.3.0 supports adult DASH and HEI-2015 diet scoring alongside MEPA.
-It supports incomplete adult records without imputing raw inputs or
-component scores. By default, the composite is calculated when at least seven
+By default, the composite score is calculated when at least seven
 components are available; `min_components` can set a threshold from 1 through
-8. Optional AHA clinical-judgment adjustments are applied only when the user
-supplies explicit adjudication flags; see `?score_le8` for details.
+8.
 
 ## Basic use
 
@@ -61,18 +59,19 @@ when a domain is unavailable:
 - blood glucose and diabetes status
 - blood pressure (requires both systolic and diastolic measures)
 
-The following example contains one record and uses
-`score_le8(patient, diet_method = "mepa")`:
+The examples use `dplyr` and the native pipe (`|>`, available in R 4.1+).
+The first scores one adult using MEPA:
 
 ```r
 library(essential8)
+library(dplyr)
 
-patient <- data.frame(
+patient <- tibble(
   id = "patient_1",
   age = 55,
   sex = "female",
 
-  # MEPA items --------------------------
+  # MEPA items
   # Daily servings
   olive_oil = 2,
   green_leafy_vegetables = 1,
@@ -92,121 +91,80 @@ patient <- data.frame(
   alcohol = 4,
   # Fast-food meals per week
   fast_food = 0,
-  # -------------------------------------
 
-  # Physical activity -------------------
+  # Physical activity
   moderate_activity_minutes = 90,
   vigorous_activity_minutes = 0,
-  # -------------------------------------
 
-  # Smoking -----------------------------
+  # Smoking
   smoking_status = "former",
   years_since_quit = 6,
   current_inhaled_nds = FALSE,
   secondhand_smoke_home = FALSE,
-  # --------------------------------------
 
-  # Sleep --------------------------------
+  # Sleep
   sleep_hours = 7.5,
-  # --------------------------------------
 
-  # BMI ----------------------------------
+  # BMI
   bmi = 27.5,
   bmi_profile = "general",
-  # --------------------------------------
 
-  # Blood lipids -------------------------
+  # Blood lipids
   non_hdl_cholesterol = 145,
   lipid_lowering_treatment = FALSE,
-  # --------------------------------------
 
-  # Diabetes & Glucose -------------------
+  # Diabetes & Glucose
   diabetes = FALSE,
   glucose_measure = "fasting_glucose",
   glucose_value = 95,
-  # --------------------------------------
 
-  # Blood Pressure -----------------------
+  # Blood Pressure
   systolic_bp = 128,
   diastolic_bp = 78,
   antihypertensive_treatment = FALSE
-  # --------------------------------------
 )
 
-scores <- score_le8(patient, diet_method = "mepa")
-scores[
-  c(
-    "id",
-    "mepa_total",
-    "le8_diet_score",
-    "le8_composite_score",
-    "le8_category"
-  )
-]
+patient |>
+  score_le8(diet_method = "mepa") |>
+  select(id, mepa_total, le8_diet_score, le8_composite_score, le8_category)
 ```
 
 The `diet_method` argument accepts `"mepa"`, `"dash"`, `"hei2015"`, or
 `"percentile"`. The `min_components` argument defaults to 7.
 For `diet_method = "mepa"`, the function calculates `mepa_total` directly from
-the 16 screener responses. Their column names must be the screener labels shown
+the 16 screener questions. Their column names must be the column labels shown
 above. Matching is case-insensitive.
 
 The default MEPA sex field is `sex`; if it is absent, a `female` column is
 recognized automatically. Map any other field with, for example,
 `mepa_columns = c(sex = "reported_sex", alcohol = "alc")`. For sex, values are
 trimmed and matched case-insensitively as `m`/`f` or `male`/`female`.
-Numeric or character `0`/`1` values are also accepted, where `0` is male and `1` is female.
+Numeric or character `0`/`1` values are also accepted, where `0` is male and
+`1` is female.
 
-For data that use different diet methods, split the rows into separate data frames
-and call `score_le8()` separately. Percentile calls use `diet_value`, containing
-a DASH or HEI-2015 percentile from 0 to 100. The result appends all eight
-component scores, `le8_n_components`, `le8_complete`, the composite score, and
-its cardiovascular health category. See `?score_le8` for more information.
+For data that use different diet methods, split the rows into separate data
+frames and call `score_le8()` separately. Percentile calls use `diet_value`,
+containing a DASH or HEI-2015 percentile from 0 to 100. The result appends all
+eight component scores, `le8_n_components`, `le8_complete`, the composite score,
+and its cardiovascular health category. See `?score_le8` for more information.
 
-## DASH and HEI-2015 population pathways
+## DASH and HEI-2015
 
-Use `diet_method = "dash"` or `"hei2015"` for population research with an
-already-computed index or percentile. Calculate the index with an established
-method appropriate for your analysis before passing it to `essential8`.
-MEPA remains the existing individual assessment pathway shown above.
+For population research, use `diet_method = "dash"` or `"hei2015"` with raw
+food and nutrient inputs, an existing diet score, or a percentile. For
+example, add an existing HEI-2015 score to the adult record above:
 
 ```r
-# Already-computed HEI-2015 index, with the fixed packaged reference.
-hei_data <- patient
-hei_data$hei2015 <- 70
-score_le8(hei_data, diet_method = "hei2015",
-          reference = "nhanes_2015_2018")
-
-# Already-computed DASH percentile; no reference lookup is needed.
-dash_data <- patient
-dash_data$diet_value <- 82
-score_le8(dash_data, diet_method = "dash")
-
-# A synthetic custom reference for an already-computed HEI-2015 index.
-custom <- diet_reference(40, 55, 65, 80, method = "hei2015",
-                         label = "Synthetic example")
-score_le8(hei_data, diet_method = "hei2015", reference = custom)
+patient |>
+  mutate(hei2015 = 70) |>
+  score_le8(diet_method = "hei2015", reference = "nhanes_2015_2018") |>
+  select(id, hei2015, le8_diet_score, le8_composite_score)
 ```
 
-Index columns are named `dash` or `hei2015`. Direct percentiles use
-`diet_value` on the **0-100 scale**, and must not be supplied together with an
-index column. A proportion such as `0.95` is never rescaled to 95.
-
-Both methods have compact, locally packaged NHANES 2015-2018 references,
-derived using the complex survey design and two-day dietary weights. The
-built-in DASH reference requires the specific Fung-style FPED index and
-weighted intake quintiles documented in the diet vignette; another DASH
-definition needs its own reference. The HEI-2015 reference uses individual
-scoring of two-recall mean constituents and energy. These adult references
-are derived estimates with provenance, not AHA-published cutpoint tables or
-usual-intake distributions. They never rank the current cohort or download
-data during scoring. Name the reference explicitly for reproducibility.
-
-Missing values remain missing. Existing explicit raw-intake workflows and
-their column mappings/cutpoints remain supported for compatibility with
-PR #15; the new pathway adds no dietary-recall processing API.
-See `vignette("population-diets", package = "essential8")` and `?score_le8`
-for reference definitions, units, provenance, validation, and compatibility.
+The diet score is converted to LE8 points using the selected reference.
+See [Diet scoring in Life's Essential 8](vignettes/population-diets.Rmd),
+also available through `vignette("population-diets", package = "essential8")`,
+for the background, scoring rules, input units, and examples.
 
 ## Incomplete component data
 
@@ -215,19 +173,12 @@ The composite is the mean of the available component scores when the selected
 threshold is met:
 
 ```r
-incomplete <- rbind(patient, patient)
-incomplete$id <- c("complete", "sleep_missing")
-incomplete$sleep_hours[2] <- NA_real_
-
-incomplete_scores <- score_le8(incomplete, min_components = 7)
-incomplete_scores[
-  c(
-    "id",
-    "le8_composite_score",
-    "le8_n_components",
-    "le8_complete"
-  )
-]
+bind_rows(
+  patient,
+  patient |> mutate(id = "sleep_missing", sleep_hours = NA_real_)
+) |>
+  score_le8(min_components = 7) |>
+  select(id, le8_composite_score, le8_n_components, le8_complete)
 ```
 
 `le8_n_components` reports how many component scores contributed, while

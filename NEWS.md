@@ -1,41 +1,19 @@
 # essential8 0.3.0
 
-## New features
+## Major Changes
 
-- Added DASH and HEI-2015 pathways for already-computed indices or direct
-  percentiles through `score_le8()`. Index inputs use the explicit default
-  `reference = "nhanes_2015_2018"`, or a validated, method-tagged
-  `diet_reference()` object. Direct percentiles bypass reference lookup (#9).
-- Built and reproduced compact references for both indices from public
-  NHANES 2015-2018/FPED data using the survey design and combined-cycle two-day
-  dietary weights. The maintainer pipeline records source hashes, sample
-  counts, index definitions, software versions, and exclusions; runtime scoring
-  uses no downloads or cohort ranking.
-- Shared percentile mapping accepts 0-100 points, preserves missing/empty
-  numeric outputs, and rejects apparent fractional proportions in 0-1.
-  MEPA results, argument order, and existing explicit raw-intake routes are
-  preserved; the new index/percentile routes add no output columns.
+- Added DASH and HEI-2015 support to `score_le8()`. Both methods accept raw
+  food and nutrient inputs, existing diet scores, or percentiles (#9).
+- Added packaged NHANES 2015-2018 references to convert diet scores to LE8
+  points, with options to supply a custom reference or scoring cutpoints.
+- Raw scoring returns `dash_total` or `hei2015_total`. HEI-2015 also returns
+  all 13 component scores.
 
-- Added adult `diet_method = "dash"` scoring from eight daily intake fields
-  using the Fung quintile index, with an auditable 8-to-40 `dash_total` (#9).
-- Added adult `diet_method = "hei2015"` scoring from food-pattern equivalents,
-  energy, and nutrients. Returns all 13 component scores and the 0-to-100
-  `hei2015_total` (#9).
-- Both methods use explicit reference-population total-score cutpoints to
-  calculate LE8 diet points. DASH additionally requires intake quintile
-  cutpoints. The package never estimates reference cutpoints from the rows
-  being scored or treats an HEI-2015 total as a percentile.
-- Added `dash_columns` and `hei2015_columns` for custom input column mappings.
-  New inputs support the existing missing-data and `min_components` behavior;
-  incomplete diets do not produce partial raw totals.
-- Added source notes, worked synthetic examples, and boundary/validation tests.
+## Minor Changes
 
-## Output changes
-
-- `score_le8()` now always appends `dash_total` and `hei2015_total`, with typed
-  missing values when the corresponding method is not selected. HEI-2015 calls
-  also append `hei2015_<component>_score` columns. These names are reserved
-  against input collisions. Existing positional arguments retain their order.
+- Expanded the diet vignette to explain MEPA, DASH, and HEI-2015, their role
+  in LE8, and how their scores are calculated.
+- Simplified the README and examples, using consistent tidy workflows.
 
 # essential8 0.2.0
 
@@ -56,7 +34,7 @@
 
 # essential8 0.1.0
 
-## Adult Life's Essential 8 scoring
+## Major Changes
 
 - Added `score_le8()` for complete adult records aged 20 years or
   older, using the eight component definitions in the AHA 2022 Presidential

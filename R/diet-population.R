@@ -43,6 +43,7 @@
       return(rep(NA_real_, nrow(data)))
     }
     column <- names(data)[index[i]]
+    data[[column]] <- .coerce_all_na_logical(data[[column]], "numeric")
     .validate_adult_numeric_column(data, column)
     value <- data[[column]]
     if (any(value < 0, na.rm = TRUE)) {

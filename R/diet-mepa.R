@@ -162,7 +162,7 @@
 .validate_adult_mepa_inputs <- function(data, columns, rows) {
   for (item in .adult_mepa_item_columns()) {
     column <- columns[[item]]
-    value <- data[[column]]
+    value <- .coerce_all_na_logical(data[[column]], "numeric")
     .validate_adult_column_shape(data, column)
 
     if (!is.numeric(value)) {
@@ -193,7 +193,7 @@
 
 .score_adult_mepa_items <- function(data, columns, rows, sex) {
   value <- function(item) {
-    data[[columns[[item]]]][rows]
+    as.numeric(data[[columns[[item]]]])[rows]
   }
 
   alcohol <- value("alcohol")

@@ -635,6 +635,15 @@ score_le8 <- function(
     "glucose_measure"
   )
 
+  # A column that is entirely missing is often read as logical NA (for
+  # example, a blank CSV column). Treat it as the missing column it is.
+  for (column in intersect(numeric_columns, names(data))) {
+    data[[column]] <- .coerce_all_na_logical(data[[column]], "numeric")
+  }
+  for (column in intersect(character_columns, names(data))) {
+    data[[column]] <- .coerce_all_na_logical(data[[column]], "character")
+  }
+
   for (column in setdiff(numeric_columns, names(data))) {
     data[[column]] <- rep(NA_real_, nrow(data))
   }
@@ -646,6 +655,14 @@ score_le8 <- function(
   }
 
   data
+}
+
+.coerce_all_na_logical <- function(value, to = c("numeric", "character")) {
+  to <- match.arg(to)
+  if (is.logical(value) && is.null(dim(value)) && all(is.na(value))) {
+    return(if (to == "numeric") as.numeric(value) else as.character(value))
+  }
+  value
 }
 
 .le8_adult_output_columns <- function() {

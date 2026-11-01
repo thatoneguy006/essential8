@@ -99,8 +99,8 @@ test_that("raw reference scoring retains missing and empty data semantics", {
     expect_true(is.na(result[[paste0(method, "_total")]][2]))
     expect_true(is.na(result$le8_composite_score[2]))
     missing[[field]] <- NULL
-    expect_warning(score_le8(missing, method),
-                   class = "essential8_missing_component")
+    expect_error(score_le8(missing, method), field,
+                 class = "essential8_adult_input_error")
 
     empty <- expect_no_warning(score_le8(input[0, ], method))
     expect_identical(empty$dash_total, integer())

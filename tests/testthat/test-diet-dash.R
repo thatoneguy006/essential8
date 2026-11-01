@@ -77,11 +77,12 @@ test_that("DASH missing inputs preserve composite missing-data semantics", {
   )
   expect_true(is.na(strict$le8_composite_score[2]))
   missing$dash_fruits <- NULL
-  expect_warning(
-    result <- score_le8(missing, "dash", dash_cutpoints = dash_reference_fixture()),
-    class = "essential8_missing_component"
+  expect_error(
+    score_le8(missing, "dash", dash_cutpoints = dash_reference_fixture()),
+    "dash_fruits",
+    class = "essential8_adult_input_error"
   )
-  expect_true(is.na(result$dash_total))
+  missing$dash_fruits <- NA_real_
   missing$dash_sodium <- -1
   expect_error(
     score_le8(missing, "dash", dash_cutpoints = dash_reference_fixture()),

@@ -69,10 +69,11 @@ test_that("HEI-2015 missing nutrients propagate without partial totals", {
   expect_equal(result$le8_n_components, c(8, 7))
   expect_equal(result$le8_composite_score, c(100, 100))
   missing$hei2015_sodium <- NULL
-  expect_warning(
+  expect_error(
     score_le8(missing, "hei2015",
               hei2015_cutpoints = hei2015_reference_fixture()),
-    class = "essential8_missing_component"
+    "hei2015_sodium",
+    class = "essential8_adult_input_error"
   )
 })
 

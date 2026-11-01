@@ -104,7 +104,11 @@ test_that("population diets handle empty inputs with stable output types", {
     expect_type(result$hei2015_total, "double")
     expect_type(result$le8_diet_score, "double")
     arguments$data <- data.frame(age = numeric())
-    expect_no_warning(do.call(score_le8, arguments))
+    # Explicit cutpoints select raw scoring, so absent raw columns are an error.
+    expect_error(
+      do.call(score_le8, arguments),
+      class = "essential8_adult_input_error"
+    )
   }
 })
 

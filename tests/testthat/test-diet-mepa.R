@@ -76,7 +76,7 @@ test_that("zero-row MEPA scoring validates column types", {
   )
 
   input <- adult_input_fixture()[0, , drop = FALSE]
-  input$sex <- logical()
+  input$sex <- complex()
   expect_error(
     score_le8(input, diet_method = "mepa"),
     class = "essential8_adult_input_error"
@@ -234,22 +234,31 @@ test_that("MEPA mappings reject unsupported or ambiguous specifications", {
   )
 })
 
-test_that("omitted MEPA inputs make diet structurally unavailable", {
+test_that("omitting every MEPA input makes diet structurally unavailable", {
+  input <- adult_mepa_row(total = 16)
+  input[c("sex", adult_mepa_columns())] <- NULL
+
+  expect_warning(
+    result <- score_le8(input),
+    "Diet",
+    class = "essential8_missing_component"
+  )
+  expect_true(is.na(result$le8_diet_score))
+  expect_equal(result$le8_n_components, 7L)
+})
+
+test_that("a partially supplied MEPA screener is an error, not silent NA", {
   complete_input <- adult_mepa_row(total = 16)
 
   for (column in c("fish", "sex")) {
     input <- complete_input
     input[[column]] <- NULL
-    label <- paste("omitted MEPA column:", column)
-
-    expect_warning(
-      result <- score_le8(input),
-      "Diet",
-      class = "essential8_missing_component",
-      info = label
+    expect_error(
+      score_le8(input),
+      "Missing mappings",
+      class = "essential8_adult_input_error",
+      info = paste("omitted MEPA column:", column)
     )
-    expect_true(is.na(result$le8_diet_score), info = label)
-    expect_equal(result$le8_n_components, 7L, info = label)
   }
 })
 

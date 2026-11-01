@@ -344,8 +344,8 @@ percentile for every possible score.
 ## Practical details
 
 - Choose one method per call. Do not combine raw inputs with an existing
-  index or observed percentile. An index and a `diet_value` column cannot
-  be supplied together, even if that percentile column is all missing.
+  index or observed percentile. An entirely missing `diet_value` column is
+  ignored.
 - For custom column names, use mappings such as
   `dash_columns = c(fruits = "fruit_intake", energy_kcal = "calories")`.
   `hei2015_columns` works the same way. Names are matched without regard

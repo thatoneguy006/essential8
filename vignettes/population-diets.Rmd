@@ -245,6 +245,10 @@ adults |>
   select(id, dash_total, le8_diet_score)
 ```
 
+Raw DASH scoring also returns the eight component scores, such as
+`dash_low_fat_dairy_score`, so you can see which quintile each intake fell
+into.
+
 ## Calculate HEI-2015 from raw inputs
 
 HEI-2015 uses fixed nutrition standards to calculate its raw score. Its

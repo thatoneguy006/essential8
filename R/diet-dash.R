@@ -77,9 +77,12 @@
     }
     if (field %in% reverse) 6L - quintile else quintile
   })
-  total <- as.integer(rowSums(do.call(cbind, item_scores)))
+  names(item_scores) <- names(inputs)
+  components <- do.call(cbind, item_scores)
+  total <- as.integer(rowSums(components))
   list(
     total = total,
+    components = components,
     score = .score_population_diet_total(total, cutpoints$total)
   )
 }

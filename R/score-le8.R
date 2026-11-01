@@ -227,6 +227,8 @@
 #' scores below 50, `"moderate"` for scores from 50 to less than 80, and
 #' `"high"` for scores of at least 80. The category is missing when the
 #' composite score is missing.
+#' For raw DASH calls, the eight component scores (1 to 5 points each) are
+#' also appended as `dash_<field>_score`; they sum to `dash_total`.
 #' For raw HEI-2015 calls, the 13 component scores are also appended as
 #' `hei2015_<component>_score`, including `fatty_acids` and `saturated_fats`.
 #'
@@ -474,6 +476,11 @@ score_le8 <- function(
     check.names = FALSE
   )
 
+  if (raw_dash) {
+    components <- as.data.frame(dash$components)
+    names(components) <- paste0("dash_", names(components), "_score")
+    scores <- cbind(scores, components)
+  }
   if (raw_hei2015) {
     components <- as.data.frame(hei2015$components)
     names(components) <- paste0("hei2015_", names(components), "_score")
@@ -713,6 +720,7 @@ score_le8 <- function(
     "mepa_total",
     "dash_total",
     "hei2015_total",
+    paste0("dash_", .adult_dash_fields(), "_score"),
     paste0("hei2015_", .hei2015_component_names(), "_score"),
     "physical_activity_moderate_equivalent_minutes",
     "le8_diet_score",

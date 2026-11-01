@@ -333,9 +333,9 @@ score_le8 <- function(
       "MEPA arguments require {.code diet_method = 'mepa'}."
     )
   }
+  original_data <- data
   input_columns <- names(data)
   data <- .validate_le8_adult_data(data, diet_method)
-  input_data <- data[input_columns]
   if (diet_method %in% c("mepa", "percentile") &&
       any(c("dash", "hei2015") %in% input_columns)) {
     .abort_adult_scoring(c(
@@ -492,7 +492,10 @@ score_le8 <- function(
   le8_category[which(scores$le8_composite_score >= 80)] <- "high"
   scores$le8_category <- le8_category
 
-  cbind(input_data, scores)
+  # Assign into the caller's object so tibbles, grouped tibbles, and
+  # row names are preserved; the validated copy is only used internally.
+  original_data[names(scores)] <- scores
+  original_data
 }
 
 .validate_min_components <- function(min_components) {

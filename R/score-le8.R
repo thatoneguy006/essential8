@@ -1174,8 +1174,13 @@ score_le8 <- function(
     )
   )
 
-  score[which(apply_lean_muscular_override)] <- 100
-  score[which(is.na(apply_lean_muscular_override))] <- NA_real_
+  # The override can only apply to a known general-profile BMI of 25 to <30.
+  # Requiring a known-TRUE eligibility prevents awarding 100 points when BMI
+  # or profile is missing, and an NA flag only blanks rows it could change.
+  eligible_override <- profile == "general" & bmi >= 25 & bmi < 30
+  score[which(apply_lean_muscular_override & eligible_override)] <- 100
+  score[which(is.na(apply_lean_muscular_override) & eligible_override)] <-
+    NA_real_
 
   score
 }

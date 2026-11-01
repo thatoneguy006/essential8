@@ -1238,7 +1238,17 @@ score_le8 <- function(
     )
   )
 
-  pmax(0, score - ifelse(apply_prevention_penalty, 20, 0))
+  # The prediabetes/metformin penalty only applies to normoglycemic adults
+  # without diabetes. Where that is known to be false, an NA flag cannot
+  # change the score, so treat it as FALSE instead of blanking the score.
+  normoglycemic <- !diabetes & (
+    (measure == "fasting_glucose" & value < 100) |
+      (measure == "hba1c" & value < 5.7)
+  )
+  penalty <- apply_prevention_penalty
+  penalty[is.na(penalty) & normoglycemic %in% FALSE] <- FALSE
+
+  pmax(0, score - ifelse(penalty, 20, 0))
 }
 
 .score_adult_blood_pressure <- function(systolic, diastolic, treated) {

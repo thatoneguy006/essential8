@@ -665,6 +665,37 @@ score_le8 <- function(
   value
 }
 
+# Canonical, case-sensitive adult input names (MEPA, DASH, and HEI-2015
+# raw-intake fields are matched case-insensitively and are not listed here).
+.le8_adult_case_sensitive_inputs <- function() {
+  c(
+    "age",
+    "moderate_activity_minutes",
+    "vigorous_activity_minutes",
+    "smoking_status",
+    "years_since_quit",
+    "current_inhaled_nds",
+    "secondhand_smoke_home",
+    "sleep_hours",
+    "bmi",
+    "bmi_profile",
+    "non_hdl_cholesterol",
+    "lipid_lowering_treatment",
+    "diabetes",
+    "glucose_measure",
+    "glucose_value",
+    "systolic_bp",
+    "diastolic_bp",
+    "antihypertensive_treatment",
+    "diet_value",
+    "dash",
+    "hei2015",
+    "apply_lean_muscular_bmi_override",
+    "apply_sleep_apnea_penalty",
+    "apply_prediabetes_metformin_penalty"
+  )
+}
+
 .le8_adult_output_columns <- function() {
   c(
     "mepa_total",
@@ -763,6 +794,19 @@ score_le8 <- function(
     .abort_adult_scoring(c(
       "{.arg data} must have unique column names.",
       "x" = "Duplicated after case normalization: {paste(duplicated_columns, collapse = ', ')}."
+    ))
+  }
+
+  known_inputs <- .le8_adult_case_sensitive_inputs()
+  case_mismatches <- names(data)[
+    tolower(names(data)) %in% known_inputs & !names(data) %in% known_inputs
+  ]
+  if (length(case_mismatches) > 0L) {
+    renames <- paste0(case_mismatches, " -> ", tolower(case_mismatches))
+    .abort_adult_scoring(c(
+      "Adult LE8 input column names are case-sensitive.",
+      "x" = "Rename: {paste(renames, collapse = ', ')}.",
+      "i" = "Otherwise these columns would be ignored and scored as missing."
     ))
   }
 

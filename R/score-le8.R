@@ -328,11 +328,20 @@ score_le8 <- function(
       "HEI-2015 arguments require {.code diet_method = 'hei2015'}."
     )
   }
+  if (diet_method != "mepa" && !is.null(mepa_columns)) {
+    .abort_adult_scoring(
+      "MEPA arguments require {.code diet_method = 'mepa'}."
+    )
+  }
   input_columns <- names(data)
   data <- .validate_le8_adult_data(data, diet_method)
   input_data <- data[input_columns]
-  if (diet_method == "mepa" && any(c("dash", "hei2015") %in% input_columns)) {
-    .abort_adult_scoring("DASH and HEI-2015 index inputs cannot be used with MEPA.")
+  if (diet_method %in% c("mepa", "percentile") &&
+      any(c("dash", "hei2015") %in% input_columns)) {
+    .abort_adult_scoring(c(
+      "DASH and HEI-2015 index columns cannot be used with {.code diet_method = '{diet_method}'}.",
+      "i" = "Use {.code diet_method = 'dash'} or {.code diet_method = 'hei2015'}, or remove the column."
+    ))
   }
 
   sleep_apnea_penalty <- .optional_adult_flag(

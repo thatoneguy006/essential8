@@ -1,7 +1,7 @@
 test_that("adult diet cut points are inclusive on the sourced boundary", {
   mepa <- c(0, 3, 4, 7, 8, 11, 12, 14, 15, 16)
   expect_equal(
-    essential8:::.score_adult_diet(rep("mepa", length(mepa)), mepa),
+    essential8:::.score_adult_mepa_total(mepa),
     c(0, 0, 25, 25, 50, 50, 80, 80, 100, 100)
   )
 
@@ -18,10 +18,7 @@ test_that("adult diet cut points are inclusive on the sourced boundary", {
     100
   )
   expect_equal(
-    essential8:::.score_adult_diet(
-      rep("percentile", length(percentile)),
-      percentile
-    ),
+    essential8:::.score_diet_percentile(percentile),
     c(0, 0, 25, 25, 50, 50, 80, 80, 100, 100)
   )
 })

@@ -128,7 +128,8 @@ so that the derived diet input can be audited. The default MEPA sex field is
 recognized automatically; map any other name with, for example,
 `mepa_columns = c(sex = "reported_sex")`. Values are trimmed and matched
 case-insensitively as `"m"`/`"f"` or `"male"`/`"female"`. Numeric or character
-`0`/`1` values are also accepted, where `0` is male and `1` is female.
+`0`/`1` values are also accepted, where `0` is male and `1` is female. A
+logical `female` column (`TRUE` for female) is also accepted.
 
 ## Choose other input methods explicitly
 

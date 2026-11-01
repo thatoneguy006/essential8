@@ -32,7 +32,7 @@ remotes::install_github("thatoneguy006/essential8")
 The American Heart Association Life's Essential 8 (LE8) framework combines
 eight lifestyle and health components into a composite cardiovascular health
 score from 0 to 100. `essential8` applies the published adult scoring bands
-in one validated workflow and returns all eight component scores plus the
+in one tested workflow and returns all eight component scores plus the
 composite.
 
 Version 0.3.0 supports adult DASH and HEI-2015 diet scoring alongside MEPA.
@@ -133,7 +133,8 @@ The `diet_method` argument accepts `"mepa"`, `"dash"`, `"hei2015"`, or
 `"percentile"`. The `min_components` argument defaults to 7.
 For `diet_method = "mepa"`, the function calculates `mepa_total` directly from
 the 16 screener questions. Their column names must be the column labels shown
-above. Matching is case-insensitive.
+above. Matching of MEPA, DASH, and HEI-2015 diet columns is
+case-insensitive; all other input column names are case-sensitive.
 
 The default MEPA sex field is `sex`; if it is absent, a `female` column is
 recognized automatically. Map any other field with, for example,

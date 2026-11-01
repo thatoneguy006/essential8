@@ -106,11 +106,6 @@ diet_reference <- function(p25, p50, p75, p95, method = "dash",
         "Unknown diet reference. Use {.val nhanes_2015_2018} or {.fn diet_reference}."
       )
     }
-    if (!exists(".nhanes_diet_references", inherits = TRUE)) {
-      .abort_adult_scoring(
-        "The NHANES 2015-2018 diet references are unavailable in this package build."
-      )
-    }
     reference <- .nhanes_diet_references[[method]]
   }
   .validate_diet_reference(reference, method)

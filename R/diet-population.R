@@ -31,18 +31,22 @@
 .population_diet_inputs <- function(data, columns, fields, method) {
   requested <- .normalize_population_diet_columns(columns, fields, method)
   index <- match(tolower(requested), tolower(names(data)))
-  explicitly_mapped <- tolower(names(columns))
-  if (any(is.na(index) & fields %in% explicitly_mapped)) {
-    .abort_adult_scoring(
-      "Explicit {toupper(method)} column mappings must refer to columns in {.arg data}."
-    )
+  # This function only runs once raw-intake scoring has been selected, so a
+  # missing input is a naming error, not structural missingness. Failing here
+  # prevents an entire batch of silently missing diet scores.
+  if (anyNA(index)) {
+    argument <- paste0(method, "_columns")
+    missing_columns <- unname(requested[is.na(index)])
+    .abort_adult_scoring(c(
+      "Raw {toupper(method)} scoring requires every input column.",
+      "x" = "Missing: {paste(missing_columns, collapse = ', ')}.",
+      "i" = "Add the columns or map them with {.arg {argument}}."
+    ))
   }
 
   values <- lapply(seq_along(fields), function(i) {
-    if (is.na(index[i])) {
-      return(rep(NA_real_, nrow(data)))
-    }
     column <- names(data)[index[i]]
+    data[[column]] <- .coerce_all_na_logical(data[[column]], "numeric")
     .validate_adult_numeric_column(data, column)
     value <- data[[column]]
     if (any(value < 0, na.rm = TRUE)) {

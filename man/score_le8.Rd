@@ -65,7 +65,7 @@ The built-in references describe nonpregnant adults aged 20+ with two
 reliable recalls; they are derived estimates, not AHA-published cutpoints.}
 }
 \value{
-A data frame containing the original columns plus
+An object of the same class as \code{data}, containing the original columns plus
 \code{mepa_total}, \code{dash_total}, and \code{hei2015_total} (missing unless calculated
 from the corresponding raw inputs),
 \code{physical_activity_moderate_equivalent_minutes}, the eight component score
@@ -76,8 +76,12 @@ only when all eight components are available. Categories are \code{"low"} for
 scores below 50, \code{"moderate"} for scores from 50 to less than 80, and
 \code{"high"} for scores of at least 80. The category is missing when the
 composite score is missing.
+For raw DASH calls, the eight component scores (1 to 5 points each) are
+also appended as \verb{dash_<field>_score}; they sum to \code{dash_total}.
 For raw HEI-2015 calls, the 13 component scores are also appended as
 \verb{hei2015_<component>_score}, including \code{fatty_acids} and \code{saturated_fats}.
+The result has the same class as \code{data}, so tibbles and grouped tibbles
+are returned as such.
 }
 \description{
 Computes the eight adult Life's Essential 8 (LE8) component scores and
@@ -95,8 +99,11 @@ Either method alternatively accepts a percentile in \code{diet_value} (0 to 100)
 Both methods also calculate raw totals from the intake fields below, using
 the packaged reference by default. Raw HEI-2015 also accepts a custom
 \code{diet_reference()}; raw DASH supports custom definitions via \code{dash_cutpoints}.
-Do not supply both the index column and the percentile column. Data with
-no diet inputs retain the package's usual missing-component behavior.
+Do not supply both the index column and an observed percentile; an
+entirely missing \code{diet_value} column is ignored. Data with no diet inputs
+retain the package's usual missing-component behavior. Once raw scoring is
+selected, every raw input column must be present (values may be missing);
+an absent column is an error rather than a silently missing diet score.
 
 An index is compared with fixed reference cutpoints to identify its
 percentile category. The package does not estimate an exact percentile
@@ -129,11 +136,17 @@ See \code{vignette("population-diets")} for executable examples and units.
 
 \section{Input columns}{
 
+The column names below are case-sensitive; a name that differs only by
+case (for example \code{BMI}) is an error. MEPA, DASH, and HEI-2015 diet fields
+are matched case-insensitively. A column whose values are all missing may
+be logical \code{NA} (as \code{read.csv()} produces for a blank column).
 \itemize{
 \item \code{age}: Age in years; must be present, complete, and at least 20.
 \item For \code{diet_method = "mepa"}, the 16 Table C screener-item columns named
 below and \code{sex} (or \code{female} when \code{sex} is absent).
-The item names are matched exactly after case normalization. Supply daily
+The item names are matched exactly after case normalization. If any
+screener item is present, all 16 items and sex are required; omitting
+every item leaves the diet component missing. Supply daily
 servings in \code{olive_oil}, \code{green_leafy_vegetables}, \code{other_vegetables}, and
 \code{whole_grains}; supply weekly servings or frequency in \code{berries},
 \code{other_fruit}, \code{meat}, \code{fish}, \code{chicken}, \code{cheese}, \code{butter_cream},
@@ -142,6 +155,7 @@ of times per week that fast-food meals are consumed in \code{fast_food}.
 Sex may be encoded as \code{"m"}/\code{"f"}, \code{"male"}/\code{"female"}, or \code{0}/\code{1},
 where \code{0} is male and \code{1} is female. Character encodings are matched
 case-insensitively, and character \code{"0"}/\code{"1"} values are also accepted.
+A logical \code{female} column (\code{TRUE} for female) is also accepted.
 \item \code{dash} or \code{hei2015}: An already-computed index for the selected population
 diet method. HEI-2015 is bounded by 0 to 100. The built-in DASH reference
 requires its documented 8-to-40 definition; custom DASH references can

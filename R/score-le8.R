@@ -55,8 +55,11 @@
 #' Both methods also calculate raw totals from the intake fields below, using
 #' the packaged reference by default. Raw HEI-2015 also accepts a custom
 #' `diet_reference()`; raw DASH supports custom definitions via `dash_cutpoints`.
-#' Do not supply both the index column and the percentile column. Data with
-#' no diet inputs retain the package's usual missing-component behavior.
+#' Do not supply both the index column and an observed percentile; an
+#' entirely missing `diet_value` column is ignored. Data with no diet inputs
+#' retain the package's usual missing-component behavior. Once raw scoring is
+#' selected, every raw input column must be present (values may be missing);
+#' an absent column is an error rather than a silently missing diet score.
 #'
 #' An index is compared with fixed reference cutpoints to identify its
 #' percentile category. The package does not estimate an exact percentile
@@ -87,10 +90,17 @@
 #' See `vignette("population-diets")` for executable examples and units.
 #'
 #' @section Input columns:
+#' The column names below are case-sensitive; a name that differs only by
+#' case (for example `BMI`) is an error. MEPA, DASH, and HEI-2015 diet fields
+#' are matched case-insensitively. A column whose values are all missing may
+#' be logical `NA` (as `read.csv()` produces for a blank column).
+#'
 #' * `age`: Age in years; must be present, complete, and at least 20.
 #' * For `diet_method = "mepa"`, the 16 Table C screener-item columns named
 #'   below and `sex` (or `female` when `sex` is absent).
-#'   The item names are matched exactly after case normalization. Supply daily
+#'   The item names are matched exactly after case normalization. If any
+#'   screener item is present, all 16 items and sex are required; omitting
+#'   every item leaves the diet component missing. Supply daily
 #'   servings in `olive_oil`, `green_leafy_vegetables`, `other_vegetables`, and
 #'   `whole_grains`; supply weekly servings or frequency in `berries`,
 #'   `other_fruit`, `meat`, `fish`, `chicken`, `cheese`, `butter_cream`,
@@ -99,6 +109,7 @@
 #'   Sex may be encoded as `"m"`/`"f"`, `"male"`/`"female"`, or `0`/`1`,
 #'   where `0` is male and `1` is female. Character encodings are matched
 #'   case-insensitively, and character `"0"`/`"1"` values are also accepted.
+#'   A logical `female` column (`TRUE` for female) is also accepted.
 #' * `dash` or `hei2015`: An already-computed index for the selected population
 #'   diet method. HEI-2015 is bounded by 0 to 100. The built-in DASH reference
 #'   requires its documented 8-to-40 definition; custom DASH references can
@@ -216,7 +227,7 @@
 #' combustible smoking and current inhaled-NDS use, produce a structured error.
 #'
 #' @return
-#' A data frame containing the original columns plus
+#' An object of the same class as `data`, containing the original columns plus
 #' `mepa_total`, `dash_total`, and `hei2015_total` (missing unless calculated
 #' from the corresponding raw inputs),
 #' `physical_activity_moderate_equivalent_minutes`, the eight component score
@@ -227,8 +238,12 @@
 #' scores below 50, `"moderate"` for scores from 50 to less than 80, and
 #' `"high"` for scores of at least 80. The category is missing when the
 #' composite score is missing.
+#' For raw DASH calls, the eight component scores (1 to 5 points each) are
+#' also appended as `dash_<field>_score`; they sum to `dash_total`.
 #' For raw HEI-2015 calls, the 13 component scores are also appended as
 #' `hei2015_<component>_score`, including `fatty_acids` and `saturated_fats`.
+#' The result has the same class as `data`, so tibbles and grouped tibbles
+#' are returned as such.
 #'
 #' @references
 #' Lloyd-Jones DM, Allen NB, Anderson CAM, et al. (2022). Life's Essential 8:
@@ -328,11 +343,20 @@ score_le8 <- function(
       "HEI-2015 arguments require {.code diet_method = 'hei2015'}."
     )
   }
+  if (diet_method != "mepa" && !is.null(mepa_columns)) {
+    .abort_adult_scoring(
+      "MEPA arguments require {.code diet_method = 'mepa'}."
+    )
+  }
+  original_data <- data
   input_columns <- names(data)
   data <- .validate_le8_adult_data(data, diet_method)
-  input_data <- data[input_columns]
-  if (diet_method == "mepa" && any(c("dash", "hei2015") %in% input_columns)) {
-    .abort_adult_scoring("DASH and HEI-2015 index inputs cannot be used with MEPA.")
+  if (diet_method %in% c("mepa", "percentile") &&
+      any(c("dash", "hei2015") %in% input_columns)) {
+    .abort_adult_scoring(c(
+      "DASH and HEI-2015 index columns cannot be used with {.code diet_method = '{diet_method}'}.",
+      "i" = "Use {.code diet_method = 'dash'} or {.code diet_method = 'hei2015'}, or remove the column."
+    ))
   }
 
   sleep_apnea_penalty <- .optional_adult_flag(
@@ -348,7 +372,6 @@ score_le8 <- function(
     "apply_lean_muscular_bmi_override"
   )
 
-  diet_methods <- rep(diet_method, nrow(data))
   smoking_status <- as.character(data$smoking_status)
   bmi_profile <- as.character(data$bmi_profile)
   glucose_measure <- as.character(data$glucose_measure)
@@ -356,20 +379,17 @@ score_le8 <- function(
   activity_minutes <- data$moderate_activity_minutes +
     2 * data$vigorous_activity_minutes
 
-  mepa_rows <- diet_methods == "mepa"
-  percentile_rows <- diet_methods == "percentile"
   mepa_total <- .compute_adult_mepa_total(
     data = data,
-    rows = mepa_rows,
     mepa_columns = mepa_columns,
-    require_schema = diet_method == "mepa"
+    required = diet_method == "mepa"
   )
-  diet_value <- rep(NA_real_, nrow(data))
-  diet_value[mepa_rows] <- mepa_total[mepa_rows]
-  if (any(percentile_rows)) {
-    diet_value[percentile_rows] <- data$diet_value[percentile_rows]
-  }
-  diet_score <- .score_adult_diet(method = diet_methods, value = diet_value)
+  diet_score <- switch(
+    diet_method,
+    mepa = .score_adult_mepa_total(mepa_total),
+    percentile = .score_diet_percentile(data$diet_value),
+    rep(NA_real_, nrow(data))
+  )
   dash_total <- rep(NA_integer_, nrow(data))
   hei2015_total <- rep(NA_real_, nrow(data))
   raw_dash <- diet_method == "dash" && (
@@ -465,6 +485,11 @@ score_le8 <- function(
     check.names = FALSE
   )
 
+  if (raw_dash) {
+    components <- as.data.frame(dash$components)
+    names(components) <- paste0("dash_", names(components), "_score")
+    scores <- cbind(scores, components)
+  }
   if (raw_hei2015) {
     components <- as.data.frame(hei2015$components)
     names(components) <- paste0("hei2015_", names(components), "_score")
@@ -483,7 +508,10 @@ score_le8 <- function(
   le8_category[which(scores$le8_composite_score >= 80)] <- "high"
   scores$le8_category <- le8_category
 
-  cbind(input_data, scores)
+  # Assign into the caller's object so tibbles, grouped tibbles, and
+  # row names are preserved; the validated copy is only used internally.
+  original_data[names(scores)] <- scores
+  original_data
 }
 
 .validate_min_components <- function(min_components) {
@@ -635,6 +663,15 @@ score_le8 <- function(
     "glucose_measure"
   )
 
+  # A column that is entirely missing is often read as logical NA (for
+  # example, a blank CSV column). Treat it as the missing column it is.
+  for (column in intersect(numeric_columns, names(data))) {
+    data[[column]] <- .coerce_all_na_logical(data[[column]], "numeric")
+  }
+  for (column in intersect(character_columns, names(data))) {
+    data[[column]] <- .coerce_all_na_logical(data[[column]], "character")
+  }
+
   for (column in setdiff(numeric_columns, names(data))) {
     data[[column]] <- rep(NA_real_, nrow(data))
   }
@@ -648,11 +685,51 @@ score_le8 <- function(
   data
 }
 
+.coerce_all_na_logical <- function(value, to = c("numeric", "character")) {
+  to <- match.arg(to)
+  if (is.logical(value) && is.null(dim(value)) && all(is.na(value))) {
+    return(if (to == "numeric") as.numeric(value) else as.character(value))
+  }
+  value
+}
+
+# Canonical, case-sensitive adult input names (MEPA, DASH, and HEI-2015
+# raw-intake fields are matched case-insensitively and are not listed here).
+.le8_adult_case_sensitive_inputs <- function() {
+  c(
+    "age",
+    "moderate_activity_minutes",
+    "vigorous_activity_minutes",
+    "smoking_status",
+    "years_since_quit",
+    "current_inhaled_nds",
+    "secondhand_smoke_home",
+    "sleep_hours",
+    "bmi",
+    "bmi_profile",
+    "non_hdl_cholesterol",
+    "lipid_lowering_treatment",
+    "diabetes",
+    "glucose_measure",
+    "glucose_value",
+    "systolic_bp",
+    "diastolic_bp",
+    "antihypertensive_treatment",
+    "diet_value",
+    "dash",
+    "hei2015",
+    "apply_lean_muscular_bmi_override",
+    "apply_sleep_apnea_penalty",
+    "apply_prediabetes_metformin_penalty"
+  )
+}
+
 .le8_adult_output_columns <- function() {
   c(
     "mepa_total",
     "dash_total",
     "hei2015_total",
+    paste0("dash_", .adult_dash_fields(), "_score"),
     paste0("hei2015_", .hei2015_component_names(), "_score"),
     "physical_activity_moderate_equivalent_minutes",
     "le8_diet_score",
@@ -746,6 +823,19 @@ score_le8 <- function(
     .abort_adult_scoring(c(
       "{.arg data} must have unique column names.",
       "x" = "Duplicated after case normalization: {paste(duplicated_columns, collapse = ', ')}."
+    ))
+  }
+
+  known_inputs <- .le8_adult_case_sensitive_inputs()
+  case_mismatches <- names(data)[
+    tolower(names(data)) %in% known_inputs & !names(data) %in% known_inputs
+  ]
+  if (length(case_mismatches) > 0L) {
+    renames <- paste0(case_mismatches, " -> ", tolower(case_mismatches))
+    .abort_adult_scoring(c(
+      "Adult LE8 input column names are case-sensitive.",
+      "x" = "Rename: {paste(renames, collapse = ', ')}.",
+      "i" = "Otherwise these columns would be ignored and scored as missing."
     ))
   }
 
@@ -1050,28 +1140,21 @@ score_le8 <- function(
   data[[column]]
 }
 
-.score_adult_diet <- function(method, value) {
-  score <- rep(NA_real_, length(value))
-
-  mepa <- method == "mepa"
-  score[mepa] <- ifelse(
-    value[mepa] >= 15,
+.score_adult_mepa_total <- function(total) {
+  as.numeric(ifelse(
+    total >= 15,
     100,
     ifelse(
-      value[mepa] >= 12,
+      total >= 12,
       80,
-      ifelse(value[mepa] >= 8, 50, ifelse(value[mepa] >= 4, 25, 0))
+      ifelse(total >= 8, 50, ifelse(total >= 4, 25, 0))
     )
-  )
-
-  percentile <- method == "percentile"
-  score[percentile] <- .score_diet_percentile(value[percentile])
-
-  score
+  ))
 }
 
 .score_adult_physical_activity <- function(minutes) {
-  ifelse(
+  # as.numeric(): ifelse() returns logical when every test value is NA.
+  as.numeric(ifelse(
     minutes >= 150,
     100,
     ifelse(
@@ -1087,7 +1170,7 @@ score_le8 <- function(
         )
       )
     )
-  )
+  ))
 }
 
 .score_adult_nicotine <- function(
@@ -1174,8 +1257,13 @@ score_le8 <- function(
     )
   )
 
-  score[which(apply_lean_muscular_override)] <- 100
-  score[which(is.na(apply_lean_muscular_override))] <- NA_real_
+  # The override can only apply to a known general-profile BMI of 25 to <30.
+  # Requiring a known-TRUE eligibility prevents awarding 100 points when BMI
+  # or profile is missing, and an NA flag only blanks rows it could change.
+  eligible_override <- profile == "general" & bmi >= 25 & bmi < 30
+  score[which(apply_lean_muscular_override & eligible_override)] <- 100
+  score[which(is.na(apply_lean_muscular_override) & eligible_override)] <-
+    NA_real_
 
   score
 }
@@ -1216,7 +1304,9 @@ score_le8 <- function(
     60
   )
 
-  with_diabetes <- which(diabetes)
+  # Diabetes bands are HbA1c bands; an unknown or non-HbA1c measure stays NA
+  # rather than being interpreted as a percentage.
+  with_diabetes <- which(diabetes & measure == "hba1c")
   score[with_diabetes] <- ifelse(
     value[with_diabetes] < 7,
     40,
@@ -1231,7 +1321,17 @@ score_le8 <- function(
     )
   )
 
-  pmax(0, score - ifelse(apply_prevention_penalty, 20, 0))
+  # The prediabetes/metformin penalty only applies to normoglycemic adults
+  # without diabetes. Where that is known to be false, an NA flag cannot
+  # change the score, so treat it as FALSE instead of blanking the score.
+  normoglycemic <- !diabetes & (
+    (measure == "fasting_glucose" & value < 100) |
+      (measure == "hba1c" & value < 5.7)
+  )
+  penalty <- apply_prevention_penalty
+  penalty[is.na(penalty) & normoglycemic %in% FALSE] <- FALSE
+
+  pmax(0, score - ifelse(penalty, 20, 0))
 }
 
 .score_adult_blood_pressure <- function(systolic, diastolic, treated) {

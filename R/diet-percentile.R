@@ -34,7 +34,8 @@
     .abort_adult_scoring("{.field {other_method}} is unrelated to {.arg diet_method}.")
   }
   has_index <- method %in% names(data)
-  has_percentile <- "diet_value" %in% input_columns
+  has_percentile <- "diet_value" %in% input_columns &&
+    any(!is.na(data$diet_value))
   if (has_index && has_percentile) {
     .abort_adult_scoring(
       "Supply either {.field {method}} or percentile {.field diet_value}, not both."

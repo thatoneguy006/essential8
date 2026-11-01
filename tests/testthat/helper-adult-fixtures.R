@@ -32,9 +32,7 @@ adult_example_fixture <- local({
 
 adult_input_fixture <- function() {
   fixture <- adult_example_fixture()
-  fixture <- fixture[!startsWith(names(fixture), "expected_")]
-  fixture$diet_method <- NULL
-  fixture
+  fixture[!startsWith(names(fixture), "expected_")]
 }
 
 adult_example_row <- function(...) {

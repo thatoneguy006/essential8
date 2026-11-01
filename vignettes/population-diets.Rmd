@@ -354,6 +354,9 @@ percentile for every possible score.
   `dash_columns = c(fruits = "fruit_intake", energy_kcal = "calories")`.
   `hei2015_columns` works the same way. Names are matched without regard
   to case.
+- Every raw input column must be present once raw scoring is selected; an
+  absent column is an error, so a misspelled name cannot silently produce
+  missing diet scores. Missing values within a column are allowed.
 - Missing inputs stay missing. A raw total requires all its components;
   `min_components` controls the LE8 composite, not a partial diet total.
   Available HEI component scores are still returned.

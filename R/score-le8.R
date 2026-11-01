@@ -55,8 +55,11 @@
 #' Both methods also calculate raw totals from the intake fields below, using
 #' the packaged reference by default. Raw HEI-2015 also accepts a custom
 #' `diet_reference()`; raw DASH supports custom definitions via `dash_cutpoints`.
-#' Do not supply both the index column and the percentile column. Data with
-#' no diet inputs retain the package's usual missing-component behavior.
+#' Do not supply both the index column and an observed percentile; an
+#' entirely missing `diet_value` column is ignored. Data with no diet inputs
+#' retain the package's usual missing-component behavior. Once raw scoring is
+#' selected, every raw input column must be present (values may be missing);
+#' an absent column is an error rather than a silently missing diet score.
 #'
 #' An index is compared with fixed reference cutpoints to identify its
 #' percentile category. The package does not estimate an exact percentile
@@ -87,10 +90,17 @@
 #' See `vignette("population-diets")` for executable examples and units.
 #'
 #' @section Input columns:
+#' The column names below are case-sensitive; a name that differs only by
+#' case (for example `BMI`) is an error. MEPA, DASH, and HEI-2015 diet fields
+#' are matched case-insensitively. A column whose values are all missing may
+#' be logical `NA` (as `read.csv()` produces for a blank column).
+#'
 #' * `age`: Age in years; must be present, complete, and at least 20.
 #' * For `diet_method = "mepa"`, the 16 Table C screener-item columns named
 #'   below and `sex` (or `female` when `sex` is absent).
-#'   The item names are matched exactly after case normalization. Supply daily
+#'   The item names are matched exactly after case normalization. If any
+#'   screener item is present, all 16 items and sex are required; omitting
+#'   every item leaves the diet component missing. Supply daily
 #'   servings in `olive_oil`, `green_leafy_vegetables`, `other_vegetables`, and
 #'   `whole_grains`; supply weekly servings or frequency in `berries`,
 #'   `other_fruit`, `meat`, `fish`, `chicken`, `cheese`, `butter_cream`,
@@ -217,7 +227,7 @@
 #' combustible smoking and current inhaled-NDS use, produce a structured error.
 #'
 #' @return
-#' A data frame containing the original columns plus
+#' An object of the same class as `data`, containing the original columns plus
 #' `mepa_total`, `dash_total`, and `hei2015_total` (missing unless calculated
 #' from the corresponding raw inputs),
 #' `physical_activity_moderate_equivalent_minutes`, the eight component score
@@ -232,6 +242,8 @@
 #' also appended as `dash_<field>_score`; they sum to `dash_total`.
 #' For raw HEI-2015 calls, the 13 component scores are also appended as
 #' `hei2015_<component>_score`, including `fatty_acids` and `saturated_fats`.
+#' The result has the same class as `data`, so tibbles and grouped tibbles
+#' are returned as such.
 #'
 #' @references
 #' Lloyd-Jones DM, Allen NB, Anderson CAM, et al. (2022). Life's Essential 8:

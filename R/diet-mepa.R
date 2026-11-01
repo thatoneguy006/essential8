@@ -132,12 +132,19 @@
 }
 
 .normalize_adult_mepa_sex <- function(sex, column) {
+  # A logical column is unambiguous only when it is named `female`.
+  if (is.logical(sex) && tolower(column) == "female") {
+    return(ifelse(sex, "female", "male"))
+  }
+  if (is.logical(sex) && all(is.na(sex))) {
+    return(rep(NA_character_, length(sex)))
+  }
   supported_type <-
     is.character(sex) || is.factor(sex) || is.numeric(sex)
   if (!supported_type) {
     .abort_adult_scoring(c(
       "MEPA sex field {.field {column}} has an unsupported type.",
-      "i" = "Use character labels, a factor, or numeric 0/1 values."
+      "i" = "Use character labels, a factor, numeric 0/1 values, or a logical {.field female} column."
     ))
   }
 
@@ -164,7 +171,7 @@
   normalized
 }
 
-.validate_adult_mepa_inputs <- function(data, columns, rows) {
+.validate_adult_mepa_inputs <- function(data, columns) {
   for (item in .adult_mepa_item_columns()) {
     column <- columns[[item]]
     value <- .coerce_all_na_logical(data[[column]], "numeric")
@@ -176,14 +183,13 @@
       )
     }
 
-    applicable <- value[rows]
-    observed <- applicable[!is.na(applicable)]
+    observed <- value[!is.na(value)]
     if (any(!is.finite(observed))) {
       .abort_adult_scoring(
         "Observed values in MEPA field {.field {item}} must be finite."
       )
     }
-    if (any(applicable < 0, na.rm = TRUE)) {
+    if (any(value < 0, na.rm = TRUE)) {
       .abort_adult_scoring(
         "MEPA field {.field {item}} cannot contain negative values."
       )
@@ -193,12 +199,12 @@
   sex_column <- columns[["sex"]]
   sex <- data[[sex_column]]
   .validate_adult_column_shape(data, sex_column)
-  .normalize_adult_mepa_sex(sex[rows], sex_column)
+  .normalize_adult_mepa_sex(sex, sex_column)
 }
 
-.score_adult_mepa_items <- function(data, columns, rows, sex) {
+.score_adult_mepa_items <- function(data, columns, sex) {
   value <- function(item) {
-    as.numeric(data[[columns[[item]]]])[rows]
+    as.numeric(data[[columns[[item]]]])
   }
 
   alcohol <- value("alcohol")
@@ -230,14 +236,13 @@
 
 .compute_adult_mepa_total <- function(
   data,
-  rows,
   mepa_columns = NULL,
-  require_schema = any(rows)
+  required = TRUE
 ) {
   total <- rep(NA_integer_, nrow(data))
   .normalize_adult_mepa_column_map(mepa_columns)
 
-  if (!require_schema) {
+  if (!required) {
     return(total)
   }
 
@@ -249,14 +254,7 @@
   if (is.null(columns)) {
     return(total)
   }
-  sex <- .validate_adult_mepa_inputs(data, columns, rows)
-  item_scores <- .score_adult_mepa_items(
-    data,
-    columns,
-    rows,
-    sex
-  )
-  total[rows] <- as.integer(rowSums(item_scores))
-
-  total
+  sex <- .validate_adult_mepa_inputs(data, columns)
+  item_scores <- .score_adult_mepa_items(data, columns, sex)
+  as.integer(rowSums(item_scores))
 }

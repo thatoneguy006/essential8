@@ -99,6 +99,7 @@
 #'   Sex may be encoded as `"m"`/`"f"`, `"male"`/`"female"`, or `0`/`1`,
 #'   where `0` is male and `1` is female. Character encodings are matched
 #'   case-insensitively, and character `"0"`/`"1"` values are also accepted.
+#'   A logical `female` column (`TRUE` for female) is also accepted.
 #' * `dash` or `hei2015`: An already-computed index for the selected population
 #'   diet method. HEI-2015 is bounded by 0 to 100. The built-in DASH reference
 #'   requires its documented 8-to-40 definition; custom DASH references can
@@ -359,7 +360,6 @@ score_le8 <- function(
     "apply_lean_muscular_bmi_override"
   )
 
-  diet_methods <- rep(diet_method, nrow(data))
   smoking_status <- as.character(data$smoking_status)
   bmi_profile <- as.character(data$bmi_profile)
   glucose_measure <- as.character(data$glucose_measure)
@@ -367,20 +367,17 @@ score_le8 <- function(
   activity_minutes <- data$moderate_activity_minutes +
     2 * data$vigorous_activity_minutes
 
-  mepa_rows <- diet_methods == "mepa"
-  percentile_rows <- diet_methods == "percentile"
   mepa_total <- .compute_adult_mepa_total(
     data = data,
-    rows = mepa_rows,
     mepa_columns = mepa_columns,
-    require_schema = diet_method == "mepa"
+    required = diet_method == "mepa"
   )
-  diet_value <- rep(NA_real_, nrow(data))
-  diet_value[mepa_rows] <- mepa_total[mepa_rows]
-  if (any(percentile_rows)) {
-    diet_value[percentile_rows] <- data$diet_value[percentile_rows]
-  }
-  diet_score <- .score_adult_diet(method = diet_methods, value = diet_value)
+  diet_score <- switch(
+    diet_method,
+    mepa = .score_adult_mepa_total(mepa_total),
+    percentile = .score_diet_percentile(data$diet_value),
+    rep(NA_real_, nrow(data))
+  )
   dash_total <- rep(NA_integer_, nrow(data))
   hei2015_total <- rep(NA_real_, nrow(data))
   raw_dash <- diet_method == "dash" && (
@@ -1131,24 +1128,16 @@ score_le8 <- function(
   data[[column]]
 }
 
-.score_adult_diet <- function(method, value) {
-  score <- rep(NA_real_, length(value))
-
-  mepa <- method == "mepa"
-  score[mepa] <- ifelse(
-    value[mepa] >= 15,
+.score_adult_mepa_total <- function(total) {
+  as.numeric(ifelse(
+    total >= 15,
     100,
     ifelse(
-      value[mepa] >= 12,
+      total >= 12,
       80,
-      ifelse(value[mepa] >= 8, 50, ifelse(value[mepa] >= 4, 25, 0))
+      ifelse(total >= 8, 50, ifelse(total >= 4, 25, 0))
     )
-  )
-
-  percentile <- method == "percentile"
-  score[percentile] <- .score_diet_percentile(value[percentile])
-
-  score
+  ))
 }
 
 .score_adult_physical_activity <- function(minutes) {

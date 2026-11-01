@@ -1216,7 +1216,9 @@ score_le8 <- function(
     60
   )
 
-  with_diabetes <- which(diabetes)
+  # Diabetes bands are HbA1c bands; an unknown or non-HbA1c measure stays NA
+  # rather than being interpreted as a percentage.
+  with_diabetes <- which(diabetes & measure == "hba1c")
   score[with_diabetes] <- ifelse(
     value[with_diabetes] < 7,
     40,

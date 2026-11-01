@@ -1088,7 +1088,8 @@ score_le8 <- function(
 }
 
 .score_adult_physical_activity <- function(minutes) {
-  ifelse(
+  # as.numeric(): ifelse() returns logical when every test value is NA.
+  as.numeric(ifelse(
     minutes >= 150,
     100,
     ifelse(
@@ -1104,7 +1105,7 @@ score_le8 <- function(
         )
       )
     )
-  )
+  ))
 }
 
 .score_adult_nicotine <- function(

@@ -104,7 +104,12 @@
       tolower(names(mepa_columns))
     }
 
-    if (allow_missing && !any(missing %in% explicitly_mapped)) {
+    # Return NULL (diet structurally missing) only when no screener item is
+    # present at all. If some items are present, a missing one is almost
+    # always a misspelling, so fail loudly instead of returning all-NA scores.
+    item_found <- !is.na(index[names(requested) != "sex"])
+    if (allow_missing && !any(item_found) &&
+        !any(missing %in% explicitly_mapped)) {
       return(NULL)
     }
 

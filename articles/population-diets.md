@@ -177,7 +177,9 @@ adults |>
   mutate(hei2015 = c(45, 70)) |>
   score_le8(diet_method = "hei2015", reference = "nhanes_2015_2018") |>
   select(id, hei2015, le8_diet_score)
-#>        id hei2015 le8_diet_score
+#> # A tibble: 2 × 3
+#>   id      hei2015 le8_diet_score
+#>   <chr>     <dbl>          <dbl>
 #> 1 adult_1      45             25
 #> 2 adult_2      70             80
 ```
@@ -199,7 +201,9 @@ adults |>
   mutate(diet_value = c(35, 98)) |>
   score_le8(diet_method = "dash") |>
   select(id, diet_value, le8_diet_score)
-#>        id diet_value le8_diet_score
+#> # A tibble: 2 × 3
+#>   id      diet_value le8_diet_score
+#>   <chr>        <dbl>          <dbl>
 #> 1 adult_1         35             25
 #> 2 adult_2         98            100
 ```
@@ -267,10 +271,16 @@ adults |>
   bind_cols(dash_inputs) |>
   score_le8(diet_method = "dash", reference = "nhanes_2015_2018") |>
   select(id, dash_total, le8_diet_score)
-#>        id dash_total le8_diet_score
+#> # A tibble: 2 × 3
+#>   id      dash_total le8_diet_score
+#>   <chr>        <int>          <dbl>
 #> 1 adult_1         27             80
 #> 2 adult_2         36            100
 ```
+
+Raw DASH scoring also returns the eight component scores, such as
+`dash_low_fat_dairy_score`, so you can see which quintile each intake
+fell into.
 
 ## Calculate HEI-2015 from raw inputs
 
@@ -332,9 +342,11 @@ adults |>
   bind_cols(hei_inputs) |>
   score_le8(diet_method = "hei2015", reference = "nhanes_2015_2018") |>
   select(id, hei2015_total, le8_diet_score)
-#>        id hei2015_total le8_diet_score
-#> 1 adult_1      61.08787             50
-#> 2 adult_2     100.00000            100
+#> # A tibble: 2 × 3
+#>   id      hei2015_total le8_diet_score
+#>   <chr>           <dbl>          <dbl>
+#> 1 adult_1          61.1             50
+#> 2 adult_2         100              100
 ```
 
 Raw HEI-2015 scoring also returns all 13 component scores, such as
@@ -359,7 +371,9 @@ adults |>
   mutate(hei2015 = c(45, 70)) |>
   score_le8(diet_method = "hei2015", reference = custom) |>
   select(id, hei2015, le8_diet_score)
-#>        id hei2015 le8_diet_score
+#> # A tibble: 2 × 3
+#>   id      hei2015 le8_diet_score
+#>   <chr>     <dbl>          <dbl>
 #> 1 adult_1      45             25
 #> 2 adult_2      70             80
 ```
@@ -385,13 +399,16 @@ exact percentile for every possible score.
 ## Practical details
 
 - Choose one method per call. Do not combine raw inputs with an existing
-  index or observed percentile. An index and a `diet_value` column
-  cannot be supplied together, even if that percentile column is all
-  missing.
+  index or observed percentile. An entirely missing `diet_value` column
+  is ignored.
 - For custom column names, use mappings such as
   `dash_columns = c(fruits = "fruit_intake", energy_kcal = "calories")`.
   `hei2015_columns` works the same way. Names are matched without regard
   to case.
+- Every raw input column must be present once raw scoring is selected;
+  an absent column is an error, so a misspelled name cannot silently
+  produce missing diet scores. Missing values within a column are
+  allowed.
 - Missing inputs stay missing. A raw total requires all its components;
   `min_components` controls the LE8 composite, not a partial diet total.
   Available HEI component scores are still returned.

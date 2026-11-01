@@ -11,8 +11,8 @@
 <script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="essential8">
-<meta name="description" content="Provides a reproducible R implementation of the American Heart Association Life's Essential 8 cardiovascular health scoring framework for complete adult records from people aged 20 years or older.">
-<meta property="og:description" content="Provides a reproducible R implementation of the American Heart Association Life's Essential 8 cardiovascular health scoring framework for complete adult records from people aged 20 years or older.">
+<meta name="description" content="Provides a reproducible R implementation of the American Heart Association Life's Essential 8 cardiovascular health scoring framework for adults aged 20 years or older, with transparent handling of missing components.">
+<meta property="og:description" content="Provides a reproducible R implementation of the American Heart Association Life's Essential 8 cardiovascular health scoring framework for adults aged 20 years or older, with transparent handling of missing components.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -93,7 +93,7 @@
 <div class="section level2">
 <h2 id="background">Background<a class="anchor" aria-label="anchor" href="#background"></a>
 </h2>
-<p>The American Heart Association Life’s Essential 8 (LE8) framework combines eight lifestyle and health components into a composite cardiovascular health score from 0 to 100. <code>essential8</code> applies the published adult scoring bands in one validated workflow and returns all eight component scores plus the composite.</p>
+<p>The American Heart Association Life’s Essential 8 (LE8) framework combines eight lifestyle and health components into a composite cardiovascular health score from 0 to 100. <code>essential8</code> applies the published adult scoring bands in one tested workflow and returns all eight component scores plus the composite.</p>
 <p>Version 0.3.0 supports adult DASH and HEI-2015 diet scoring alongside MEPA. By default, the composite score is calculated when at least seven components are available; <code>min_components</code> can set a threshold from 1 through 8.</p>
 </div>
 <div class="section level2">
@@ -177,7 +177,7 @@
 <span><span class="va">patient</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/score_le8.html">score_le8</a></span><span class="op">(</span>diet_method <span class="op">=</span> <span class="st">"mepa"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">mepa_total</span>, <span class="va">le8_diet_score</span>, <span class="va">le8_composite_score</span>, <span class="va">le8_category</span><span class="op">)</span></span></code></pre></div>
-<p>The <code>diet_method</code> argument accepts <code>"mepa"</code>, <code>"dash"</code>, <code>"hei2015"</code>, or <code>"percentile"</code>. The <code>min_components</code> argument defaults to 7. For <code>diet_method = "mepa"</code>, the function calculates <code>mepa_total</code> directly from the 16 screener questions. Their column names must be the column labels shown above. Matching is case-insensitive.</p>
+<p>The <code>diet_method</code> argument accepts <code>"mepa"</code>, <code>"dash"</code>, <code>"hei2015"</code>, or <code>"percentile"</code>. The <code>min_components</code> argument defaults to 7. For <code>diet_method = "mepa"</code>, the function calculates <code>mepa_total</code> directly from the 16 screener questions. Their column names must be the column labels shown above. Matching of MEPA, DASH, and HEI-2015 diet columns is case-insensitive; all other input column names are case-sensitive.</p>
 <p>The default MEPA sex field is <code>sex</code>; if it is absent, a <code>female</code> column is recognized automatically. Map any other field with, for example, <code>mepa_columns = c(sex = "reported_sex", alcohol = "alc")</code>. For sex, values are trimmed and matched case-insensitively as <code>m</code>/<code>f</code> or <code>male</code>/<code>female</code>. Numeric or character <code>0</code>/<code>1</code> values are also accepted, where <code>0</code> is male and <code>1</code> is female.</p>
 <p>For data that use different diet methods, split the rows into separate data frames and call <code><a href="reference/score_le8.html">score_le8()</a></code> separately. Percentile calls use <code>diet_value</code>, containing a DASH or HEI-2015 percentile from 0 to 100. The result appends all eight component scores, <code>le8_n_components</code>, <code>le8_complete</code>, the composite score, and its cardiovascular health category. See <code><a href="reference/score_le8.html">?score_le8</a></code> for more information.</p>
 </div>

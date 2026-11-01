@@ -90,9 +90,11 @@ scored <- adult_data |>
 
 scored |>
   select(id, mepa_total, le8_diet_score, le8_composite_score, le8_category)
-#>          id mepa_total le8_diet_score le8_composite_score le8_category
-#> 1 patient_1         14             80              97.500         high
-#> 2 patient_2          4             25              54.375     moderate
+#> # A tibble: 2 × 5
+#>   id        mepa_total le8_diet_score le8_composite_score le8_category
+#>   <chr>          <int>          <dbl>               <dbl> <chr>       
+#> 1 patient_1         14             80                97.5 high        
+#> 2 patient_2          4             25                54.4 moderate
 ```
 
 Each vigorous activity minute counts as two moderate activity minutes
@@ -107,15 +109,14 @@ The component scores are available for analysis and quality checks:
 
 scored |>
   select(id, starts_with("le8_") & ends_with("_score"), -le8_composite_score)
-#>          id le8_diet_score le8_physical_activity_score le8_nicotine_score
-#> 1 patient_1             80                         100                100
-#> 2 patient_2             25                          60                 75
-#>   le8_sleep_score le8_bmi_score le8_blood_lipids_score le8_blood_glucose_score
-#> 1             100           100                    100                     100
-#> 2              70            75                     40                      60
-#>   le8_blood_pressure_score
-#> 1                      100
-#> 2                       30
+#> # A tibble: 2 × 9
+#>   id    le8_diet_score le8_physical_activit…¹ le8_nicotine_score le8_sleep_score
+#>   <chr>          <dbl>                  <dbl>              <dbl>           <dbl>
+#> 1 pati…             80                    100                100             100
+#> 2 pati…             25                     60                 75              70
+#> # ℹ abbreviated name: ¹​le8_physical_activity_score
+#> # ℹ 4 more variables: le8_bmi_score <dbl>, le8_blood_lipids_score <dbl>,
+#> #   le8_blood_glucose_score <dbl>, le8_blood_pressure_score <dbl>
 ```
 
 ## Understand the MEPA inputs
@@ -143,7 +144,7 @@ automatically; map any other name with, for example,
 `mepa_columns = c(sex = "reported_sex")`. Values are trimmed and matched
 case-insensitively as `"m"`/`"f"` or `"male"`/`"female"`. Numeric or
 character `0`/`1` values are also accepted, where `0` is male and `1` is
-female.
+female. A logical `female` column (`TRUE` for female) is also accepted.
 
 ## Choose other input methods explicitly
 
@@ -175,9 +176,11 @@ adult_data |>
   mutate(diet_value = c(35, 95)) |>
   score_le8(diet_method = "percentile") |>
   select(id, diet_value, le8_diet_score, le8_composite_score)
-#>          id diet_value le8_diet_score le8_composite_score
-#> 1 patient_1         35             25              90.625
-#> 2 patient_2         95            100              63.750
+#> # A tibble: 2 × 4
+#>   id        diet_value le8_diet_score le8_composite_score
+#>   <chr>          <dbl>          <dbl>               <dbl>
+#> 1 patient_1         35             25                90.6
+#> 2 patient_2         95            100                63.8
 ```
 
 Use `diet_method = "dash"` or `"hei2015"` with raw food and nutrient
@@ -210,9 +213,11 @@ adult_data |>
   mutate(sleep_hours = c(NA_real_, 6.5)) |>
   score_le8(min_components = 7) |>
   select(id, le8_composite_score, le8_n_components, le8_complete)
-#>          id le8_composite_score le8_n_components le8_complete
-#> 1 patient_1            97.14286                7        FALSE
-#> 2 patient_2            54.37500                8         TRUE
+#> # A tibble: 2 × 4
+#>   id        le8_composite_score le8_n_components le8_complete
+#>   <chr>                   <dbl>            <int> <lgl>       
+#> 1 patient_1                97.1                7 FALSE       
+#> 2 patient_2                54.4                8 TRUE
 ```
 
 `le8_n_components` reports how many components were scored.

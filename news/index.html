@@ -53,8 +53,31 @@
 <li>Raw scoring returns <code>dash_total</code> or <code>hei2015_total</code>. HEI-2015 also returns all 13 component scores.</li>
 </ul></div>
 <div class="section level3">
+<h3 id="bug-fixes-0-3-0">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-3-0"></a></h3>
+<ul><li>Diagnosed diabetes with a missing <code>glucose_measure</code> is no longer scored as though <code>glucose_value</code> were HbA1c; the glucose score is now missing.</li>
+<li>
+<code>apply_lean_muscular_bmi_override = TRUE</code> no longer awards 100 BMI points when <code>bmi</code> or <code>bmi_profile</code> is missing.</li>
+<li>Missing values in <code>apply_lean_muscular_bmi_override</code> and <code>apply_prediabetes_metformin_penalty</code> now blank a score only for records where the adjustment could apply.</li>
+<li>Entirely missing input columns stored as logical <code>NA</code> (such as blank CSV columns) are treated as missing instead of raising a type error.</li>
+<li>
+<code>le8_physical_activity_score</code> is now always double, including when activity inputs are entirely missing.</li>
+<li>
+<code><a href="../reference/score_le8.html">score_le8()</a></code> now returns an object of the same class as <code>data</code>, so tibbles and grouped tibbles are preserved.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="breaking-changes-0-3-0">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-3-0"></a></h3>
+<ul><li>Input column names that differ from a case-sensitive LE8 input name only by case (for example <code>BMI</code>) now raise an error instead of being ignored.</li>
+<li>Supplying some but not all 16 MEPA items, or omitting any raw DASH or HEI-2015 column once raw scoring is selected, now raises an error naming the missing columns instead of silently returning missing diet scores.</li>
+<li>
+<code>mepa_columns</code> now requires <code>diet_method = "mepa"</code>, and <code>dash</code> or <code>hei2015</code> index columns are rejected under <code>diet_method = "percentile"</code>.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="minor-changes-0-3-0">Minor Changes<a class="anchor" aria-label="anchor" href="#minor-changes-0-3-0"></a></h3>
-<ul><li>Expanded the diet vignette to explain MEPA, DASH, and HEI-2015, their role in LE8, and how their scores are calculated.</li>
+<ul><li>Raw DASH scoring now returns the eight <code>dash_&lt;field&gt;_score</code> component scores, matching the raw HEI-2015 output.</li>
+<li>An entirely missing <code>diet_value</code> column no longer blocks scoring of a <code>dash</code> or <code>hei2015</code> index column.</li>
+<li>A logical <code>female</code> column is accepted as the MEPA sex field.</li>
+<li>Removed unused internal rule-schema scaffolding.</li>
+<li>Expanded the diet vignette to explain MEPA, DASH, and HEI-2015, their role in LE8, and how their scores are calculated.</li>
 <li>Simplified the README and examples, using consistent tidy workflows.</li>
 </ul></div>
 </div>

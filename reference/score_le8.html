@@ -145,7 +145,7 @@ reliable recalls; they are derived estimates, not AHA-published cutpoints.</p></
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A data frame containing the original columns plus
+    <p>An object of the same class as <code>data</code>, containing the original columns plus
 <code>mepa_total</code>, <code>dash_total</code>, and <code>hei2015_total</code> (missing unless calculated
 from the corresponding raw inputs),
 <code>physical_activity_moderate_equivalent_minutes</code>, the eight component score
@@ -156,8 +156,12 @@ only when all eight components are available. Categories are <code>"low"</code> 
 scores below 50, <code>"moderate"</code> for scores from 50 to less than 80, and
 <code>"high"</code> for scores of at least 80. The category is missing when the
 composite score is missing.
+For raw DASH calls, the eight component scores (1 to 5 points each) are
+also appended as <code>dash_&lt;field&gt;_score</code>; they sum to <code>dash_total</code>.
 For raw HEI-2015 calls, the 13 component scores are also appended as
-<code>hei2015_&lt;component&gt;_score</code>, including <code>fatty_acids</code> and <code>saturated_fats</code>.</p>
+<code>hei2015_&lt;component&gt;_score</code>, including <code>fatty_acids</code> and <code>saturated_fats</code>.
+The result has the same class as <code>data</code>, so tibbles and grouped tibbles
+are returned as such.</p>
     </div>
     <div class="section level2">
     <h2 id="diet-scoring-methods">Diet scoring methods<a class="anchor" aria-label="anchor" href="#diet-scoring-methods"></a></h2>
@@ -170,8 +174,11 @@ Either method alternatively accepts a percentile in <code>diet_value</code> (0 t
 Both methods also calculate raw totals from the intake fields below, using
 the packaged reference by default. Raw HEI-2015 also accepts a custom
 <code><a href="diet_reference.html">diet_reference()</a></code>; raw DASH supports custom definitions via <code>dash_cutpoints</code>.
-Do not supply both the index column and the percentile column. Data with
-no diet inputs retain the package's usual missing-component behavior.</p>
+Do not supply both the index column and an observed percentile; an
+entirely missing <code>diet_value</code> column is ignored. Data with no diet inputs
+retain the package's usual missing-component behavior. Once raw scoring is
+selected, every raw input column must be present (values may be missing);
+an absent column is an error rather than a silently missing diet score.</p>
 <p>An index is compared with fixed reference cutpoints to identify its
 percentile category. The package does not estimate an exact percentile
 from four cutpoints, or rank the current cohort against itself. Specify
@@ -201,10 +208,15 @@ See <code><a href="../articles/population-diets.html">vignette("population-diets
     <h2 id="input-columns">Input columns<a class="anchor" aria-label="anchor" href="#input-columns"></a></h2>
 
 
-<ul><li><p><code>age</code>: Age in years; must be present, complete, and at least 20.</p></li>
+<p>The column names below are case-sensitive; a name that differs only by
+case (for example <code>BMI</code>) is an error. MEPA, DASH, and HEI-2015 diet fields
+are matched case-insensitively. A column whose values are all missing may
+be logical <code>NA</code> (as <code><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv()</a></code> produces for a blank column).</p><ul><li><p><code>age</code>: Age in years; must be present, complete, and at least 20.</p></li>
 <li><p>For <code>diet_method = "mepa"</code>, the 16 Table C screener-item columns named
 below and <code>sex</code> (or <code>female</code> when <code>sex</code> is absent).
-The item names are matched exactly after case normalization. Supply daily
+The item names are matched exactly after case normalization. If any
+screener item is present, all 16 items and sex are required; omitting
+every item leaves the diet component missing. Supply daily
 servings in <code>olive_oil</code>, <code>green_leafy_vegetables</code>, <code>other_vegetables</code>, and
 <code>whole_grains</code>; supply weekly servings or frequency in <code>berries</code>,
 <code>other_fruit</code>, <code>meat</code>, <code>fish</code>, <code>chicken</code>, <code>cheese</code>, <code>butter_cream</code>,
@@ -212,7 +224,8 @@ servings in <code>olive_oil</code>, <code>green_leafy_vegetables</code>, <code>o
 of times per week that fast-food meals are consumed in <code>fast_food</code>.
 Sex may be encoded as <code>"m"</code>/<code>"f"</code>, <code>"male"</code>/<code>"female"</code>, or <code>0</code>/<code>1</code>,
 where <code>0</code> is male and <code>1</code> is female. Character encodings are matched
-case-insensitively, and character <code>"0"</code>/<code>"1"</code> values are also accepted.</p></li>
+case-insensitively, and character <code>"0"</code>/<code>"1"</code> values are also accepted.
+A logical <code>female</code> column (<code>TRUE</code> for female) is also accepted.</p></li>
 <li><p><code>dash</code> or <code>hei2015</code>: An already-computed index for the selected population
 diet method. HEI-2015 is bounded by 0 to 100. The built-in DASH reference
 requires its documented 8-to-40 definition; custom DASH references can
@@ -411,8 +424,10 @@ and <a href="https://epi.grants.cancer.gov/hei/hei-scoring-method.html" class="e
 <span class="r-in"><span><span class="va">scores</span> <span class="op">&lt;-</span> <span class="fu">score_le8</span><span class="op">(</span><span class="va">patient</span>, diet_method <span class="op">=</span> <span class="st">"mepa"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">scores</span>, <span class="va">id</span>, <span class="va">mepa_total</span>, <span class="va">le8_diet_score</span>, <span class="va">le8_composite_score</span>,</span></span>
 <span class="r-in"><span>       <span class="va">le8_category</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          id mepa_total le8_diet_score le8_composite_score le8_category</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 patient_1         14             80                  80         high</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   id        mepa_total le8_diet_score le8_composite_score le8_category</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> patient_1         14             80                  80 high        </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

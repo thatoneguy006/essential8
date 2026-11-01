@@ -316,9 +316,11 @@ unused MEPA columns in these records.</p>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>hei2015 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">45</span>, <span class="fl">70</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span>diet_method <span class="op">=</span> <span class="st">"hei2015"</span>, reference <span class="op">=</span> <span class="st">"nhanes_2015_2018"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">hei2015</span>, <span class="va">le8_diet_score</span><span class="op">)</span></span>
-<span><span class="co">#&gt;        id hei2015 le8_diet_score</span></span>
-<span><span class="co">#&gt; 1 adult_1      45             25</span></span>
-<span><span class="co">#&gt; 2 adult_2      70             80</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
+<span><span class="co">#&gt;   id      hei2015 le8_diet_score</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> adult_1      45             25</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> adult_2      70             80</span></span></code></pre></div>
 <p>The raw scores of 45 and 70 receive 25 and 80 LE8 points with this
 reference. For an existing DASH score, use a <code>dash</code> column
 and <code>diet_method = "dash"</code>. The original score stays in its
@@ -335,9 +337,11 @@ reference lookup is needed:</p>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>diet_value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">35</span>, <span class="fl">98</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span>diet_method <span class="op">=</span> <span class="st">"dash"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">diet_value</span>, <span class="va">le8_diet_score</span><span class="op">)</span></span>
-<span><span class="co">#&gt;        id diet_value le8_diet_score</span></span>
-<span><span class="co">#&gt; 1 adult_1         35             25</span></span>
-<span><span class="co">#&gt; 2 adult_2         98            100</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
+<span><span class="co">#&gt;   id      diet_value le8_diet_score</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> adult_1         35             25</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> adult_2         98            100</span></span></code></pre></div>
 <p>These percentiles receive 25 and 100 LE8 points. Supply
 <code>95</code> for the 95th percentile, rather than <code>0.95</code>.
 The package rejects a batch that looks like fractional proportions and
@@ -445,9 +449,14 @@ before scoring.</p>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_cols.html" class="external-link">bind_cols</a></span><span class="op">(</span><span class="va">dash_inputs</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span>diet_method <span class="op">=</span> <span class="st">"dash"</span>, reference <span class="op">=</span> <span class="st">"nhanes_2015_2018"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">dash_total</span>, <span class="va">le8_diet_score</span><span class="op">)</span></span>
-<span><span class="co">#&gt;        id dash_total le8_diet_score</span></span>
-<span><span class="co">#&gt; 1 adult_1         27             80</span></span>
-<span><span class="co">#&gt; 2 adult_2         36            100</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
+<span><span class="co">#&gt;   id      dash_total le8_diet_score</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> adult_1         27             80</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> adult_2         36            100</span></span></code></pre></div>
+<p>Raw DASH scoring also returns the eight component scores, such as
+<code>dash_low_fat_dairy_score</code>, so you can see which quintile
+each intake fell into.</p>
 </div>
 </div>
 <div class="section level2">
@@ -551,9 +560,11 @@ algorithm</a>.</p>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_cols.html" class="external-link">bind_cols</a></span><span class="op">(</span><span class="va">hei_inputs</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span>diet_method <span class="op">=</span> <span class="st">"hei2015"</span>, reference <span class="op">=</span> <span class="st">"nhanes_2015_2018"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">hei2015_total</span>, <span class="va">le8_diet_score</span><span class="op">)</span></span>
-<span><span class="co">#&gt;        id hei2015_total le8_diet_score</span></span>
-<span><span class="co">#&gt; 1 adult_1      61.08787             50</span></span>
-<span><span class="co">#&gt; 2 adult_2     100.00000            100</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
+<span><span class="co">#&gt;   id      hei2015_total le8_diet_score</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> adult_1          61.1             50</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> adult_2         100              100</span></span></code></pre></div>
 <p>Raw HEI-2015 scoring also returns all 13 component scores, such as
 <code>hei2015_total_fruits_score</code> and
 <code>hei2015_sodium_score</code>.</p>
@@ -576,9 +587,11 @@ algorithm</a>.</p>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>hei2015 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">45</span>, <span class="fl">70</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/score_le8.html">score_le8</a></span><span class="op">(</span>diet_method <span class="op">=</span> <span class="st">"hei2015"</span>, reference <span class="op">=</span> <span class="va">custom</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">hei2015</span>, <span class="va">le8_diet_score</span><span class="op">)</span></span>
-<span><span class="co">#&gt;        id hei2015 le8_diet_score</span></span>
-<span><span class="co">#&gt; 1 adult_1      45             25</span></span>
-<span><span class="co">#&gt; 2 adult_2      70             80</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
+<span><span class="co">#&gt;   id      hei2015 le8_diet_score</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> adult_1      45             25</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> adult_2      70             80</span></span></code></pre></div>
 <p>A reference must match the diet method, score definition, and
 population. For raw DASH with a different definition, supply
 <code>dash_cutpoints</code>: a list with four intake-quintile cutpoints
@@ -601,13 +614,16 @@ exact percentile for every possible score.</p>
 </h2>
 <ul>
 <li>Choose one method per call. Do not combine raw inputs with an
-existing index or observed percentile. An index and a
-<code>diet_value</code> column cannot be supplied together, even if that
-percentile column is all missing.</li>
+existing index or observed percentile. An entirely missing
+<code>diet_value</code> column is ignored.</li>
 <li>For custom column names, use mappings such as
 <code>dash_columns = c(fruits = "fruit_intake", energy_kcal = "calories")</code>.
 <code>hei2015_columns</code> works the same way. Names are matched
 without regard to case.</li>
+<li>Every raw input column must be present once raw scoring is selected;
+an absent column is an error, so a misspelled name cannot silently
+produce missing diet scores. Missing values within a column are
+allowed.</li>
 <li>Missing inputs stay missing. A raw total requires all its
 components; <code>min_components</code> controls the LE8 composite, not
 a partial diet total. Available HEI component scores are still

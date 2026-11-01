@@ -13,7 +13,7 @@ Thank you for helping improve essential8!
 
 Reference rule pull requests require more than ordinary code review:
 
-Open a reference-rule issue identifying the standard, metric,
+Open a “Reference Documentation” issue identifying the standard, metric,
 population, measurement pathway, and exact source location.
 
 ## Code contributions

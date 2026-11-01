@@ -15,8 +15,45 @@
 - Raw scoring returns `dash_total` or `hei2015_total`. HEI-2015 also
   returns all 13 component scores.
 
+### Bug Fixes
+
+- Diagnosed diabetes with a missing `glucose_measure` is no longer
+  scored as though `glucose_value` were HbA1c; the glucose score is now
+  missing.
+- `apply_lean_muscular_bmi_override = TRUE` no longer awards 100 BMI
+  points when `bmi` or `bmi_profile` is missing.
+- Missing values in `apply_lean_muscular_bmi_override` and
+  `apply_prediabetes_metformin_penalty` now blank a score only for
+  records where the adjustment could apply.
+- Entirely missing input columns stored as logical `NA` (such as blank
+  CSV columns) are treated as missing instead of raising a type error.
+- `le8_physical_activity_score` is now always double, including when
+  activity inputs are entirely missing.
+- [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+  now returns an object of the same class as `data`, so tibbles and
+  grouped tibbles are preserved.
+
+### Breaking Changes
+
+- Input column names that differ from a case-sensitive LE8 input name
+  only by case (for example `BMI`) now raise an error instead of being
+  ignored.
+- Supplying some but not all 16 MEPA items, or omitting any raw DASH or
+  HEI-2015 column once raw scoring is selected, now raises an error
+  naming the missing columns instead of silently returning missing diet
+  scores.
+- `mepa_columns` now requires `diet_method = "mepa"`, and `dash` or
+  `hei2015` index columns are rejected under
+  `diet_method = "percentile"`.
+
 ### Minor Changes
 
+- Raw DASH scoring now returns the eight `dash_<field>_score` component
+  scores, matching the raw HEI-2015 output.
+- An entirely missing `diet_value` column no longer blocks scoring of a
+  `dash` or `hei2015` index column.
+- A logical `female` column is accepted as the MEPA sex field.
+- Removed unused internal rule-schema scaffolding.
 - Expanded the diet vignette to explain MEPA, DASH, and HEI-2015, their
   role in LE8, and how their scores are calculated.
 - Simplified the README and examples, using consistent tidy workflows.

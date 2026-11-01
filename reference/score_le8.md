@@ -89,9 +89,9 @@ score_le8(
 
 ## Value
 
-A data frame containing the original columns plus `mepa_total`,
-`dash_total`, and `hei2015_total` (missing unless calculated from the
-corresponding raw inputs),
+An object of the same class as `data`, containing the original columns
+plus `mepa_total`, `dash_total`, and `hei2015_total` (missing unless
+calculated from the corresponding raw inputs),
 `physical_activity_moderate_equivalent_minutes`, the eight component
 score columns prefixed with `le8_`, `le8_n_components`,
 `le8_composite_score`, `le8_complete`, and `le8_category`. The component
@@ -99,10 +99,13 @@ count reports how many scores contributed to the composite score;
 `le8_complete` is `TRUE` only when all eight components are available.
 Categories are `"low"` for scores below 50, `"moderate"` for scores from
 50 to less than 80, and `"high"` for scores of at least 80. The category
-is missing when the composite score is missing. For raw HEI-2015 calls,
+is missing when the composite score is missing. For raw DASH calls, the
+eight component scores (1 to 5 points each) are also appended as
+`dash_<field>_score`; they sum to `dash_total`. For raw HEI-2015 calls,
 the 13 component scores are also appended as
 `hei2015_<component>_score`, including `fatty_acids` and
-`saturated_fats`.
+`saturated_fats`. The result has the same class as `data`, so tibbles
+and grouped tibbles are returned as such.
 
 ## Diet scoring methods
 
@@ -115,8 +118,12 @@ intake fields below, using the packaged reference by default. Raw
 HEI-2015 also accepts a custom
 [`diet_reference()`](https://thatoneguy006.github.io/essential8/reference/diet_reference.md);
 raw DASH supports custom definitions via `dash_cutpoints`. Do not supply
-both the index column and the percentile column. Data with no diet
-inputs retain the package's usual missing-component behavior.
+both the index column and an observed percentile; an entirely missing
+`diet_value` column is ignored. Data with no diet inputs retain the
+package's usual missing-component behavior. Once raw scoring is
+selected, every raw input column must be present (values may be
+missing); an absent column is an error rather than a silently missing
+diet score.
 
 An index is compared with fixed reference cutpoints to identify its
 percentile category. The package does not estimate an exact percentile
@@ -152,20 +159,30 @@ for executable examples and units.
 
 ## Input columns
 
+The column names below are case-sensitive; a name that differs only by
+case (for example `BMI`) is an error. MEPA, DASH, and HEI-2015 diet
+fields are matched case-insensitively. A column whose values are all
+missing may be logical `NA` (as
+[`read.csv()`](https://rdrr.io/r/utils/read.table.html) produces for a
+blank column).
+
 - `age`: Age in years; must be present, complete, and at least 20.
 
 - For `diet_method = "mepa"`, the 16 Table C screener-item columns named
   below and `sex` (or `female` when `sex` is absent). The item names are
-  matched exactly after case normalization. Supply daily servings in
-  `olive_oil`, `green_leafy_vegetables`, `other_vegetables`, and
-  `whole_grains`; supply weekly servings or frequency in `berries`,
-  `other_fruit`, `meat`, `fish`, `chicken`, `cheese`, `butter_cream`,
-  `beans`, `sweets_and_pastries`, `nuts`, and `alcohol`; supply the
-  number of times per week that fast-food meals are consumed in
-  `fast_food`. Sex may be encoded as `"m"`/`"f"`, `"male"`/`"female"`,
-  or `0`/`1`, where `0` is male and `1` is female. Character encodings
-  are matched case-insensitively, and character `"0"`/`"1"` values are
-  also accepted.
+  matched exactly after case normalization. If any screener item is
+  present, all 16 items and sex are required; omitting every item leaves
+  the diet component missing. Supply daily servings in `olive_oil`,
+  `green_leafy_vegetables`, `other_vegetables`, and `whole_grains`;
+  supply weekly servings or frequency in `berries`, `other_fruit`,
+  `meat`, `fish`, `chicken`, `cheese`, `butter_cream`, `beans`,
+  `sweets_and_pastries`, `nuts`, and `alcohol`; supply the number of
+  times per week that fast-food meals are consumed in `fast_food`. Sex
+  may be encoded as `"m"`/`"f"`, `"male"`/`"female"`, or `0`/`1`, where
+  `0` is male and `1` is female. Character encodings are matched
+  case-insensitively, and character `"0"`/`"1"` values are also
+  accepted. A logical `female` column (`TRUE` for female) is also
+  accepted.
 
 - `dash` or `hei2015`: An already-computed index for the selected
   population diet method. HEI-2015 is bounded by 0 to 100. The built-in
@@ -400,6 +417,8 @@ patient <- tibble(
 scores <- score_le8(patient, diet_method = "mepa")
 select(scores, id, mepa_total, le8_diet_score, le8_composite_score,
        le8_category)
-#>          id mepa_total le8_diet_score le8_composite_score le8_category
-#> 1 patient_1         14             80                  80         high
+#> # A tibble: 1 × 5
+#>   id        mepa_total le8_diet_score le8_composite_score le8_category
+#>   <chr>          <int>          <dbl>               <dbl> <chr>       
+#> 1 patient_1         14             80                  80 high        
 ```

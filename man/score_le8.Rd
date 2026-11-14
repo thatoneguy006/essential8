@@ -17,24 +17,25 @@ score_le8(
 )
 }
 \arguments{
-\item{data}{A data frame with one row per adult and the input columns
-described below.}
+\item{data}{A data frame with one row per person (or visit) and the input
+columns described below. Adults and children may be mixed.}
 
 \item{diet_method}{A single diet-scoring method applied to every row in
 \code{data}: \code{"mepa"} (the default), \code{"dash"}, \code{"hei2015"}, or \code{"percentile"}.
-Values are matched
-case-insensitively. Score data that use different methods in separate
-calls.}
+Values are matched case-insensitively. Score data that use different
+methods in separate calls.}
 
 \item{mepa_columns}{\code{NULL}, or a named character vector mapping canonical
-MEPA fields to columns in \code{data}. The names are canonical fields and the
-values are actual column names. Unmapped fields use their canonical names.}
+MEPA fields to columns in \code{data}. The names are canonical fields (the 16
+screener items, \code{sex}, and \code{milk_source}) and the values are actual
+column names. Unmapped fields use their canonical names.}
 
 \item{min_components}{A single integer from 1 to 8 specifying the minimum
 number of non-missing LE8 component scores required to calculate
 \code{le8_composite_score}. The default is 7. Available component scores are
 averaged without imputation; observations below the threshold receive
-\code{NA_real_}.}
+\code{NA_real_}. Pediatric data usually need a lower value; see
+\emph{Pediatric scoring}.}
 
 \item{dash_columns, hei2015_columns}{\code{NULL}, or named character vectors
 mapping canonical DASH or HEI-2015 fields to columns in \code{data}. Unmapped
@@ -62,15 +63,19 @@ packaged reference's intake quintiles; for other DASH definitions, supply
 \code{dash_cutpoints}. Direct percentiles and explicit raw cutpoints bypass
 reference lookup.
 The built-in references describe nonpregnant adults aged 20+ with two
-reliable recalls; they are derived estimates, not AHA-published cutpoints.}
+reliable recalls; they are derived estimates, not AHA-published cutpoints,
+and are refused for pediatric rows.}
 }
 \value{
 An object of the same class as \code{data}, containing the original columns plus
-\code{mepa_total}, \code{dash_total}, and \code{hei2015_total} (missing unless calculated
+\code{mepa_total} (items met on the age-appropriate MEPA screener: 0-16 from
+age 6, 0-10 at ages 2-5, 0-6 at 6-23 months), \code{dash_total}, and \code{hei2015_total} (missing unless calculated
 from the corresponding raw inputs),
-\code{physical_activity_moderate_equivalent_minutes}, the eight component score
+\code{physical_activity_moderate_equivalent_minutes} (weekly minutes used for
+adults and children aged 6+), the eight component score
 columns prefixed with \code{le8_}, \code{le8_n_components}, \code{le8_composite_score},
-\code{le8_complete}, and \code{le8_category}. The component count reports how many
+\code{le8_complete}, \code{le8_category}, and \code{le8_population} (\code{"adult"} or
+\code{"pediatric"}). The component count reports how many
 scores contributed to the composite score; \code{le8_complete} is \code{TRUE}
 only when all eight components are available. Categories are \code{"low"} for
 scores below 50, \code{"moderate"} for scores from 50 to less than 80, and
@@ -84,11 +89,12 @@ The result has the same class as \code{data}, so tibbles and grouped tibbles
 are returned as such.
 }
 \description{
-Computes the eight adult Life's Essential 8 (LE8) component scores and
-the composite score using the American Heart Association's 2022
-Presidential Advisory. Component scores are calculated wherever sufficient
-inputs are available, without imputing missing values. This implementation
-applies only to adults aged 20 years or older.
+Computes the eight Life's Essential 8 (LE8) component scores and the
+composite score using the American Heart Association's 2022 Presidential
+Advisory. Rows aged 20 years or older are scored with the adult
+definitions; rows aged 4 months to 19 years are scored with the pediatric
+definitions. Component scores are calculated wherever sufficient inputs are
+available, without imputing missing values.
 }
 \section{Diet scoring methods}{
 
@@ -139,13 +145,19 @@ See \code{vignette("population-diets")} for executable examples and units.
 The column names below are case-sensitive; a name that differs only by
 case (for example \code{BMI}) is an error. MEPA, DASH, and HEI-2015 diet fields
 are matched case-insensitively. A column whose values are all missing may
-be logical \code{NA} (as \code{read.csv()} produces for a blank column).
+be logical \code{NA} (as \code{read.csv()} produces for a blank column). Columns that
+only apply to adults or only to children are ignored for other rows.
 \itemize{
-\item \code{age}: Age in years; must be present, complete, and at least 20.
+\item \code{age}: Age in years; must be present, complete, and at least 4 months
+(1/3 year). Rows aged 20 or older are scored as adults.
+\item \code{age_months}: Optional age in months, used for the pediatric age bands
+when observed. It must fall within the same completed year as \code{age}.
 \item For \code{diet_method = "mepa"}, the 16 Table C screener-item columns named
-below and \code{sex} (or \code{female} when \code{sex} is absent).
-The item names are matched exactly after case normalization. If any
-screener item is present, all 16 items and sex are required; omitting
+below and \code{sex} (or \code{female} when \code{sex} is absent). The same columns
+serve children; see \emph{Pediatric input columns} for which items each age
+uses. The item names are matched exactly after case normalization. If any
+screener item is present, every field used at the ages in \code{data} is
+required (all 16 items and sex when any row is aged 6 or older); omitting
 every item leaves the diet component missing. Supply daily
 servings in \code{olive_oil}, \code{green_leafy_vegetables}, \code{other_vegetables}, and
 \code{whole_grains}; supply weekly servings or frequency in \code{berries},
@@ -193,19 +205,24 @@ one another. If this column is absent or missing, the diet score is
 missing. MEPA and raw-intake calls require it to be absent
 or entirely missing.
 \item \code{moderate_activity_minutes} and \code{vigorous_activity_minutes}: Weekly
-minutes. Each vigorous minute counts as two moderate-equivalent minutes.
-\item \code{smoking_status}: One of \code{"never"}, \code{"former"}, or \code{"current"}.
+minutes. For adults, each vigorous minute counts as two
+moderate-equivalent minutes; for children aged 6 to 19, every minute
+counts once.
+\item \code{smoking_status}: One of \code{"never"}, \code{"former"}, or \code{"current"}. See
+\emph{Pediatric input columns} for the pediatric meaning.
 \item \code{years_since_quit}: Years since quitting combustible tobacco. This is
-used only when \code{smoking_status} is \code{"former"}.
+used only for adults whose \code{smoking_status} is \code{"former"}.
 \item \code{current_inhaled_nds}: Whether an inhaled nicotine-delivery system is
 currently used.
-\item \code{secondhand_smoke_home}: Whether the adult lives with an active indoor
+\item \code{secondhand_smoke_home}: Whether the person lives with an active indoor
 smoker.
-\item \code{sleep_hours}: Average hours of sleep per night.
-\item \code{bmi}: Body mass index in kg/m^2. Values below 18.5 are not scored because
-the AHA advisory defers to clinician judgment for underweight adults.
-\item \code{bmi_profile}: Either \code{"general"} or \code{"asian_pacific"}. The function
-never infers a profile from race or ethnicity.
+\item \code{sleep_hours}: Average hours of sleep per night (per 24 hours, including
+naps, for children aged 5 or younger).
+\item \code{bmi}: Adult body mass index in kg/m^2. Values below 18.5 are not scored
+because the AHA advisory defers to clinician judgment for underweight
+adults.
+\item \code{bmi_profile}: Either \code{"general"} or \code{"asian_pacific"} (adults). The
+function never infers a profile from race or ethnicity.
 \item \code{non_hdl_cholesterol}: Non-HDL cholesterol in mg/dL.
 \item \code{lipid_lowering_treatment}: Whether the lipid value is drug treated.
 \item \code{diabetes}: Whether diabetes has been diagnosed.
@@ -221,7 +238,84 @@ rejected because the AHA scoring table does not assign that combination.
 Component input columns may contain missing values or be omitted. A
 component score is \code{NA_real_} when its available inputs are insufficient.
 Missing values are never imputed. A warning is emitted when an entire LE8
-component cannot be calculated for any observation.
+component cannot be calculated for any observation where AHA defines it.
+}
+
+\section{Pediatric scoring}{
+
+Rows aged 4 months to 19 years use the children column of Table 1 of the
+advisory and the suggested rules for younger children in its Supplemental
+Appendix 2:
+\itemize{
+\item Diet: MEPA (the adult 16-item screener and adult bands at ages 6-19; a
+10-item subset at 10 points per item at ages 2-5; a 6-item subset at
+ages 6-23 months), or population percentiles at ages 2-19. Not scored
+before 6 months.
+\item Physical activity: daily active play at ages 1-5; weekly moderate or
+vigorous minutes at ages 6-19. Not scored before 1 year.
+\item Nicotine exposure, sleep, BMI, blood lipids, and blood glucose: all
+pediatric ages, with age-appropriate sleep ranges, growth-chart BMI
+(weight-for-length or BMI percentile before age 2), and pediatric non-HDL
+cholesterol bands. Glucose uses the adult table.
+\item Blood pressure: AAP 2017 percentile categories at ages 1-12, adult bands
+at ages 13-19. Not scored before 1 year.
+}
+
+Components AHA does not define at a row's age are \code{NA} and are not counted
+toward \code{min_components}; a message notes any such inputs that were
+supplied. AHA recommends averaging the components that are available and
+appropriate for measurement in children (the NHANES analysis averaged as few
+as three), so pediatric analyses usually set a lower \code{min_components}.
+\code{\link[=add_pediatric_references]{add_pediatric_references()}} can derive the growth-chart and
+blood-pressure reference inputs. See \code{vignette("pediatric-scoring")}.
+
+Where the sources conflict, the package follows the more specific rule:
+the supplement's 2-5 year diet rule (10 points per item) rather than the
+Table 1 bands; and, for 6-23 month weight, the supplement's explicit 0-point worst state
+(at or above the 99.7th percentile with rapid gain) rather than its
+decrements, which would leave 25. Nineteen-year-olds use the 13-18 year
+sleep range (8 to 10 hours), the last range AHA lists.
+}
+
+\section{Pediatric input columns}{
+
+\itemize{
+\item \code{smoking_status}: \code{"never"} (never tried any nicotine product),
+\code{"former"} (tried a nicotine product, but not within 30 days), or
+\code{"current"} (combustible use within 30 days). \code{current_inhaled_nds} is
+inhaled-NDS use within 30 days and caps the score at 25. Record
+\code{"never"} and \code{FALSE} for young children without exposure;
+\code{secondhand_smoke_home} applies at every age.
+\item \code{active_play_minutes}: Ages 1-5. Average daily minutes of active play of
+any intensity over 7 days.
+\item \code{bmi_percentile} and \code{bmi_percent_of_p95}: Ages 2-19. CDC BMI-for-age
+percentile (0-100) and BMI as a percentage of the 95th percentile (for
+example, 125). The latter is used only at or above the 95th percentile.
+Percentiles below the 5th are rejected because AHA defers to clinician
+judgment.
+\item \code{infant_weight_percentile} and \code{infant_weight_z_change}: Under age 2.
+WHO weight-for-length (or BMI-for-age) percentile, and the increase in
+the matching z-score since the prior routine visit (for example, since
+age 1 month). The change is required from 6 months; 0.67 or more counts
+as rapid weight gain.
+\item \code{systolic_bp_p90}, \code{systolic_bp_p95}, \code{diastolic_bp_p90}, and
+\code{diastolic_bp_p95}: Ages 1-12. The child's AAP 2017 90th and 95th
+blood-pressure percentiles in mm Hg for age, sex, and height.
+\item MEPA, ages 2-5: ten of the adult items. Vegetables are
+\code{green_leafy_vegetables + other_vegetables} (at least 2 per day) and
+fruit is \code{berries + other_fruit} (at least 14 per week, i.e. 2 per day);
+\code{whole_grains} (3+ per day), \code{olive_oil} (1+ per day), \code{fish} (1+ per
+week), \code{nuts} (4+ per week), \code{meat} (3 or fewer per week),
+\code{butter_cream} (3 or fewer per week), \code{sweets_and_pastries} (3 or fewer
+per week), and \code{fast_food} (2 or fewer per month, i.e. at most 24/52 per
+week). For children under 6, \code{sweets_and_pastries} should include
+sugar-sweetened beverages.
+\item MEPA, ages 6-23 months: vegetables and fruit as above (at least 1 per
+day before 12 months, 2 per day from 12 months), \code{whole_grains} (same
+thresholds), no sweets or sugar-sweetened beverages, no fast food, and
+\code{milk_source}: \code{"human"}, \code{"cow"}, \code{"formula"}, or \code{"other"}. Human milk
+meets the item before 12 months; human or cow's milk from 12 months.
+}
 }
 
 \section{Optional clinical-judgment columns}{
@@ -230,12 +324,12 @@ component cannot be calculated for any observation.
 \item \code{apply_lean_muscular_bmi_override}: A caller-adjudicated flag asserting
 that a lean, higher-muscle-mass adult in the general BMI profile has a BMI
 from 25 to less than 30 and should receive 100 BMI points. If absent, the
-standard BMI band is used.
+standard BMI band is used. Not defined for children.
 \item \code{apply_sleep_apnea_penalty}: If \code{TRUE}, subtract 20 points for untreated
-or undertreated sleep apnea. If absent, no discretionary penalty is
-applied.
+or undertreated sleep apnea (adults or children). If absent, no
+discretionary penalty is applied.
 \item \code{apply_prediabetes_metformin_penalty}: A caller-adjudicated flag asserting
-that the adult has a history of prediabetes, is taking metformin to
+that the person has a history of prediabetes, is taking metformin to
 prevent diabetes, is currently normoglycemic, and the clinician chose to
 apply the AHA's discretionary 20-point decrement. If absent, no
 discretionary penalty is applied.
@@ -278,6 +372,11 @@ Inputs are not rounded. The documented MEPA daily/weekly equivalences are
 applied where the source question and criterion use different timeframes.
 Combinations without a source-defined score, including simultaneous current
 combustible smoking and current inhaled-NDS use, produce a structured error.
+
+Input errors inherit from \code{essential8_input_error} and \code{essential8_error}.
+General and adult errors also carry \code{essential8_adult_input_error}, as in
+earlier versions; pediatric-only errors carry
+\code{essential8_pediatric_input_error}.
 }
 
 \examples{
@@ -329,6 +428,31 @@ patient <- tibble(
 scores <- score_le8(patient, diet_method = "mepa")
 select(scores, id, mepa_total, le8_diet_score, le8_composite_score,
        le8_category)
+
+# A 4-year-old with the preschool diet screener and no laboratory values.
+child <- tibble(
+  id = "child_1",
+  age = 4,
+  # Ten MEPA items apply at ages 2-5; sweets include sugary drinks.
+  green_leafy_vegetables = 1, other_vegetables = 1, # servings per day
+  berries = 7, other_fruit = 14,                     # servings per week
+  whole_grains = 2, olive_oil = 1,                   # servings per day
+  sweets_and_pastries = 2, meat = 2, fish = 1,       # servings per week
+  nuts = 2, butter_cream = 1,
+  fast_food = 0.25,                                  # times per week
+  active_play_minutes = 160,
+  smoking_status = "never", current_inhaled_nds = FALSE,
+  secondhand_smoke_home = FALSE,
+  sleep_hours = 11,
+  bmi_percentile = 60, bmi_percent_of_p95 = 85,
+  systolic_bp = 98, diastolic_bp = 58,
+  systolic_bp_p90 = 103, systolic_bp_p95 = 107,
+  diastolic_bp_p90 = 63, diastolic_bp_p95 = 67,
+  antihypertensive_treatment = FALSE
+)
+
+child_scores <- score_le8(child, min_components = 5)
+select(child_scores, id, mepa_total, starts_with("le8_"))
 \dontshow{\}) # examplesIf}
 }
 \references{
@@ -342,6 +466,11 @@ Health in US Adults and Children Using the American Heart Association's New
 Life's Essential 8 Metrics. \emph{Circulation}, 146(11), 822-835.
 \doi{10.1161/CIRCULATIONAHA.122.060911}
 
+Flynn JT, Kaelber DC, Baker-Smith CM, et al. (2017). Clinical Practice
+Guideline for Screening and Management of High Blood Pressure in Children
+and Adolescents. \emph{Pediatrics}, 140(3), e20171904.
+\doi{10.1542/peds.2017-1904}
+
 Fung TT, Chiuve SE, McCullough ML, et al. (2008). Adherence to a DASH-Style
 Diet and Risk of Coronary Heart Disease and Stroke in Women.
 \emph{Archives of Internal Medicine}, 168(7), 713-720.
@@ -353,4 +482,8 @@ Eating Index: HEI-2015. \emph{Journal of the Academy of Nutrition and Dietetics}
 See also the National Cancer Institute's
 \href{https://epi.grants.cancer.gov/hei/developing.html}{scoring standards}
 and \href{https://epi.grants.cancer.gov/hei/hei-scoring-method.html}{algorithm}.
+}
+\seealso{
+\code{\link[=add_pediatric_references]{add_pediatric_references()}} to derive pediatric growth-chart and
+blood-pressure inputs; \code{\link[=diet_reference]{diet_reference()}} for custom diet references.
 }

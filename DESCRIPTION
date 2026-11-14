@@ -1,6 +1,6 @@
 Package: essential8
 Title: Reproducible Cardiovascular Health Metric Scoring
-Version: 0.3.0
+Version: 0.3.0.9000
 Authors@R: c(
     person(
       given = "Carson",
@@ -25,11 +25,11 @@ Authors@R: c(
   )
 Description: Provides a reproducible R implementation of the American Heart
     Association Life's Essential 8 cardiovascular health scoring framework for
-    adult records from people aged 20 years or older. Calculates the eight
-    component scores and their unweighted composite score from available
-    component data, including raw MEPA, DASH, and HEI-2015 diet inputs, using
-    the 2022 adult definition described by Lloyd-Jones et
-    al. (2022)
+    adults aged 20 years or older and children aged 4 months to 19 years.
+    Calculates the eight component scores and their unweighted composite score
+    from available component data, including raw MEPA, DASH, and HEI-2015 diet
+    inputs and pediatric growth-chart and blood-pressure percentiles, using the
+    2022 definitions described by Lloyd-Jones et al. (2022)
     <doi:10.1161/CIR.0000000000001078>.
 License: MIT + file LICENSE
 Depends:
@@ -39,8 +39,10 @@ Language: en-US
 Imports:
     cli (>= 3.6.0)
 Suggests:
+    cdcanthro,
     dplyr,
     knitr,
+    pedbp,
     rmarkdown,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr

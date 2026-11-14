@@ -29,8 +29,9 @@ knitr::opts_chunk$set(
 `essential8` provides a reproducible R implementation of the American Heart
 Association Life's Essential 8 cardiovascular health scoring framework.
 
-The current release implements adult scoring for people aged 20 years or
-older. Pediatric scoring is planned but not yet implemented.
+It scores both adults aged 20 years or older and children aged 4 months to 19
+years, choosing the adult or pediatric AHA definitions row by row from `age`.
+See `vignette("pediatric-scoring")` for pediatric-specific rules.
 
 ## Installation
 
@@ -51,12 +52,11 @@ pak::pak("thatoneguy006/essential8")
 
 The American Heart Association Life's Essential 8 (LE8) framework combines
 eight lifestyle and health components into a composite cardiovascular health
-score from 0 to 100. `essential8` applies the published adult scoring bands
-in one tested workflow and returns all eight component scores plus the
-composite.
+score from 0 to 100. `essential8` applies the published adult and pediatric
+scoring bands in one tested workflow and returns all eight component scores plus the composite.
 
-Version 0.3.0 supports adult DASH and HEI-2015 diet scoring alongside MEPA.
-By default, the composite score is calculated when at least seven
+Diet can be scored with MEPA screeners or with DASH and HEI-2015 population
+indices. By default, the composite score is calculated when at least seven
 components are available; `min_components` can set a threshold from 1 through
 8.
 

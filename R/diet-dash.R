@@ -12,7 +12,7 @@
       is.null(names(dash_cutpoints)) || anyNA(names(dash_cutpoints)) ||
       anyDuplicated(tolower(names(dash_cutpoints))) ||
       !setequal(tolower(names(dash_cutpoints)), fields)) {
-    .abort_adult_scoring(c(
+    .abort_input(c(
       "{.arg dash_cutpoints} must be a named list of eight intake cutpoint vectors and {.field total}.",
       "i" = "Supply reference-population intake quintiles and total-score percentiles; no reference is inferred from data."
     ))
@@ -42,7 +42,7 @@
     if (!identical(reference$provenance$index_definition,
                    "essential8_fung_fped_v1") ||
         is.null(reference$provenance$component_cutpoints)) {
-      .abort_adult_scoring(c(
+      .abort_input(c(
         "Raw DASH scoring requires reference intake quintiles.",
         "i" = "Use {.val nhanes_2015_2018} or supply {.arg dash_cutpoints} with all eight intake quintiles and total-score cutpoints."
       ))
@@ -59,7 +59,7 @@
   )
   if (use_reference) {
     if (any(inputs$energy_kcal <= 0, na.rm = TRUE)) {
-      .abort_adult_scoring(
+      .abort_input(
         "DASH {.field energy_kcal} must be greater than zero when observed."
       )
     }

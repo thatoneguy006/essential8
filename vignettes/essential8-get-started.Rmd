@@ -17,9 +17,10 @@ knitr::opts_chunk$set(
 ## Overview
 
 `essential8` computes component and composite Life's Essential 8 (LE8)
-cardiovascular health scores. The current implementation scores adults aged
-20 years or older using the American Heart Association's 2022 definition.
-Pediatric scoring is not yet available.
+cardiovascular health scores using the American Heart Association's 2022
+definitions. Rows aged 20 years or older use the adult definitions and rows
+aged 4 months to 19 years use the pediatric definitions; this vignette scores
+adults, and `vignette("pediatric-scoring")` covers children.
 
 This vignette shows how to score complete and incomplete data. The examples
 use `dplyr` and the native pipe (`|>`, available in R 4.1+). See `?score_le8`

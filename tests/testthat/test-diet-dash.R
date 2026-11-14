@@ -4,12 +4,12 @@ test_that("DASH totals and LE8 composite scores follow hand-scored profiles", {
     input, diet_method = " DASH ", dash_cutpoints = dash_reference_fixture()
   )
   expect_identical(result$dash_total, c(8L, 40L))
-  expect_equal(result$le8_diet_score, c(0, 100))
+  expect_equal(result$diet_score, c(0, 100))
   expect_equal(result$le8_composite_score, c(87.5, 100))
-  expect_identical(result$le8_n_components, c(8L, 8L))
+  expect_identical(result$n_components, c(8L, 8L))
   expect_true(all(is.na(result$mepa_total)))
   expect_true(all(is.na(result$hei2015_total)))
-  expect_identical(result[names(input)], input)
+  expect_identical(.drop_le8_scores_class(result)[names(input)], input)
 })
 
 test_that("every DASH quintile boundary and reverse-scored item is correct", {
@@ -40,7 +40,7 @@ test_that("DASH total reference thresholds are inclusive and allow ties", {
     row$dash_fruits <- 4 # 39 total
     result <- score_le8(row, "dash", dash_cutpoints = reference)
     expect_equal(result$dash_total, 39)
-    expect_equal(result$le8_diet_score, c(25, 50, 80, 100)[i])
+    expect_equal(result$diet_score, c(25, 50, 80, 100)[i])
   }
   reference <- dash_reference_fixture()
   reference$fruits <- c(0, 0, 2, 2)
@@ -58,7 +58,7 @@ test_that("DASH scores are independent of batch composition and row order", {
     "dash", dash_cutpoints = reference
   )
   expect_equal(many$dash_total[2:3], rep(one$dash_total, 2))
-  expect_equal(many$le8_diet_score[2:3], rep(one$le8_diet_score, 2))
+  expect_equal(many$diet_score[2:3], rep(one$diet_score, 2))
 })
 
 test_that("DASH missing inputs preserve composite missing-data semantics", {
@@ -69,7 +69,7 @@ test_that("DASH missing inputs preserve composite missing-data semantics", {
     rbind(row, missing), "dash", dash_cutpoints = dash_reference_fixture()
   ))
   expect_identical(result$dash_total, c(40L, NA_integer_))
-  expect_equal(result$le8_n_components, c(8, 7))
+  expect_equal(result$n_components, c(8, 7))
   expect_equal(result$le8_composite_score, c(100, 100))
   strict <- score_le8(
     rbind(row, missing), "dash", min_components = 8,

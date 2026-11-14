@@ -2,14 +2,16 @@ cff-version: 1.2.0
 message: >-
   If you use essential8, please cite this software.
 title: essential8
-type: software
-version: 0.3.0
-repository-code: https://github.com/thatoneguy006/essential8
-url: https://thatoneguy006.github.io/essential8/
 authors:
   - family-names: Richardson
     given-names: Carson
-    email: carson.richardson@outlook.com
     orcid: https://orcid.org/0009-0004-8710-1097
+type: software
+version: 0.9.0
+identifiers:
+  - type: doi
+    value: "10.32614/CRAN.package.ggforestplotR"
+url: "https://CRAN.R-project.org/package=essential8"
+repository-code: "https://github.com/thatoneguy006/essential8"
 license: MIT
 

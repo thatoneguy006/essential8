@@ -53,7 +53,7 @@ test_that("min_components controls composite eligibility", {
 
     expect_equal(length(captured$warnings), 0L, info = case$name)
     expect_equal(
-      result$le8_n_components, c(case$n_components, 8L),
+      result$n_components, c(case$n_components, 8L),
       info = case$name
     )
     expect_identical(result$le8_complete, c(FALSE, TRUE), info = case$name)
@@ -73,8 +73,8 @@ test_that("min_components controls composite eligibility", {
         unlist(result[1, adult_component_score_columns()]),
         na.rm = TRUE
       )
-      expect_true(is.na(result$le8_sleep_score[1]), info = case$name)
-      expect_equal(result$le8_sleep_score[2], 100, info = case$name)
+      expect_true(is.na(result$sleep_score[1]), info = case$name)
+      expect_equal(result$sleep_score[2], 100, info = case$name)
       expect_equal(
         result$le8_composite_score[1], expected_mean,
         info = case$name
@@ -89,7 +89,7 @@ test_that("structural missingness emits one informative warning", {
       name = "Sleep missing with seven required",
       columns = "sleep_hours",
       components = "Sleep",
-      scores = "le8_sleep_score",
+      scores = "sleep_score",
       min_components = 7L,
       n_components = 7L,
       warning_class = "essential8_missing_component",
@@ -99,7 +99,7 @@ test_that("structural missingness emits one informative warning", {
       name = "Sleep and BMI missing with six required",
       columns = c("sleep_hours", "bmi"),
       components = c("Sleep", "BMI"),
-      scores = c("le8_sleep_score", "le8_bmi_score"),
+      scores = c("sleep_score", "bmi_score"),
       min_components = 6L,
       n_components = 6L,
       warning_class = "essential8_missing_component",
@@ -109,7 +109,7 @@ test_that("structural missingness emits one informative warning", {
       name = "Sleep and BMI missing with impossible threshold seven",
       columns = c("sleep_hours", "bmi"),
       components = c("Sleep", "BMI"),
-      scores = c("le8_sleep_score", "le8_bmi_score"),
+      scores = c("sleep_score", "bmi_score"),
       min_components = 7L,
       n_components = 6L,
       warning_class = "essential8_insufficient_components",
@@ -147,7 +147,7 @@ test_that("structural missingness emits one informative warning", {
     }
     expect_true(all(is.na(result[case$scores])), info = case$name)
     expect_identical(
-      result$le8_n_components, rep(case$n_components, 2L),
+      result$n_components, rep(case$n_components, 2L),
       info = case$name
     )
     expect_identical(
@@ -168,7 +168,7 @@ test_that("all missing components yield NA rather than NaN", {
     captured$warnings[[1]],
     "essential8_insufficient_components"
   )
-  expect_identical(result$le8_n_components, c(0L, 0L))
+  expect_identical(result$n_components, c(0L, 0L))
   expect_identical(result$le8_composite_score, rep(NA_real_, 2L))
   expect_false(any(is.nan(result$le8_composite_score)))
   expect_false(any(result$le8_complete))
@@ -178,9 +178,9 @@ test_that("missing treatment status is not interpreted as untreated", {
   input <- make_missing_component_input("antihypertensive_treatment")
   result <- expect_no_warning(score_le8(input, min_components = 7))
 
-  expect_true(is.na(result$le8_blood_pressure_score[1]))
-  expect_equal(result$le8_blood_pressure_score[2], 100)
-  expect_equal(result$le8_n_components[1], 7L)
+  expect_true(is.na(result$blood_pressure_score[1]))
+  expect_equal(result$blood_pressure_score[2], 100)
+  expect_equal(result$n_components[1], 7L)
 })
 
 test_that("missing-value support does not relax input validation", {
@@ -203,7 +203,7 @@ test_that("scattered row-level missingness does not warn", {
 
   result <- expect_no_warning(score_le8(input, min_components = 7))
 
-  expect_true(all(result$le8_n_components == 7L))
+  expect_true(all(result$n_components == 7L))
   expect_false(any(result$le8_complete))
   expect_true(all(!is.na(result$le8_composite_score)))
 })
@@ -218,9 +218,9 @@ test_that("omitted component columns do not block unrelated scoring", {
   result <- captured$value
 
   expect_length(captured$warnings, 1L)
-  expect_true(all(is.na(result$le8_sleep_score)))
-  expect_true(all(is.na(result$le8_bmi_score)))
-  expect_true(all(!is.na(result$le8_blood_pressure_score)))
-  expect_true(all(result$le8_n_components == 6L))
+  expect_true(all(is.na(result$sleep_score)))
+  expect_true(all(is.na(result$bmi_score)))
+  expect_true(all(!is.na(result$blood_pressure_score)))
+  expect_true(all(result$n_components == 6L))
   expect_true(all(!is.na(result$le8_composite_score)))
 })

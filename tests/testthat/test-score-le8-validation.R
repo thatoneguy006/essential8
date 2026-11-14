@@ -16,8 +16,8 @@ test_that("adult scoring allows missing values but rejects malformed values", {
   input <- adult_input_fixture()
   input$glucose_value[1] <- NA_real_
   result <- expect_no_warning(score_le8(input))
-  expect_true(is.na(result$le8_blood_glucose_score[1]))
-  expect_equal(result$le8_n_components[1], 7L)
+  expect_true(is.na(result$blood_glucose_score[1]))
+  expect_equal(result$n_components[1], 7L)
 
   input <- adult_input_fixture()
   input$current_inhaled_nds <- as.integer(input$current_inhaled_nds)
@@ -187,7 +187,7 @@ test_that("diet_method is a scalar, case-insensitive call-level argument", {
 
   result <- score_le8(input, diet_method = "  PeRcEnTiLe  ")
 
-  expect_equal(result$le8_diet_score, c(25, 100))
+  expect_equal(result$diet_score, c(25, 100))
   expect_equal(result$le8_composite_score[2], 100)
   expect_false("diet_method" %in% names(result))
 })

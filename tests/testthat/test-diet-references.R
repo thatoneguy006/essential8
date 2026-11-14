@@ -90,12 +90,12 @@ test_that("typed direct-percentile calls bypass reference lookup", {
     input <- adult_example_row(diet_value = 82)
     input[c("sex", adult_mepa_columns())] <- NULL
     result <- score_le8(input, method, reference = "not_used_for_percentiles")
-    expect_equal(result$le8_diet_score, 80)
-    expect_equal(result$le8_n_components, 8)
+    expect_equal(result$diet_score, 80)
+    expect_equal(result$n_components, 8)
     expect_false(any(grepl("^hei2015_.*_score$", names(result))))
-    expect_identical(result[names(input)], input)
+    expect_identical(.drop_le8_scores_class(result)[names(input)], input)
     input$diet_value <- 0
-    expect_equal(score_le8(input, method)$le8_diet_score, 0)
+    expect_equal(score_le8(input, method)$diet_score, 0)
   }
 })
 
@@ -110,17 +110,17 @@ test_that("precomputed indices integrate with LE8 without cohort ranking", {
     extreme <- row
     extreme[[method]] <- ref$score_range[1]
     combined <- score_le8(rbind(extreme, row, extreme), method)
-    expect_equal(original$le8_diet_score, 80)
-    expect_equal(combined$le8_diet_score[2], original$le8_diet_score)
+    expect_equal(original$diet_score, 80)
+    expect_equal(combined$diet_score[2], original$diet_score)
     expect_equal(original$le8_composite_score, 97.5)
-    expect_identical(original[names(row)], row)
+    expect_identical(.drop_le8_scores_class(original)[names(row)], row)
     row[[method]] <- NA_real_
     missing <- suppressWarnings(score_le8(row, method))
-    expect_identical(missing$le8_diet_score, NA_real_)
-    expect_equal(missing$le8_n_components, 7)
+    expect_identical(missing$diet_score, NA_real_)
+    expect_equal(missing$n_components, 7)
     row <- row[0, ]
     empty <- expect_no_warning(score_le8(row, method))
-    expect_identical(empty$le8_diet_score, numeric())
+    expect_identical(empty$diet_score, numeric())
   }
 })
 
@@ -150,5 +150,5 @@ test_that("custom references work through the public scorer", {
   row$diet_value <- NULL
   row$hei2015 <- 70
   ref <- diet_reference(40, 50, 60, 80, "hei2015", label = "Synthetic")
-  expect_equal(score_le8(row, "hei2015", reference = ref)$le8_diet_score, 80)
+  expect_equal(score_le8(row, "hei2015", reference = ref)$diet_score, 80)
 })

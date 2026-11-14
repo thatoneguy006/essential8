@@ -37,14 +37,20 @@ Depends:
 Encoding: UTF-8
 Language: en-US
 Imports:
-    cli (>= 3.6.0)
+    cli (>= 3.6.0),
+    generics,
+    rlang (>= 1.1.0)
 Suggests:
     cdcanthro,
-    dplyr,
+    dplyr (>= 1.1.0),
+    ggforestplotR (>= 0.6.0),
+    ggplot2 (>= 3.4.0),
     knitr,
+    mice (>= 3.16.0),
     pedbp,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    tibble
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/Needs/website: pkgdown

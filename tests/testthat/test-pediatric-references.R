@@ -59,8 +59,8 @@ test_that("reference output feeds score_le8()", {
   child$diastolic_bp <- 60
   child$antihypertensive_treatment <- FALSE
   scored <- score_pediatric(child, min_components = 1)
-  expect_false(is.na(scored$le8_bmi_score))
-  expect_equal(scored$le8_blood_pressure_score, 100)
+  expect_false(is.na(scored$bmi_score))
+  expect_equal(scored$blood_pressure_score, 100)
 })
 
 test_that("reference arguments are validated", {

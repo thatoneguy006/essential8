@@ -28,7 +28,7 @@ test_that("the hand-scored 10-subject example is reproduced", {
     unname(as.matrix(fixture[expected_columns]))
   )
   expect_equal(result$le8_composite_score, fixture$expected_le8_composite_score)
-  expect_identical(result$le8_n_components, rep(8L, nrow(result)))
+  expect_identical(result$n_components, rep(8L, nrow(result)))
   expect_true(all(result$le8_complete))
   expect_true("le8_composite_score" %in% names(result))
   expect_false("le8_score" %in% names(result))
@@ -64,8 +64,8 @@ test_that("public scoring uses optional-column defaults", {
   input$apply_prediabetes_metformin_penalty <- NULL
   result <- score_le8(input)
 
-  expect_equal(result$le8_sleep_score, 100)
-  expect_equal(result$le8_blood_glucose_score, 100)
+  expect_equal(result$sleep_score, 100)
+  expect_equal(result$blood_glucose_score, 100)
 })
 
 test_that("public scoring supports the explicit lean muscular BMI override", {
@@ -75,6 +75,6 @@ test_that("public scoring supports the explicit lean muscular BMI override", {
   )
   result <- score_le8(input)
 
-  expect_equal(result$le8_bmi_score, 100)
+  expect_equal(result$bmi_score, 100)
   expect_equal(result$le8_composite_score, 100)
 })

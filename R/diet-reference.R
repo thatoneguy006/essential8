@@ -30,14 +30,14 @@ diet_reference <- function(p25, p50, p75, p95, method = "dash",
       !is.na(x) && is.finite(x)
   }, logical(1))
   if (!all(valid) || any(diff(unlist(values)) < 0)) {
-    .abort_adult_scoring(
+    .abort_input(
       "Diet reference cutpoints must be finite numeric scalars in nondecreasing order."
     )
   }
   for (value in list(label, source)) {
     if (!is.null(value) && (!is.character(value) || length(value) != 1L ||
                            is.na(value) || !nzchar(trimws(value)))) {
-      .abort_adult_scoring(
+      .abort_input(
         "Diet reference labels and sources must be single nonempty strings."
       )
     }
@@ -46,7 +46,7 @@ diet_reference <- function(p25, p50, p75, p95, method = "dash",
     if (!is.null(score_range) && (!is.numeric(score_range) ||
         !is.null(dim(score_range)) ||
         !identical(as.numeric(score_range), c(0, 100)))) {
-      .abort_adult_scoring("HEI-2015 references must use the range 0 to 100.")
+      .abort_input("HEI-2015 references must use the range 0 to 100.")
     }
     score_range <- c(0, 100)
   }
@@ -56,7 +56,7 @@ diet_reference <- function(p25, p50, p75, p95, method = "dash",
         any(!is.finite(score_range)) || score_range[1] >= score_range[2] ||
         any(unlist(values) < score_range[1] |
             unlist(values) > score_range[2])) {
-      .abort_adult_scoring(
+      .abort_input(
         "{.arg score_range} must contain two increasing finite bounds enclosing every cutpoint."
       )
     }
@@ -69,9 +69,9 @@ diet_reference <- function(p25, p50, p75, p95, method = "dash",
 }
 
 .normalize_reference_method <- function(method) {
-  method <- .normalize_adult_diet_method(method)
+  method <- .normalize_diet_method(method)
   if (!method %in% c("dash", "hei2015")) {
-    .abort_adult_scoring("Diet references support only {.val dash} or {.val hei2015}.")
+    .abort_input("Diet references support only {.val dash} or {.val hei2015}.")
   }
   method
 }
@@ -81,7 +81,7 @@ diet_reference <- function(p25, p50, p75, p95, method = "dash",
   if (!inherits(reference, "essential8_diet_reference") ||
       !is.list(reference) || anyDuplicated(names(reference)) ||
       !all(required %in% names(reference))) {
-    .abort_adult_scoring("Use {.fn diet_reference} to construct a diet reference.")
+    .abort_input("Use {.fn diet_reference} to construct a diet reference.")
   }
   validated <- diet_reference(
     reference$p25, reference$p50, reference$p75, reference$p95,
@@ -89,7 +89,7 @@ diet_reference <- function(p25, p50, p75, p95, method = "dash",
     source = reference$source, score_range = reference$score_range
   )
   if (validated$method != method) {
-    .abort_adult_scoring(
+    .abort_input(
       "The supplied diet reference is for {validated$method}, but {.arg diet_method} is {method}."
     )
   }
@@ -102,7 +102,7 @@ diet_reference <- function(p25, p50, p75, p95, method = "dash",
   if (is.character(reference)) {
     if (length(reference) != 1L || anyNA(reference) ||
         reference != "nhanes_2015_2018") {
-      .abort_adult_scoring(
+      .abort_input(
         "Unknown diet reference. Use {.val nhanes_2015_2018} or {.fn diet_reference}."
       )
     }
@@ -115,11 +115,11 @@ diet_reference <- function(p25, p50, p75, p95, method = "dash",
   if (is.logical(score) && all(is.na(score))) score <- as.numeric(score)
   if (!is.numeric(score) || !is.null(dim(score)) ||
       any(!is.finite(score[!is.na(score)]))) {
-    .abort_adult_scoring("Diet index scores must be numeric and finite when observed.")
+    .abort_input("Diet index scores must be numeric and finite when observed.")
   }
   bounds <- reference$score_range
   if (!is.null(bounds) && any(score < bounds[1] | score > bounds[2], na.rm = TRUE)) {
-    .abort_adult_scoring(
+    .abort_input(
       "Diet index scores must be from {bounds[1]} to {bounds[2]} for the selected reference."
     )
   }

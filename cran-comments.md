@@ -1,10 +1,10 @@
 ## Test environments
 
-- Local: Windows 11 x64 (build 26200), R 4.6.1
+- Local: Windows 11 x64 (build 26200), R 4.6.2
 
 ## R CMD check results
 
-- `R CMD check essential8_0.2.0.tar.gz --as-cran`
+- `R CMD check essential8_0.3.0.tar.gz --as-cran`
 - Status: OK
 0 errors | 0 warnings | 0 notes
 

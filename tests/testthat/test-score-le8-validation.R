@@ -79,11 +79,11 @@ test_that("adult scoring rejects dimensioned input columns", {
   )
 })
 
-test_that("adult age and source-defined measurement domains are enforced", {
+test_that("age and source-defined measurement domains are enforced", {
   cases <- list(
     list(
-      name = "age below adult range",
-      changes = list(age = 19.999),
+      name = "age below pediatric range",
+      changes = list(age = 0.25),
       diet_method = "mepa"
     ),
     list(

@@ -1,3 +1,35 @@
+# essential8 (development version)
+
+## Major Changes
+
+- `score_le8()` now scores children aged 4 months to 19 years with the
+  pediatric LE8 definitions (Table 1 and Supplemental Appendix 2 of the 2022
+  advisory). Rows are routed by `age`, so adults and children can be scored
+  in one call, and the new `le8_population` column records which definitions
+  were used. Components AHA does not define at a child's age (for example,
+  blood pressure before age 1) are `NA` and are excluded from
+  `min_components`.
+- Pediatric MEPA uses the same input columns as adults, plus `milk_source`
+  at 6-23 months: 6 items at 6-23 months, 10 items at 2-5 years (10 points
+  per item), and all 16 items with adult bands from age 6. `mepa_total`
+  reports items met on the age-appropriate screener.
+- New pediatric inputs: `age_months`, `milk_source`, `active_play_minutes`,
+  `bmi_percentile`, `bmi_percent_of_p95`, `infant_weight_percentile`,
+  `infant_weight_z_change`, and the AAP 2017 blood-pressure references
+  `systolic_bp_p90`, `systolic_bp_p95`, `diastolic_bp_p90`, and
+  `diastolic_bp_p95`.
+- New `add_pediatric_references()` derives the growth-chart and
+  blood-pressure reference inputs from sex, age, height, and weight using the
+  suggested packages cdcanthro and pedbp.
+- New `vignette("pediatric-scoring")`.
+
+## Minor Changes
+
+- Input errors now also carry the class `essential8_input_error`;
+  pediatric-only errors carry `essential8_pediatric_input_error`. The
+  `essential8_adult_input_error` class remains on general and adult errors.
+- Errors now report `score_le8()` as the call rather than an internal helper.
+
 # essential8 0.3.0
 
 ## Major Changes

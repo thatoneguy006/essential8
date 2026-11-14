@@ -211,8 +211,9 @@ is met:
 ``` r
 bind_rows(
   patient,
-  patient |> mutate(id = "sleep_missing", sleep_hours = NA_real_)
-) |>
+  patient |> 
+    mutate(id = "sleep_missing", sleep_hours = NA_real_)
+  ) |>
   score_le8(min_components = 7) |>
   select(id, le8_composite_score, n_components, le8_complete)
 #> # A tibble: 2 × 4
@@ -230,11 +231,11 @@ component.
 
 ## Imputing missing inputs
 
-By default, `score_le8()` never fills in missing values: the composite
-averages whichever components are available, which treats a missing
-component as equal to the average of that person’s other components.
-With `impute = TRUE`, `score_le8()` instead uses multiple imputation
-\[[5](#ref-rubin1987multiple)\] with mice
+By default, `score_le8(impute = FALSE)` never fills in missing values:
+the composite averages whichever components are available, which treats
+a missing component as equal to the average of that person’s other
+components. With `impute = TRUE`, `score_le8()` instead uses multiple
+imputation \[[5](#ref-rubin1987multiple)\] with mice
 \[[6](#ref-vanbuuren2011mice)\]:
 
 1.  **Check.** Observed values are validated first, so data that cannot
@@ -256,9 +257,9 @@ With `impute = TRUE`, `score_le8()` instead uses multiple imputation
     values.
 
 ``` r
-adults <- read.csv(system.file(
-  "extdata", "le8-adult-example.csv", package = "essential8"
-)) |>
+adults <- read.csv(
+  system.file("extdata", "le8-adult-example.csv", package = "essential8")
+  ) |>
   select(!starts_with("expected_")) |>
   mutate(non_hdl_cholesterol = replace(non_hdl_cholesterol, c(2, 5, 8), NA))
 
@@ -294,7 +295,9 @@ scored <- bind_rows(
   patient |> mutate(id = "patient_2", sleep_hours = 5, bmi = 31)
 ) |>
   score_le8()
+```
 
+``` r
 summary(scored)
 #> LE8 scores: 2 rows (2 adult)
 #> Diet method: mepa; min_components: 7
@@ -316,6 +319,9 @@ summary(scored)
 #>   low      0    0.0%
 #>   moderate 1   50.0%
 #>   high     1   50.0%
+```
+
+``` r
 summarise(scored)
 #> # A tibble: 9 × 10
 #>   measure               n n_missing  mean    sd   min   q25 median   q75   max

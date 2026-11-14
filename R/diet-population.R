@@ -9,19 +9,19 @@
       is.null(names(columns)) ||
       anyNA(columns) || anyNA(names(columns)) ||
       any(columns == "") || any(names(columns) == "")) {
-    .abort_adult_scoring(
+    .abort_input(
       "{.arg {argument}} must be a named character vector with complete, nonempty names and values."
     )
   }
   map_names <- tolower(names(columns))
   if (anyDuplicated(map_names) || any(!map_names %in% fields)) {
-    .abort_adult_scoring(
+    .abort_input(
       "{.arg {argument}} must name unique canonical {toupper(method)} fields."
     )
   }
   resolved[map_names] <- unname(columns)
   if (anyDuplicated(tolower(resolved))) {
-    .abort_adult_scoring(
+    .abort_input(
       "{.arg {argument}} must map each field to a different column."
     )
   }
@@ -37,7 +37,7 @@
   if (anyNA(index)) {
     argument <- paste0(method, "_columns")
     missing_columns <- unname(requested[is.na(index)])
-    .abort_adult_scoring(c(
+    .abort_input(c(
       "Raw {toupper(method)} scoring requires every input column.",
       "x" = "Missing: {paste(missing_columns, collapse = ', ')}.",
       "i" = "Add the columns or map them with {.arg {argument}}."
@@ -47,10 +47,10 @@
   values <- lapply(seq_along(fields), function(i) {
     column <- names(data)[index[i]]
     data[[column]] <- .coerce_all_na_logical(data[[column]], "numeric")
-    .validate_adult_numeric_column(data, column)
+    .check_numeric_column(data, column)
     value <- data[[column]]
     if (any(value < 0, na.rm = TRUE)) {
-      .abort_adult_scoring(
+      .abort_input(
         "{toupper(method)} field {.field {column}} cannot be negative."
       )
     }
@@ -63,7 +63,7 @@
   if (!is.numeric(value) || !is.null(dim(value)) || length(value) != 4L ||
       anyNA(value) || any(!is.finite(value)) ||
       any(value < lower | value > upper) || any(diff(value) < 0)) {
-    .abort_adult_scoring(
+    .abort_input(
       "{.arg {argument}} must contain four finite, nondecreasing numbers from {lower} to {upper}."
     )
   }

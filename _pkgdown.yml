@@ -25,7 +25,8 @@ home:
   description: >-
     Provides a reproducible R implementation of the American Heart Association
     Life's Essential 8 cardiovascular health scoring framework for adults
-    aged 20 years or older, with transparent handling of missing components.
+    aged 20 years or older and children aged 4 months to 19 years, with
+    transparent handling of missing components.
 
 navbar:
   structure:
@@ -42,6 +43,8 @@ navbar:
           href: articles/essential8-get-started.html
         - text: Diet scoring
           href: articles/population-diets.html
+        - text: Scoring children
+          href: articles/pediatric-scoring.html
     news:
       text: Changelog
       href: news/index.html
@@ -56,6 +59,7 @@ articles:
     contents:
       - essential8-get-started
       - population-diets
+      - pediatric-scoring
 
 footer:
   structure:

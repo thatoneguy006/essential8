@@ -54,11 +54,14 @@ test_that("population diet inputs validate numeric values and column shapes", {
     expect_equal(
       do.call(score_le8, c(list(data = row), arguments))$le8_diet_score, 100
     )
+    # A 19-year-old is scored with the pediatric definitions; an explicit
+    # (caller-supplied) reference is applied to a pediatric-only call.
     row$age <- 19
-    expect_error(
-      do.call(score_le8, c(list(data = row), arguments)),
-      "at least 20", class = "essential8_adult_input_error"
+    pediatric <- suppressWarnings(
+      do.call(score_le8, c(list(data = row), arguments))
     )
+    expect_identical(pediatric$le8_population, "pediatric")
+    expect_equal(pediatric$le8_diet_score, 100)
   }
 })
 

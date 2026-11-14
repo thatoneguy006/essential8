@@ -35,7 +35,7 @@
   )
   energy <- inputs$energy_kcal
   if (any(energy <= 0, na.rm = TRUE)) {
-    .abort_adult_scoring(
+    .abort_input(
       "HEI-2015 {.field energy_kcal} must be greater than zero when observed."
     )
   }

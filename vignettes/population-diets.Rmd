@@ -18,7 +18,9 @@ Each describes diet quality in a different way. The package first calculates
 or accepts a diet score, then applies the LE8 scoring rules.
 
 This article explains where the measures came from, how they become LE8
-points, and which inputs to use. Examples apply to adults aged 20 or older.
+points, and which inputs to use. Examples apply to adults aged 20 or older;
+for children, see `vignette("pediatric-scoring")`. The packaged NHANES
+references describe adults and are refused for pediatric rows.
 
 ## Where the diet measures came from
 

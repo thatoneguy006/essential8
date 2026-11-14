@@ -1,0 +1,45 @@
+# essential8: Reproducible cardiovascular health metric scoring
+
+`essential8` is a transparent, versioned, and auditable implementation
+of published adult cardiovascular health metric definitions. Adult
+scoring, including transparent handling of unavailable components, is
+based on the American Heart Association's 2022 Life's Essential 8
+definition and is available through
+[`score_le8()`](https://thatoneguy006.github.io/essential8/dev/reference/score_le8.md).
+
+## Scientific status
+
+The adult scoring rules in version 0.3.0 are implemented from the cited
+AHA, DASH, and HEI-2015 sources and covered by boundary and
+input-validation tests. Users remain responsible for verifying
+measurement protocols, population-specific diet cutpoints or
+percentiles, and caller-adjudicated clinical-judgment flags. The package
+is research software and is not intended for clinical decision support.
+
+## See also
+
+Useful links:
+
+- <https://thatoneguy006.github.io/essential8/>
+
+- <https://github.com/thatoneguy006/essential8>
+
+- Report bugs at <https://github.com/thatoneguy006/essential8/issues>
+
+## Author
+
+**Maintainer**: Carson Richardson <carson.richardson@outlook.com>
+([ORCID](https://orcid.org/0009-0004-8710-1097)) \[copyright holder\]
+
+Authors:
+
+- Carson Richardson <carson.richardson@outlook.com>
+  ([ORCID](https://orcid.org/0009-0004-8710-1097)) \[copyright holder\]
+
+Other contributors:
+
+- Amrik Khalsa <Amrik.Khalsa@nationwidechildrens.org>
+  ([ORCID](https://orcid.org/0000-0002-4609-5194)) \[contributor\]
+
+- Sara Conroy ([ORCID](https://orcid.org/0000-0001-9155-9456))
+  \[contributor\]

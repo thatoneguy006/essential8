@@ -1,6 +1,10 @@
+
+<!-- README.md is generated from README.Rmd. Please edit that file. -->
+
 # essential8 <img src="man/figures/essential8_favicon.png" align="right" height="160" alt="" />
 
 <!-- badges: start -->
+
 [![R-CMD-check](https://github.com/thatoneguy006/essential8/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/thatoneguy006/essential8/actions/workflows/R-CMD-check.yaml)
 [![pkgdown](https://github.com/thatoneguy006/essential8/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/thatoneguy006/essential8/actions/workflows/pkgdown.yaml)
 [![CRAN version](https://www.r-pkg.org/badges/version/essential8)](https://CRAN.R-project.org/package=essential8)
@@ -17,12 +21,14 @@ older. Pediatric scoring is planned but not yet implemented.
 ## Installation
 
 ### CRAN
-```r
+
+``` r
 install.packages("essential8")
 ```
 
 ### Development
-```r
+
+``` r
 # install.packages("remotes")
 remotes::install_github("thatoneguy006/essential8")
 ```
@@ -62,7 +68,7 @@ when a domain is unavailable:
 The examples use `dplyr` and the native pipe (`|>`, available in R 4.1+).
 The first scores one adult using MEPA:
 
-```r
+``` r
 library(essential8)
 library(dplyr)
 
@@ -127,6 +133,10 @@ patient <- tibble(
 patient |>
   score_le8(diet_method = "mepa") |>
   select(id, mepa_total, le8_diet_score, le8_composite_score, le8_category)
+#> # A tibble: 1 x 5
+#>   id        mepa_total le8_diet_score le8_composite_score le8_category
+#>   <chr>          <int>          <dbl>               <dbl> <chr>
+#> 1 patient_1         14             80                  80 high
 ```
 
 The `diet_method` argument accepts `"mepa"`, `"dash"`, `"hei2015"`, or
@@ -155,11 +165,15 @@ For population research, use `diet_method = "dash"` or `"hei2015"` with raw
 food and nutrient inputs, an existing diet score, or a percentile. For
 example, add an existing HEI-2015 score to the adult record above:
 
-```r
+``` r
 patient |>
   mutate(hei2015 = 70) |>
   score_le8(diet_method = "hei2015", reference = "nhanes_2015_2018") |>
   select(id, hei2015, le8_diet_score, le8_composite_score)
+#> # A tibble: 1 x 4
+#>   id        hei2015 le8_diet_score le8_composite_score
+#>   <chr>       <dbl>          <dbl>               <dbl>
+#> 1 patient_1      70             80                  80
 ```
 
 The diet score is converted to LE8 points using the selected reference.
@@ -173,13 +187,18 @@ for the background, scoring rules, input units, and examples.
 The composite is the mean of the available component scores when the selected
 threshold is met:
 
-```r
+``` r
 bind_rows(
   patient,
   patient |> mutate(id = "sleep_missing", sleep_hours = NA_real_)
 ) |>
   score_le8(min_components = 7) |>
   select(id, le8_composite_score, le8_n_components, le8_complete)
+#> # A tibble: 2 x 4
+#>   id            le8_composite_score le8_n_components le8_complete
+#>   <chr>                       <dbl>            <int> <lgl>
+#> 1 patient_1                    80                  8 TRUE
+#> 2 sleep_missing                77.1                7 FALSE
 ```
 
 `le8_n_components` reports how many component scores contributed, while
@@ -188,8 +207,9 @@ component cannot be calculated for any observation, the function emits one
 consolidated warning identifying every structurally unavailable component.
 
 ## Learn more
-- Package website: https://thatoneguy006.github.io/essential8/index.html
-- Get started: https://thatoneguy006.github.io/essential8/articles/essential8-get-started.html
+
+- Package website: <https://thatoneguy006.github.io/essential8/index.html>
+- Get started: <https://thatoneguy006.github.io/essential8/articles/essential8-get-started.html>
 
 ## Disclaimer
 

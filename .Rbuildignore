@@ -4,6 +4,7 @@
 ^_pkgdown\.yml$
 ^CODE_OF_CONDUCT\.md$
 ^CONTRIBUTING\.md$
+^README\.Rmd$
 ^CITATION\.cff$
 ^LICENSE\.md$
 ^cran-comments\.md$

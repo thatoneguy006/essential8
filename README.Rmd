@@ -1,0 +1,231 @@
+---
+output: github_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file. -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  dpi = 400
+)
+```
+
+# essential8 <img src="man/figures/essential8_favicon.png" align="right" height="160" alt="" />
+
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/thatoneguy006/essential8/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/thatoneguy006/essential8/actions/workflows/R-CMD-check.yaml)
+[![pkgdown](https://github.com/thatoneguy006/essential8/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/thatoneguy006/essential8/actions/workflows/pkgdown.yaml)
+[![CRAN version](https://www.r-pkg.org/badges/version/essential8)](https://CRAN.R-project.org/package=essential8)
+<!-- badges: end -->
+
+## Overview
+
+`essential8` provides a reproducible R implementation of the American Heart
+Association Life's Essential 8 cardiovascular health scoring framework.
+
+The current release implements adult scoring for people aged 20 years or
+older. Pediatric scoring is planned but not yet implemented.
+
+## Installation
+
+### CRAN
+
+```r
+install.packages("essential8")
+```
+
+### Development
+
+```r
+# install.packages("pak")
+pak::pak("thatoneguy006/essential8")
+```
+
+## Background
+
+The American Heart Association Life's Essential 8 (LE8) framework combines
+eight lifestyle and health components into a composite cardiovascular health
+score from 0 to 100. `essential8` applies the published adult scoring bands
+in one tested workflow and returns all eight component scores plus the
+composite.
+
+Version 0.3.0 supports adult DASH and HEI-2015 diet scoring alongside MEPA.
+By default, the composite score is calculated when at least seven
+components are available; `min_components` can set a threshold from 1 through
+8.
+
+## Basic use
+
+Read the AHA advisory and `?score_le8` before using the package, particularly
+the input units, population-percentile diet requirements, and optional
+clinical-judgment adjustments.
+
+Pass a data frame containing adult inputs for the eight AHA metrics. Missing
+component values are allowed, and component-specific columns may be omitted
+when a domain is unavailable:
+
+- diet (MEPA, DASH, HEI-2015, or externally supplied percentiles)
+- physical activity (moderate and vigorous activity)
+- smoking
+- sleep
+- BMI
+- blood lipids
+- blood glucose and diabetes status
+- blood pressure (requires both systolic and diastolic measures)
+
+The examples use `dplyr` and the native pipe (`|>`, available in R 4.1+).
+The first scores one adult using MEPA:
+
+```{r mepa, message=FALSE}
+library(essential8)
+library(dplyr)
+
+patient <- tibble(
+  id = "patient_1",
+  age = 55,
+  sex = "female",
+
+  # MEPA items
+  # Daily servings
+  olive_oil = 2,
+  green_leafy_vegetables = 1,
+  other_vegetables = 2,
+  whole_grains = 2,
+  # Weekly servings
+  berries = 3,
+  other_fruit = 5,
+  meat = 2,
+  fish = 3,
+  chicken = 2,
+  cheese = 1,
+  butter_cream = 1,
+  beans = 3,
+  sweets_and_pastries = 1,
+  nuts = 4,
+  alcohol = 4,
+  # Fast-food meals per week
+  fast_food = 0,
+
+  # Physical activity
+  moderate_activity_minutes = 90,
+  vigorous_activity_minutes = 0,
+
+  # Smoking
+  smoking_status = "former",
+  years_since_quit = 6,
+  current_inhaled_nds = FALSE,
+  secondhand_smoke_home = FALSE,
+
+  # Sleep
+  sleep_hours = 7.5,
+
+  # BMI
+  bmi = 27.5,
+  bmi_profile = "general",
+
+  # Blood lipids
+  non_hdl_cholesterol = 145,
+  lipid_lowering_treatment = FALSE,
+
+  # Diabetes & Glucose
+  diabetes = FALSE,
+  glucose_measure = "fasting_glucose",
+  glucose_value = 95,
+
+  # Blood Pressure
+  systolic_bp = 128,
+  diastolic_bp = 78,
+  antihypertensive_treatment = FALSE
+)
+
+patient |>
+  score_le8(diet_method = "mepa") |>
+  select(id, mepa_total, le8_diet_score, le8_composite_score, le8_category)
+```
+
+The `diet_method` argument accepts `"mepa"`, `"dash"`, `"hei2015"`, or
+`"percentile"`. The `min_components` argument defaults to 7.
+For `diet_method = "mepa"`, the function calculates `mepa_total` directly from
+the 16 screener questions. Their column names must be the column labels shown
+above. Matching of MEPA, DASH, and HEI-2015 diet columns is
+case-insensitive; all other input column names are case-sensitive.
+
+The default MEPA sex field is `sex`; if it is absent, a `female` column is
+recognized automatically. Map any other field with, for example,
+`mepa_columns = c(sex = "reported_sex", alcohol = "alc")`. For sex, values are
+trimmed and matched case-insensitively as `m`/`f` or `male`/`female`.
+Numeric or character `0`/`1` values are also accepted, where `0` is male and
+`1` is female.
+
+For data that use different diet methods, split the rows into separate data
+frames and call `score_le8()` separately. Percentile calls use `diet_value`,
+containing a DASH or HEI-2015 percentile from 0 to 100. The result appends all
+eight component scores, `le8_n_components`, `le8_complete`, the composite score,
+and its cardiovascular health category. See `?score_le8` for more information.
+
+## DASH and HEI-2015
+
+For population research, use `diet_method = "dash"` or `"hei2015"` with raw
+food and nutrient inputs, an existing diet score, or a percentile. For
+example, add an existing HEI-2015 score to the adult record above:
+
+```{r hei2015}
+patient |>
+  mutate(hei2015 = 70) |>
+  score_le8(diet_method = "hei2015", reference = "nhanes_2015_2018") |>
+  select(id, hei2015, le8_diet_score, le8_composite_score)
+```
+
+The diet score is converted to LE8 points using the selected reference.
+See [Diet scoring in Life's Essential 8](vignettes/population-diets.Rmd),
+also available through `vignette("population-diets", package = "essential8")`,
+for the background, scoring rules, input units, and examples.
+
+## Incomplete component data
+
+`score_le8()` preserves ordinary row-level missingness.
+The composite is the mean of the available component scores when the selected
+threshold is met:
+
+```{r incomplete-components}
+bind_rows(
+  patient,
+  patient |> mutate(id = "sleep_missing", sleep_hours = NA_real_)
+) |>
+  score_le8(min_components = 7) |>
+  select(id, le8_composite_score, le8_n_components, le8_complete)
+```
+
+`le8_n_components` reports how many component scores contributed, while
+`le8_complete` is `TRUE` only when all eight were available. If a
+component cannot be calculated for any observation, the function emits one
+consolidated warning identifying every structurally unavailable component.
+
+## Learn more
+- Package website: https://thatoneguy006.github.io/essential8/index.html
+- Get started: https://thatoneguy006.github.io/essential8/articles/essential8-get-started.html
+
+## Disclaimer
+
+`essential8` is independent research software and is not affiliated with,
+sponsored by, approved by, or endorsed by the American Heart Association.
+It is not intended for clinical decision-making or diagnosis of health
+problems.
+
+## References
+
+- Lloyd-Jones, D. M., Allen, N. B., Anderson, C. A. M., et al. (2022).
+  Life's Essential 8: Updating and Enhancing the American Heart Association's
+  Construct of Cardiovascular Health: A Presidential Advisory From the
+  American Heart Association. *Circulation*, 146(5), e18-e43.
+  <https://doi.org/10.1161/CIR.0000000000001078>
+- Lloyd-Jones, D. M., Ning, H., Labarthe, D., et al. (2022). Status of
+  Cardiovascular Health in US Adults and Children Using the American Heart
+  Association's New Life's Essential 8 Metrics. *Circulation*, 146(11),
+  822-835. <https://doi.org/10.1161/CIRCULATIONAHA.122.060911>

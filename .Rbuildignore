@@ -15,3 +15,5 @@
 ^data-raw$
 ^\.git$
 ^NEWS\.html$
+^references\.bib$
+^nlm-citation-sequence-brackets\.csl$

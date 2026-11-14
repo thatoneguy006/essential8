@@ -1,5 +1,8 @@
 ---
 output: github_document
+bibliography: references.bib
+csl: nlm-citation-sequence-brackets.csl
+link-citations: true
 editor_options: 
   markdown: 
     wrap: 72
@@ -55,20 +58,7 @@ eight lifestyle and health components into a composite cardiovascular health
 score from 0 to 100. `essential8` applies the published adult and pediatric
 scoring bands in one tested workflow and returns all eight component scores plus the composite.
 
-Diet can be scored with MEPA screeners or with DASH and HEI-2015 population
-indices. By default, the composite score is calculated when at least seven
-components are available; `min_components` can set a threshold from 1 through
-8.
-
-## Basic use
-
-Read the AHA advisory and `?score_le8` before using the package, particularly
-the input units, population-percentile diet requirements, and optional
-clinical-judgment adjustments.
-
-Pass a data frame containing adult inputs for the eight AHA metrics. Missing
-component values are allowed, and component-specific columns may be omitted
-when a domain is unavailable:
+The scoring components are as follows:
 
 - diet (MEPA, DASH, HEI-2015, or externally supplied percentiles)
 - physical activity (moderate and vigorous activity)
@@ -78,6 +68,22 @@ when a domain is unavailable:
 - blood lipids
 - blood glucose and diabetes status
 - blood pressure (requires both systolic and diastolic measures)
+
+Diet can be scored with one of three measures:
+
+- MEPA [@cerwinske2017mepa]
+- DASH [@fung2008dash]
+- HEI-2015 [@krebssmith2018hei]
+
+MEPA is based on a 16-item questionnaire. DASH and HEI-2015 are based on population indices. More information about the nuances with diet scoring can be found in [Diet scoring in Life's Essential 8](vignettes/population-diets.Rmd), also available through `vignette("population-diets", package = "essential8")`.
+
+## Basic use
+
+If this is your first time working with Life Essential 8 scores, you should read the AHA advisory [@lloydjones2022le8] and `?score_le8` before using the package, particularly the input units, population-percentile diet requirements, and optional clinical-judgment adjustments.
+
+Pass a data frame containing inputs for the eight AHA metrics. Missing
+component values are allowed, and component-specific columns may be omitted
+when a domain is unavailable. By default, the composite score is calculated when at least seven components are available; this can be changed via `min_components` with valid thresholds from 1 through 8.
 
 The examples use `dplyr` and the native pipe (`|>`, available in R 4.1+).
 The first scores one adult using MEPA:
@@ -143,7 +149,9 @@ patient <- tibble(
   diastolic_bp = 78,
   antihypertensive_treatment = FALSE
 )
+```
 
+```{r score}
 patient |>
   score_le8(diet_method = "mepa") |>
   select(id, mepa_total, le8_diet_score, le8_composite_score, le8_category)
@@ -220,12 +228,6 @@ problems.
 
 ## References
 
-- Lloyd-Jones, D. M., Allen, N. B., Anderson, C. A. M., et al. (2022).
-  Life's Essential 8: Updating and Enhancing the American Heart Association's
-  Construct of Cardiovascular Health: A Presidential Advisory From the
-  American Heart Association. *Circulation*, 146(5), e18-e43.
-  <https://doi.org/10.1161/CIR.0000000000001078>
-- Lloyd-Jones, D. M., Ning, H., Labarthe, D., et al. (2022). Status of
-  Cardiovascular Health in US Adults and Children Using the American Heart
-  Association's New Life's Essential 8 Metrics. *Circulation*, 146(11),
-  822-835. <https://doi.org/10.1161/CIRCULATIONAHA.122.060911>
+:::{#refs}
+
+:::

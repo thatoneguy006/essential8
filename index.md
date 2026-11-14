@@ -129,6 +129,10 @@ patient <- tibble(
 patient |>
   score_le8(diet_method = "mepa") |>
   select(id, mepa_total, le8_diet_score, le8_composite_score, le8_category)
+#> # A tibble: 1 x 5
+#>   id        mepa_total le8_diet_score le8_composite_score le8_category
+#>   <chr>          <int>          <dbl>               <dbl> <chr>
+#> 1 patient_1         14             80                  80 high
 ```
 
 The `diet_method` argument accepts `"mepa"`, `"dash"`, `"hei2015"`, or
@@ -167,6 +171,10 @@ patient |>
   mutate(hei2015 = 70) |>
   score_le8(diet_method = "hei2015", reference = "nhanes_2015_2018") |>
   select(id, hei2015, le8_diet_score, le8_composite_score)
+#> # A tibble: 1 x 4
+#>   id        hei2015 le8_diet_score le8_composite_score
+#>   <chr>       <dbl>          <dbl>               <dbl>
+#> 1 patient_1      70             80                  80
 ```
 
 The diet score is converted to LE8 points using the selected reference.
@@ -190,6 +198,11 @@ bind_rows(
 ) |>
   score_le8(min_components = 7) |>
   select(id, le8_composite_score, le8_n_components, le8_complete)
+#> # A tibble: 2 x 4
+#>   id            le8_composite_score le8_n_components le8_complete
+#>   <chr>                       <dbl>            <int> <lgl>
+#> 1 patient_1                    80                  8 TRUE
+#> 2 sleep_missing                77.1                7 FALSE
 ```
 
 `le8_n_components` reports how many component scores contributed, while

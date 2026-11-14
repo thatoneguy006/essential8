@@ -176,7 +176,11 @@
 <span></span>
 <span><span class="va">patient</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/score_le8.html">score_le8</a></span><span class="op">(</span>diet_method <span class="op">=</span> <span class="st">"mepa"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">mepa_total</span>, <span class="va">le8_diet_score</span>, <span class="va">le8_composite_score</span>, <span class="va">le8_category</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">mepa_total</span>, <span class="va">le8_diet_score</span>, <span class="va">le8_composite_score</span>, <span class="va">le8_category</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # A tibble: 1 x 5</span></span>
+<span><span class="co">#&gt;   id        mepa_total le8_diet_score le8_composite_score le8_category</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;          &lt;int&gt;          &lt;dbl&gt;               &lt;dbl&gt; &lt;chr&gt;</span></span>
+<span><span class="co">#&gt; 1 patient_1         14             80                  80 high</span></span></code></pre></div>
 <p>The <code>diet_method</code> argument accepts <code>"mepa"</code>, <code>"dash"</code>, <code>"hei2015"</code>, or <code>"percentile"</code>. The <code>min_components</code> argument defaults to 7. For <code>diet_method = "mepa"</code>, the function calculates <code>mepa_total</code> directly from the 16 screener questions. Their column names must be the column labels shown above. Matching of MEPA, DASH, and HEI-2015 diet columns is case-insensitive; all other input column names are case-sensitive.</p>
 <p>The default MEPA sex field is <code>sex</code>; if it is absent, a <code>female</code> column is recognized automatically. Map any other field with, for example, <code>mepa_columns = c(sex = "reported_sex", alcohol = "alc")</code>. For sex, values are trimmed and matched case-insensitively as <code>m</code>/<code>f</code> or <code>male</code>/<code>female</code>. Numeric or character <code>0</code>/<code>1</code> values are also accepted, where <code>0</code> is male and <code>1</code> is female.</p>
 <p>For data that use different diet methods, split the rows into separate data frames and call <code><a href="reference/score_le8.html">score_le8()</a></code> separately. Percentile calls use <code>diet_value</code>, containing a DASH or HEI-2015 percentile from 0 to 100. The result appends all eight component scores, <code>le8_n_components</code>, <code>le8_complete</code>, the composite score, and its cardiovascular health category. See <code><a href="reference/score_le8.html">?score_le8</a></code> for more information.</p>
@@ -189,7 +193,11 @@
 <code class="sourceCode R"><span><span class="va">patient</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>hei2015 <span class="op">=</span> <span class="fl">70</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/score_le8.html">score_le8</a></span><span class="op">(</span>diet_method <span class="op">=</span> <span class="st">"hei2015"</span>, reference <span class="op">=</span> <span class="st">"nhanes_2015_2018"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">hei2015</span>, <span class="va">le8_diet_score</span>, <span class="va">le8_composite_score</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">hei2015</span>, <span class="va">le8_diet_score</span>, <span class="va">le8_composite_score</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # A tibble: 1 x 4</span></span>
+<span><span class="co">#&gt;   id        hei2015 le8_diet_score le8_composite_score</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;       &lt;dbl&gt;          &lt;dbl&gt;               &lt;dbl&gt;</span></span>
+<span><span class="co">#&gt; 1 patient_1      70             80                  80</span></span></code></pre></div>
 <p>The diet score is converted to LE8 points using the selected reference. See <a href="vignettes/population-diets.Rmd">Diet scoring in Life’s Essential 8</a>, also available through <code><a href="articles/population-diets.html">vignette("population-diets", package = "essential8")</a></code>, for the background, scoring rules, input units, and examples.</p>
 </div>
 <div class="section level2">
@@ -202,7 +210,12 @@
 <span>  <span class="va">patient</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"sleep_missing"</span>, sleep_hours <span class="op">=</span> <span class="cn">NA_real_</span><span class="op">)</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/score_le8.html">score_le8</a></span><span class="op">(</span>min_components <span class="op">=</span> <span class="fl">7</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">le8_composite_score</span>, <span class="va">le8_n_components</span>, <span class="va">le8_complete</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">le8_composite_score</span>, <span class="va">le8_n_components</span>, <span class="va">le8_complete</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # A tibble: 2 x 4</span></span>
+<span><span class="co">#&gt;   id            le8_composite_score le8_n_components le8_complete</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;                       &lt;dbl&gt;            &lt;int&gt; &lt;lgl&gt;</span></span>
+<span><span class="co">#&gt; 1 patient_1                    80                  8 TRUE</span></span>
+<span><span class="co">#&gt; 2 sleep_missing                77.1                7 FALSE</span></span></code></pre></div>
 <p><code>le8_n_components</code> reports how many component scores contributed, while <code>le8_complete</code> is <code>TRUE</code> only when all eight were available. If a component cannot be calculated for any observation, the function emits one consolidated warning identifying every structurally unavailable component.</p>
 </div>
 <div class="section level2">

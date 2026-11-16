@@ -16,11 +16,7 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-`essential8` computes component and composite Life's Essential 8 (LE8)
-cardiovascular health scores using the American Heart Association's 2022
-definitions. Rows aged 20 years or older use the adult definitions and rows
-aged 4 months to 19 years use the pediatric definitions; this vignette scores
-adults, and `vignette("pediatric-scoring")` covers children.
+`essential8` computes Life's Essential 8 (LE8) cardiovascular health scores using the American Heart Association's 2022 definitions. Subjects aged 20 years or older are scored using the adult definitions whereas subjects aged 4 months to 19 years are scored using the pediatric definitions; this vignette scores adults, see `vignette("pediatric-scoring")` for details about pediatric scoring.
 
 This vignette shows how to score complete and incomplete data. The examples
 use `dplyr` and the native pipe (`|>`, available in R 4.1+). See `?score_le8`
@@ -28,8 +24,8 @@ for all input requirements and scoring details.
 
 ## Create an adult data frame
 
-Supply one row per person. The example includes two adults with responses
-to the 16-item Mediterranean Eating Pattern for Americans (MEPA) screener.
+Supply one row per person. This example includes two adults with responses
+to the 16-item Mediterranean Eating Pattern for Americans (MEPA) questionnaire.
 It shows both BMI profiles and both glucose measures.
 
 ```{r create-data}
@@ -82,15 +78,15 @@ adult_data <- tibble(
 
 Pass the data frame to `score_le8()`. The returned data frame retains the
 input columns and appends the derived activity measure, eight component
-scores, the number of contributing components, composite score, completeness
-indicator, and category.
+scores, the number of contributing components, composite score, a completeness
+indicator, and cardiovascular health category.
 
 ```{r score-data}
 scored <- adult_data |>
   score_le8(diet_method = "mepa")
 
 scored |>
-  select(id, mepa_total, le8_diet_score, le8_composite_score, le8_category)
+  select(id, mepa_total, diet_score, le8_composite_score, le8_category)
 ```
 
 Each vigorous activity minute counts as two moderate activity minutes and is
@@ -103,10 +99,10 @@ The component scores are available for analysis and quality checks:
 
 ```{r component-scores}
 scored |>
-  select(id, starts_with("le8_") & ends_with("_score"), -le8_composite_score)
+  select(id, ends_with("_score"), -le8_composite_score)
 ```
 
-## Understand the MEPA inputs
+## Understanding the MEPA inputs
 
 The MEPA response columns use the 16 screener-item labels shown above.
 Use `mepa_columns` to map different column names to these labels.
@@ -125,18 +121,26 @@ regular cheese or cream cheese.
 
 `score_le8()` evaluates each criterion and returns their sum as `mepa_total`
 so that the derived diet input can be audited. The default MEPA sex field is
-`sex`. If `sex` is absent, a field named `female` is
-recognized automatically; map any other name with, for example,
-`mepa_columns = c(sex = "reported_sex")`. Values are trimmed and matched
-case-insensitively as `"m"`/`"f"` or `"male"`/`"female"`. Numeric or character
-`0`/`1` values are also accepted, where `0` is male and `1` is female. A
-logical `female` column (`TRUE` for female) is also accepted.
+`sex`. If `sex` is absent, a field named `female` is recognized automatically; map any other name with, for example, `mepa_columns = c(sex = "reported_sex")`. Values are trimmed and matched case-insensitively as `"m"`/`"f"` or `"male"`/`"female"`. Numeric or character `0`/`1` values are also accepted, where `0` is male and `1` is female. A logical `female` column (`TRUE` for female) is also accepted.
 
-## Choose other input methods explicitly
+## Choosing a diet scoring method
 
-The `diet_method` argument defaults to `"mepa"`. If a source data set
-contains both MEPA and percentile inputs, split the rows into separate data
-frames and call `score_le8()` separately for each method.
+The `diet_method` argument defaults to `"mepa"`. If your data contains both MEPA and percentile inputs, split the rows into separate data frames and call `score_le8()` separately for each method.
+
+`essential8` can also compute DASH/HEI-2015 percentiles if you collected data for those instruments. Use `diet_method = "dash"` or `"hei2015"` with raw food and nutrient inputs,the resulting data-frame is similar to the MEPA call. Otherwise supply the DASH/HEI-2015 scores to be converted to percentiles, or the percentiles themselves in the data-frame via `diet_value`. See
+`vignette("population-diets", package = "essential8")` for the background,
+scoring rules, and examples.
+
+Here is an example where the percentiles are user-supplied:
+
+```{r percentile}
+adult_data |>
+  mutate(diet_value = c(35, 95)) |>
+  score_le8(diet_method = "percentile") |>
+  select(id, diet_value, diet_score, le8_composite_score)
+```
+
+## Scoring tips
 
 - For `diet_method = "mepa"`, `diet_value` must be absent or contain only
   missing values.
@@ -149,33 +153,16 @@ frames and call `score_le8()` separately for each method.
 - Set `glucose_measure` to `"fasting_glucose"` for a value in mg/dL or
   `"hba1c"` for a percentage. Diagnosed diabetes requires HbA1c for scoring.
 
-The percentile workflow is executable without removing the unused MEPA columns:
-
-```{r percentile}
-adult_data |>
-  mutate(diet_value = c(35, 95)) |>
-  score_le8(diet_method = "percentile") |>
-  select(id, diet_value, le8_diet_score, le8_composite_score)
-```
-
-Use `diet_method = "dash"` or `"hei2015"` with raw food and nutrient inputs,
-an existing diet score, or a percentile. See
-`vignette("population-diets", package = "essential8")` for the background,
-scoring rules, and examples.
-
 Three optional flags apply adjustments that require clinical judgment:
 `apply_lean_muscular_bmi_override`, `apply_sleep_apnea_penalty`, and
 `apply_prediabetes_metformin_penalty`. When these columns are absent, their
 adjustments are not applied.
 
-## Work with incomplete component data
+## Working with incomplete component data
 
-Component inputs may be missing or their columns may be omitted. Missing
-values are not filled in, and measurements are not rounded. Supply values in
-the documented units. `age` must be complete and at least 20 for every row.
+Component inputs may be missing, their columns may be omitted, or optionally, you can choose to impute missing data using `score_le8(impute = TRUE)`. Supply values in the documented units. `age` must be complete and at least 20 for every row.
 
-By default, `score_le8()` calculates the composite when at least seven of the
-eight component scores are available. Choose any threshold from 1 through 8
+By default, `score_le8()` calculates the composite score when at least seven of the eight component scores are available. Choose any threshold from 1 through 8
 with `min_components`. The composite is the mean of the available components
 when the threshold is met.
 
@@ -183,14 +170,52 @@ when the threshold is met.
 adult_data |>
   mutate(sleep_hours = c(NA_real_, 6.5)) |>
   score_le8(min_components = 7) |>
-  select(id, le8_composite_score, le8_n_components, le8_complete)
+  select(id, le8_composite_score, n_components, le8_complete)
 ```
 
-`le8_n_components` reports how many components were scored. `le8_complete`
+`n_components` reports how many components were scored. `le8_complete`
 is `TRUE` when all eight are available. Missing values in individual rows
 do not trigger warnings. If a component cannot be scored for anyone, a
 warning names it. The warning also explains when too few components are
 available to calculate any composite scores.
+
+## Summarize, reshape, and plot scores
+
+`score_le8()` returns its input with the extra class `essential8_scores`,
+which adds methods for summarizing and plotting. `summary()` reports how many
+rows were scored, the distribution of each score, and the categories:
+
+```{r summary}
+summary(scored)
+```
+
+`dplyr::summarise()` without any expressions returns the same
+statistics as a data frame, one row per measure, optionally by group with
+`.by`. Ordinary summaries, such as
+`summarise(scored, mean_le8 = mean(le8_composite_score))`, work as usual.
+
+```{r summarise}
+summarise(scored)
+```
+
+`tidy()` reshapes the scores into long format, one row per person and
+measure, ready for grouped analyses or custom plots:
+
+```{r tidy}
+tidy(scored, id_cols = "id")
+```
+
+`plot()` draws the mean scores with ggplot2. Use `type = "distribution"` for
+box plots and `type = "composite"` for a histogram of the composite score by
+category. The result is a ggplot object that you can modify further.
+
+```{r plot, eval = requireNamespace("ggplot2", quietly = TRUE), fig.alt = "Bar chart of the mean LE8 composite and component scores, with dashed lines at the moderate (50) and high (80) thresholds."}
+plot(scored)
+```
+
+Row-wise verbs such as `filter()`, `mutate()`, and joins keep the class;
+`group_by()` and saving to a file drop it. Use `as_le8_scores()` to restore
+it, for example after reading saved scores back into R.
 
 ## Source-defined inputs
 

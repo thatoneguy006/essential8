@@ -9,7 +9,7 @@ test_that("raw MEPA inputs flow through diet and composite scoring", {
 
   expect_false("diet_value" %in% names(input))
   expect_equal(result$mepa_total, totals)
-  expect_equal(result$le8_diet_score, c(0, 50, 100))
+  expect_equal(result$diet_score, c(0, 50, 100))
   expect_equal(result$le8_composite_score, c(87.5, 93.75, 100))
 })
 
@@ -38,14 +38,14 @@ test_that("percentile-only scoring does not require MEPA inputs", {
 
   expect_false(any(c("sex", adult_mepa_columns()) %in% names(result)))
   expect_equal(result$mepa_total, NA_integer_)
-  expect_equal(result$le8_diet_score, 100)
+  expect_equal(result$diet_score, 100)
 })
 
 test_that("zero-row diet dispatch preserves diet output types", {
   input <- adult_input_fixture()[0, , drop = FALSE]
   complete_mepa_result <- expect_no_warning(score_le8(input))
   expect_type(complete_mepa_result$mepa_total, "integer")
-  expect_type(complete_mepa_result$le8_diet_score, "double")
+  expect_type(complete_mepa_result$diet_score, "double")
 
   input[c("sex", adult_mepa_columns())] <- NULL
   mepa_result <- expect_no_warning(
@@ -56,15 +56,15 @@ test_that("zero-row diet dispatch preserves diet output types", {
   )
 
   expect_type(mepa_result$mepa_total, "integer")
-  expect_type(mepa_result$le8_diet_score, "double")
+  expect_type(mepa_result$diet_score, "double")
   expect_type(percentile_result$mepa_total, "integer")
-  expect_type(percentile_result$le8_diet_score, "double")
+  expect_type(percentile_result$diet_score, "double")
 
   input$diet_value <- numeric()
   result <- score_le8(input, diet_method = "percentile")
 
   expect_type(result$mepa_total, "integer")
-  expect_type(result$le8_diet_score, "double")
+  expect_type(result$diet_score, "double")
 })
 
 test_that("zero-row MEPA scoring validates column types", {
@@ -164,7 +164,7 @@ test_that("MEPA alcohol uses a bounded positive weekly range", {
     stats::setNames(c(0, 1, 1, 0, 0, 1, 1, 0), labels)
   )
   expect_equal(
-    stats::setNames(result$le8_diet_score, labels),
+    stats::setNames(result$diet_score, labels),
     stats::setNames(rep(0, 8), labels)
   )
 })
@@ -183,7 +183,7 @@ test_that("MEPA method, screener names, and sex are case-insensitive", {
 
   expect_identical(result$SeX, "FEMALE")
   expect_equal(result$mepa_total, 16)
-  expect_equal(result$le8_diet_score, 100)
+  expect_equal(result$diet_score, 100)
 })
 
 test_that("a named MEPA mapping adapts existing data column names", {
@@ -200,7 +200,7 @@ test_that("a named MEPA mapping adapts existing data column names", {
   )
 
   expect_equal(result$mepa_total, 16)
-  expect_equal(result$le8_diet_score, 100)
+  expect_equal(result$diet_score, 100)
 })
 
 test_that("MEPA mappings reject unsupported or ambiguous specifications", {
@@ -243,8 +243,8 @@ test_that("omitting every MEPA input makes diet structurally unavailable", {
     "Diet",
     class = "essential8_missing_component"
   )
-  expect_true(is.na(result$le8_diet_score))
-  expect_equal(result$le8_n_components, 7L)
+  expect_true(is.na(result$diet_score))
+  expect_equal(result$n_components, 7L)
 })
 
 test_that("a partially supplied MEPA screener is an error, not silent NA", {

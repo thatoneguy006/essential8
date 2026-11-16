@@ -1,8 +1,8 @@
 ---
-title: "Scoring children"
+title: "Pediatric AHA Scoring"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Scoring children}
+  %\VignetteIndexEntry{Pediatric AHA Scoring}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -20,15 +20,14 @@ younger children in its Supplemental Appendix 2. Adults and children can be
 scored in the same call; each row's `age` chooses the definitions, and
 `le8_population` records which were used.
 
-This article covers what changes for children, which inputs to supply, and
-how to derive growth-chart and blood-pressure percentiles.
+This article covers how LE8 scoring changes for children, which inputs to supply, and how to derive growth-chart and blood-pressure percentiles.
 
 ```{r packages, message = FALSE}
 library(essential8)
 library(dplyr)
 ```
 
-## What changes for children
+## Pediatric Scoring Changes
 
 Each component uses an age-appropriate rule. Some are defined only from a
 certain age; before then, the component is `NA` and does not count toward
@@ -36,7 +35,7 @@ certain age; before then, the component is `NA` and does not count toward
 
 | Component | Pediatric rule | Ages scored |
 |---|---|---|
-| Diet | MEPA from the same columns as adults: 6 items (6-23 months), 10 items (2-5 years), all 16 (6-19 years); or population percentiles | 6 months+ (percentiles: 2 years+) |
+| Diet | MEPA: 6 items (6-23 months), 10 items (2-5 years), all 16 (6-19 years); or population percentiles | 6 months+ (percentiles: 2 years+) |
 | Physical activity | Daily active play (1-5 years); weekly moderate or vigorous minutes, not doubled (6-19 years) | 1 year+ |
 | Nicotine exposure | Never tried, tried over 30 days ago, current inhaled NDS, current combustible; secondhand smoke at any age | All |
 | Sleep | Distance from the age-appropriate range (12-16 h at 4-11 months to 8-10 h at 13-19 years) | All |
@@ -48,13 +47,60 @@ certain age; before then, the component is `NA` and does not count toward
 AHA suggests that the composite for a child be the average of whatever
 components are available and appropriate for measurement. Laboratory values
 are often unavailable in children, and the NHANES analysis that accompanied the
-advisory averaged as few as three components, so pediatric analyses usually
-set `min_components` below the default of 7.
+advisory averaged as few as three components, so set `min_components` appropriately for your cohort.
 
-## A preschool child
+## Deriving growth-chart and blood-pressure percentiles
 
-Children use the same MEPA columns as adults. At ages 2-5, ten of the items
-are scored, at 10 points per item met, with child-sized thresholds:
+For some pediatric samples, you will need blood-pressure percentiles and/or growth chart data. 
+
+`add_pediatric_references()` derives the percentile inputs from raw
+measurements, using the packages [cdcanthro](https://CRAN.R-project.org/package=cdcanthro)
+(CDC and WHO growth charts) and [pedbp](https://CRAN.R-project.org/package=pedbp)
+(AAP 2017 blood-pressure percentiles). It needs sex, height, and weight, and
+uses `age_months` or `age * 12`.
+
+```{r references, eval = has_references}
+measurements <- tibble(
+  id = c("toddler", "school_age", "teen"),
+  age = c(1.5, 8.25, 15.5),
+  sex = c("male", "female", "male"),
+  height_cm = c(82, 128, 172),
+  weight_kg = c(11.5, 27, 64)
+)
+
+measurements |>
+  add_pediatric_references() |>
+  select(id, bmi_percentile, bmi_percent_of_p95, infant_weight_percentile,
+         systolic_bp_p90, systolic_bp_p95)
+```
+
+Blood-pressure references are returned only for ages 1 to 12, and only when
+height is known.
+
+Rapid infant weight gain compares visits, so it cannot be derived from one
+row. With longitudinal data, compute it from `infant_weight_z` within each
+child:
+
+```{r z-change, eval = FALSE}
+visits |>
+  add_pediatric_references() |>
+  arrange(child_id, age) |>
+  mutate(
+    infant_weight_z_change = infant_weight_z - lag(infant_weight_z),
+    .by = child_id
+  )
+```
+
+AHA compares against the z-score at prior routine visits, for example since
+age 1 month; choose the comparison visit to match your study design.
+
+## School-age children and adolescents (6-19 yrs)
+
+From age 6, diet uses all 16 MEPA items and the adult scoring bands. Weekly moderate and vigorous minutes count once each (adults count vigorous minutes twice). The pediatric nicotine categories describe any nicotine product: `"never"` = never tried, `"former"` = tried but not within 30 days, and `"current"` = combustible use within 30 days. Blood pressure switches to the adult bands at 13, while the other components stay pediatric through age 19.
+
+## A preschool child (2-5 yrs)
+
+At ages 2-5, ten of the MEPA items are scored, at 10 points per item met, with pediatric thresholds:
 
 * vegetables: `green_leafy_vegetables + other_vegetables`, 2+ per day
 * fruit: `berries + other_fruit`, 14+ per week (2 per day)
@@ -62,14 +108,14 @@ are scored, at 10 points per item met, with child-sized thresholds:
 * `fish` 1+ and `nuts` 4+ per week
 * `meat`, `butter_cream`, and `sweets_and_pastries` 3 or fewer per week; for
   children under 6, sweets should include sugar-sweetened beverages
-* `fast_food` 2 or fewer times per month (at most 24/52 per week)
+* `fast_food` 2 or fewer times per month
 
 `chicken`, `cheese`, `beans`, `alcohol`, and `sex` are not used before age 6
 and may be omitted from data containing only young children.
 
-The example also uses active play in minutes per day and blood-pressure
+This example also uses active play in minutes per day and blood-pressure
 percentiles. The 90th and 95th percentiles (`systolic_bp_p90` and so on) are
-the child's reference values for age, sex, and height, in mm Hg.
+the child's reference values for age, sex, and height, in mmHg.
 
 ```{r preschool}
 preschooler <- tibble(
@@ -108,7 +154,7 @@ preschooler <- tibble(
 
 preschooler |>
   score_le8(min_components = 5) |>
-  select(mepa_total, starts_with("le8_"))
+  select(mepa_total, ends_with("_score"), n_components, le8_category)
 ```
 
 Eight of the ten items are met (80 points); `mepa_total` counts items met on
@@ -118,7 +164,7 @@ child's 95th percentile (107 mm Hg) but below 95th + 12 mm Hg, which is
 stage 1 (50 points). Lipids and glucose were not measured, so the composite
 averages six components; the warning says so.
 
-## Infants and toddlers
+## Infants and toddlers (6-23 months)
 
 From 6 to 23 months, diet uses six items: vegetables, fruit, and whole grains
 (at least once a day before 12 months, twice a day from 12 months), no sweets
@@ -154,77 +200,22 @@ infant <- tibble(
 
 infant |>
   score_le8(min_components = 4) |>
-  select(mepa_total, starts_with("le8_"))
+  select(mepa_total, ends_with("_score"), n_components, le8_category)
 ```
 
 `age_months` is optional; when supplied it sets the pediatric age bands more
 precisely than `age * 12`. Physical activity and blood pressure are not scored
 before age 1, so they are `NA` here regardless of the inputs.
 
-## School-age children and adolescents
-
-From age 6, diet uses all 16 MEPA items and the adult bands, so `sex` (for
-the alcohol item) is needed from this age. Weekly moderate and
-vigorous minutes count once each (adults count vigorous minutes twice). The
-pediatric nicotine categories describe any nicotine product: `"never"` means
-never tried, `"former"` means tried but not within 30 days, and `"current"`
-means combustible use within 30 days. Blood pressure switches to the adult
-bands at 13, while the other components stay pediatric through age 19.
-
-## Deriving growth-chart and blood-pressure percentiles
-
-`add_pediatric_references()` derives the percentile inputs from raw
-measurements, using the suggested packages [cdcanthro](https://CRAN.R-project.org/package=cdcanthro)
-(CDC and WHO growth charts) and [pedbp](https://CRAN.R-project.org/package=pedbp)
-(AAP 2017 blood-pressure percentiles). It needs sex, height, and weight, and
-uses `age_months` or `age * 12`.
-
-```{r references, eval = has_references}
-measurements <- tibble(
-  id = c("toddler", "school_age", "teen"),
-  age = c(1.5, 8.25, 15.5),
-  sex = c("male", "female", "male"),
-  height_cm = c(82, 128, 172),
-  weight_kg = c(11.5, 27, 64)
-)
-
-measurements |>
-  add_pediatric_references() |>
-  select(id, bmi_percentile, bmi_percent_of_p95, infant_weight_percentile,
-         systolic_bp_p90, systolic_bp_p95)
-```
-
-Blood-pressure references are returned only for ages 1 to 12, and only when
-height is known: without height, pedbp would assume a median-height child,
-which is a form of imputation the package avoids.
-
-Rapid infant weight gain compares visits, so it cannot be derived from one
-row. With longitudinal data, compute it from `infant_weight_z` within each
-child:
-
-```{r z-change, eval = FALSE}
-visits |>
-  add_pediatric_references() |>
-  arrange(child_id, age) |>
-  mutate(
-    infant_weight_z_change = infant_weight_z - lag(infant_weight_z),
-    .by = child_id
-  )
-```
-
-AHA compares against the z-score at prior routine visits, for example since
-age 1 month; choose the comparison visit to match your study design.
-
 ## Where the sources conflict
 
-The advisory's main table and its supplement are not always consistent. The
-package follows the more specific rule and documents each choice in
+The advisory's main table and its supplement are not always consistent. `essential8` follows the more specific rule and documents each choice in
 `?score_le8`:
 
 * Ages 2-5 use the supplement's 10 points per item met rather than Table 1's
   banded 0-10 scale (for example, 7 items score 70 rather than 80).
-* The supplement calls the 16-item MEPA the screener "used in older children
-  and adults", so ages 6-19 use it with the adult bands.
+* The supplement describes the 16-item MEPA questionnaire as, "used in older
+  children and adults", so ages 6-19 use the adult bands.
 * At 6-23 months, weight at or above the 99.7th percentile with rapid gain
   scores 0, the supplement's explicit worst state, rather than the 25 its
   listed decrements would give.

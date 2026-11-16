@@ -21,7 +21,7 @@ test_that("population diet column maps are case-insensitive and partial", {
     names(row)[!is.na(index)] <- base_names[index[!is.na(index)]]
     arguments$data <- row
     result <- do.call(score_le8, arguments)
-    expect_equal(result$le8_diet_score, 100, info = method)
+    expect_equal(result$diet_score, 100, info = method)
   }
 })
 
@@ -52,7 +52,7 @@ test_that("population diet inputs validate numeric values and column shapes", {
     )
     row$diet_value <- NA_real_
     expect_equal(
-      do.call(score_le8, c(list(data = row), arguments))$le8_diet_score, 100
+      do.call(score_le8, c(list(data = row), arguments))$diet_score, 100
     )
     # A 19-year-old is scored with the pediatric definitions; an explicit
     # (caller-supplied) reference is applied to a pediatric-only call.
@@ -61,7 +61,7 @@ test_that("population diet inputs validate numeric values and column shapes", {
       do.call(score_le8, c(list(data = row), arguments))
     )
     expect_identical(pediatric$le8_population, "pediatric")
-    expect_equal(pediatric$le8_diet_score, 100)
+    expect_equal(pediatric$diet_score, 100)
   }
 })
 
@@ -105,7 +105,7 @@ test_that("population diets handle empty inputs with stable output types", {
     expect_equal(nrow(result), 0)
     expect_type(result$dash_total, "integer")
     expect_type(result$hei2015_total, "double")
-    expect_type(result$le8_diet_score, "double")
+    expect_type(result$diet_score, "double")
     arguments$data <- data.frame(age = numeric())
     # Explicit cutpoints select raw scoring, so absent raw columns are an error.
     expect_error(

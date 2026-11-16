@@ -15,7 +15,7 @@ test_that("HEI-2015 endpoints and midpoints reproduce manual totals", {
   actual <- as.matrix(result[paste0("hei2015_", component_names, "_score")])
   expect_equal(unname(actual), unname(rbind(maximum * 0, maximum / 2, maximum)))
   expect_equal(result$hei2015_total, c(0, 50, 100))
-  expect_equal(result$le8_diet_score, c(0, 25, 100))
+  expect_equal(result$diet_score, c(0, 25, 100))
   expect_equal(result$le8_composite_score, c(87.5, 90.625, 100))
   expect_true(all(is.na(result$dash_total)))
   expect_true(all(is.na(result$mepa_total)))
@@ -66,7 +66,7 @@ test_that("HEI-2015 missing nutrients propagate without partial totals", {
   expect_true(is.na(result$hei2015_total[2]))
   expect_true(is.na(result$hei2015_sodium_score[2]))
   expect_equal(result$hei2015_total_fruits_score, c(5, 5))
-  expect_equal(result$le8_n_components, c(8, 7))
+  expect_equal(result$n_components, c(8, 7))
   expect_equal(result$le8_composite_score, c(100, 100))
   missing$hei2015_sodium <- NULL
   expect_error(
@@ -131,7 +131,7 @@ test_that("HEI-2015 fatty-acid endpoints include MUFA and PUFA", {
 test_that("HEI-2015 uses fixed reference thresholds with inclusive equality", {
   row <- adult_hei2015_row()
   result <- score_le8(row, "hei2015", hei2015_cutpoints = rep(100, 4))
-  expect_equal(result$le8_diet_score, 100)
+  expect_equal(result$diet_score, 100)
   # Totals of 95/97.5/100 from a single 0/2.5/5 point fruit component.
   rows <- lapply(c(0, 0.4, 0.64, 0.8), function(x) {
     row <- adult_hei2015_row()
@@ -142,10 +142,10 @@ test_that("HEI-2015 uses fixed reference thresholds with inclusive equality", {
     do.call(rbind, rows), "hei2015", hei2015_cutpoints = c(95, 97.5, 99, 100)
   )
   expect_equal(result$hei2015_total, c(95, 97.5, 99, 100))
-  expect_equal(result$le8_diet_score, c(25, 50, 80, 100))
+  expect_equal(result$diet_score, c(25, 50, 80, 100))
   singleton <- score_le8(rows[[2]], "hei2015",
                         hei2015_cutpoints = c(95, 97.5, 99, 100))
-  expect_equal(singleton$le8_diet_score, result$le8_diet_score[2])
+  expect_equal(singleton$diet_score, result$diet_score[2])
 })
 
 test_that("explicit HEI-2015 reference cutpoints are validated", {

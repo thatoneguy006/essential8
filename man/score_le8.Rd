@@ -13,7 +13,8 @@ score_le8(
   dash_cutpoints = NULL,
   hei2015_columns = NULL,
   hei2015_cutpoints = NULL,
-  reference = "nhanes_2015_2018"
+  reference = "nhanes_2015_2018",
+  impute = FALSE
 )
 }
 \arguments{
@@ -33,9 +34,11 @@ column names. Unmapped fields use their canonical names.}
 \item{min_components}{A single integer from 1 to 8 specifying the minimum
 number of non-missing LE8 component scores required to calculate
 \code{le8_composite_score}. The default is 7. Available component scores are
-averaged without imputation; observations below the threshold receive
+averaged without imputation, which treats a missing component as equal
+to the average of the others; observations below the threshold receive
 \code{NA_real_}. Pediatric data usually need a lower value; see
-\emph{Pediatric scoring}.}
+\emph{Pediatric scoring}. To account for missing inputs instead, use
+\code{impute}.}
 
 \item{dash_columns, hei2015_columns}{\code{NULL}, or named character vectors
 mapping canonical DASH or HEI-2015 fields to columns in \code{data}. Unmapped
@@ -65,15 +68,24 @@ reference lookup.
 The built-in references describe nonpregnant adults aged 20+ with two
 reliable recalls; they are derived estimates, not AHA-published cutpoints,
 and are refused for pediatric rows.}
+
+\item{impute}{Whether to multiply impute missing inputs before scoring:
+\code{FALSE} (the default), \code{TRUE} for the default settings, or
+\code{\link[=le8_imputation_control]{le8_imputation_control()}} to set the number of imputations, a seed,
+auxiliary predictors, and other \code{\link[mice:mice]{mice::mice()}} arguments. Requires the
+mice package and \code{diet_method = "mepa"}. See \emph{Multiple imputation}.}
 }
 \value{
-An object of the same class as \code{data}, containing the original columns plus
+An \code{essential8_scores} object: \code{data}, with its original class (so tibbles
+and grouped tibbles are returned as such) and columns, plus
 \code{mepa_total} (items met on the age-appropriate MEPA screener: 0-16 from
-age 6, 0-10 at ages 2-5, 0-6 at 6-23 months), \code{dash_total}, and \code{hei2015_total} (missing unless calculated
-from the corresponding raw inputs),
-\code{physical_activity_moderate_equivalent_minutes} (weekly minutes used for
-adults and children aged 6+), the eight component score
-columns prefixed with \code{le8_}, \code{le8_n_components}, \code{le8_composite_score},
+age 6, 0-10 at ages 2-5, 0-6 at 6-23 months), \code{dash_total}, and
+\code{hei2015_total} (missing unless calculated from the corresponding raw
+inputs), \code{physical_activity_moderate_equivalent_minutes} (weekly minutes
+used for adults and children aged 6+), the eight component scores
+(\code{diet_score}, \code{physical_activity_score}, \code{nicotine_score}, \code{sleep_score},
+\code{bmi_score}, \code{blood_lipids_score}, \code{blood_glucose_score}, and
+\code{blood_pressure_score}), \code{n_components}, \code{le8_composite_score},
 \code{le8_complete}, \code{le8_category}, and \code{le8_population} (\code{"adult"} or
 \code{"pediatric"}). The component count reports how many
 scores contributed to the composite score; \code{le8_complete} is \code{TRUE}
@@ -85,8 +97,21 @@ For raw DASH calls, the eight component scores (1 to 5 points each) are
 also appended as \verb{dash_<field>_score}; they sum to \code{dash_total}.
 For raw HEI-2015 calls, the 13 component scores are also appended as
 \verb{hei2015_<component>_score}, including \code{fatty_acids} and \code{saturated_fats}.
-The result has the same class as \code{data}, so tibbles and grouped tibbles
-are returned as such.
+
+With \code{impute}, an \code{essential8_imputed_scores} object instead: the scored
+completed data sets stacked, with the imputation number in \code{.imp} and the
+row of \code{data} in \code{.id}. It is a data frame, or a tibble for tibble input
+(ungrouped). The \code{mids} object from mice is kept as \code{attr(x, "mids")} for
+diagnostics, for example \code{plot(attr(x, "mids"))} to check convergence.
+
+\code{data} must not already contain any of these output columns (compared
+case-insensitively), or the \code{le8_}-prefixed component names used by
+essential8 0.3.0 and earlier; rename or remove them first.
+
+The \code{essential8_scores} class adds \link[=summary.essential8_scores]{summary()},
+\link[=tidy.essential8_scores]{tidy()}, \link[=plot.essential8_scores]{plot()}, and
+dplyr \link[=summarise.essential8_scores]{summarise()} methods. See
+\code{\link[=as_le8_scores]{as_le8_scores()}} for when the class is kept and how to restore it.
 }
 \description{
 Computes the eight Life's Essential 8 (LE8) component scores and the
@@ -379,6 +404,38 @@ earlier versions; pediatric-only errors carry
 \code{essential8_pediatric_input_error}.
 }
 
+\section{Multiple imputation}{
+
+With \code{impute}, \code{score_le8()} fills in missing inputs with \code{\link[mice:mice]{mice::mice()}}
+several times, scores every completed data set, and returns them stacked.
+The imputation:
+\enumerate{
+\item checks the observed values, so data that cannot be scored stop before
+imputation;
+\item imputes an input only for participants whose age uses it (adult BMI is
+never imputed for a child, for example), predicting it from age, the
+other inputs available for the same participants, and any \code{auxiliary}
+columns;
+\item uses predictive mean matching for numeric inputs, so imputed values are
+always values observed in someone else, and logistic or multinomial
+regression for categorical inputs;
+\item never imputes a combination the AHA scoring rules do not score, such as
+diagnosed diabetes without an HbA1c, current smoking with current
+inhaled-NDS use, or a fasting glucose of 126 mg/dL or more without
+diagnosed diabetes.
+}
+
+\code{min_components} then applies to each completed data set as usual.
+\link[=summary.essential8_imputed_scores]{summary()}, dplyr
+\link[=summarise.essential8_imputed_scores]{summarise()}, and \code{plot()} pool
+the results across imputations with Rubin's rules. See
+\code{\link[=le8_imputation_setup]{le8_imputation_setup()}} for the full rules, and to inspect or adjust them.
+
+Imputation assumes values are missing at random given the variables in the
+imputation models; include the variables used in later analyses, such as
+exposures and outcomes, with \code{le8_imputation_control(auxiliary = )}.
+}
+
 \examples{
 \dontshow{if (requireNamespace("dplyr", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 library(dplyr)
@@ -426,7 +483,7 @@ patient <- tibble(
 )
 
 scores <- score_le8(patient, diet_method = "mepa")
-select(scores, id, mepa_total, le8_diet_score, le8_composite_score,
+select(scores, id, mepa_total, diet_score, le8_composite_score,
        le8_category)
 
 # A 4-year-old with the preschool diet screener and no laboratory values.
@@ -452,7 +509,19 @@ child <- tibble(
 )
 
 child_scores <- score_le8(child, min_components = 5)
-select(child_scores, id, mepa_total, starts_with("le8_"))
+select(child_scores, id, mepa_total, ends_with("_score"), n_components)
+\dontshow{\}) # examplesIf}
+\dontshow{if (requireNamespace("mice", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+
+# Multiply impute missing inputs, then pool the scores.
+adults <- read.csv(system.file(
+  "extdata", "le8-adult-example.csv", package = "essential8"
+))
+adults <- adults[!startsWith(names(adults), "expected_")]
+adults$non_hdl_cholesterol[c(2, 5)] <- NA
+
+imputed <- score_le8(adults, impute = le8_imputation_control(m = 5, seed = 1))
+summary(imputed)
 \dontshow{\}) # examplesIf}
 }
 \references{
@@ -484,6 +553,8 @@ See also the National Cancer Institute's
 and \href{https://epi.grants.cancer.gov/hei/hei-scoring-method.html}{algorithm}.
 }
 \seealso{
+\code{\link[=summary.essential8_scores]{summary.essential8_scores()}}, \code{\link[=tidy.essential8_scores]{tidy.essential8_scores()}}, and
+\code{\link[=plot.essential8_scores]{plot.essential8_scores()}} to summarize, reshape, and plot the scores;
 \code{\link[=add_pediatric_references]{add_pediatric_references()}} to derive pediatric growth-chart and
 blood-pressure inputs; \code{\link[=diet_reference]{diet_reference()}} for custom diet references.
 }

@@ -45,8 +45,8 @@
     ncol = length(.le8_component_score_columns()),
     dimnames = list(NULL, .le8_component_score_columns())
   )
-  applicable[, "le8_diet_score"] <- !.pediatric_ages(age, 0, diet_minimum)
-  applicable[, "le8_physical_activity_score"] <- !.pediatric_ages(age, 0, 12)
-  applicable[, "le8_blood_pressure_score"] <- !.pediatric_ages(age, 0, 12)
+  applicable[, "diet_score"] <- !.pediatric_ages(age, 0, diet_minimum)
+  applicable[, "physical_activity_score"] <- !.pediatric_ages(age, 0, 12)
+  applicable[, "blood_pressure_score"] <- !.pediatric_ages(age, 0, 12)
   applicable
 }

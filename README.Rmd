@@ -1,5 +1,8 @@
 ---
 output: github_document
+bibliography: references.bib
+csl: nlm-citation-sequence-brackets.csl
+link-citations: true
 editor_options: 
   markdown: 
     wrap: 72
@@ -55,20 +58,7 @@ eight lifestyle and health components into a composite cardiovascular health
 score from 0 to 100. `essential8` applies the published adult and pediatric
 scoring bands in one tested workflow and returns all eight component scores plus the composite.
 
-Diet can be scored with MEPA screeners or with DASH and HEI-2015 population
-indices. By default, the composite score is calculated when at least seven
-components are available; `min_components` can set a threshold from 1 through
-8.
-
-## Basic use
-
-Read the AHA advisory and `?score_le8` before using the package, particularly
-the input units, population-percentile diet requirements, and optional
-clinical-judgment adjustments.
-
-Pass a data frame containing adult inputs for the eight AHA metrics. Missing
-component values are allowed, and component-specific columns may be omitted
-when a domain is unavailable:
+The scoring components are as follows:
 
 - diet (MEPA, DASH, HEI-2015, or externally supplied percentiles)
 - physical activity (moderate and vigorous activity)
@@ -78,6 +68,22 @@ when a domain is unavailable:
 - blood lipids
 - blood glucose and diabetes status
 - blood pressure (requires both systolic and diastolic measures)
+
+Diet can be scored with one of three measures:
+
+- MEPA [@cerwinske2017mepa]
+- DASH [@fung2008dash]
+- HEI-2015 [@krebssmith2018hei]
+
+MEPA is based on a 16-item questionnaire. DASH and HEI-2015 are based on population indices. More information about the nuances with diet scoring can be found in [Diet scoring in Life's Essential 8](vignettes/population-diets.Rmd), also available through `vignette("population-diets", package = "essential8")`.
+
+## Basic use
+
+If this is your first time working with Life Essential 8 scores, you should read the AHA advisory [@lloydjones2022le8] and `?score_le8` before using the package, particularly the input units, population-percentile diet requirements, and optional clinical-judgment adjustments.
+
+Pass a data frame containing inputs for the eight AHA metrics. Missing
+component values are allowed, and component-specific columns may be omitted
+when a domain is unavailable. By default, the composite score is calculated when at least seven components are available; this can be changed via `min_components` with valid thresholds from 1 through 8.
 
 The examples use `dplyr` and the native pipe (`|>`, available in R 4.1+).
 The first scores one adult using MEPA:
@@ -143,10 +149,12 @@ patient <- tibble(
   diastolic_bp = 78,
   antihypertensive_treatment = FALSE
 )
+```
 
+```{r score}
 patient |>
   score_le8(diet_method = "mepa") |>
-  select(id, mepa_total, le8_diet_score, le8_composite_score, le8_category)
+  select(id, mepa_total, diet_score, le8_composite_score, le8_category)
 ```
 
 The `diet_method` argument accepts `"mepa"`, `"dash"`, `"hei2015"`, or
@@ -166,7 +174,7 @@ Numeric or character `0`/`1` values are also accepted, where `0` is male and
 For data that use different diet methods, split the rows into separate data
 frames and call `score_le8()` separately. Percentile calls use `diet_value`,
 containing a DASH or HEI-2015 percentile from 0 to 100. The result appends all
-eight component scores, `le8_n_components`, `le8_complete`, the composite score,
+eight component scores, `n_components`, `le8_complete`, the composite score,
 and its cardiovascular health category. See `?score_le8` for more information.
 
 ## DASH and HEI-2015
@@ -179,7 +187,7 @@ example, add an existing HEI-2015 score to the adult record above:
 patient |>
   mutate(hei2015 = 70) |>
   score_le8(diet_method = "hei2015", reference = "nhanes_2015_2018") |>
-  select(id, hei2015, le8_diet_score, le8_composite_score)
+  select(id, hei2015, diet_score, le8_composite_score)
 ```
 
 The diet score is converted to LE8 points using the selected reference.
@@ -196,16 +204,84 @@ threshold is met:
 ```{r incomplete-components}
 bind_rows(
   patient,
-  patient |> mutate(id = "sleep_missing", sleep_hours = NA_real_)
-) |>
+  patient |> 
+    mutate(id = "sleep_missing", sleep_hours = NA_real_)
+  ) |>
   score_le8(min_components = 7) |>
-  select(id, le8_composite_score, le8_n_components, le8_complete)
+  select(id, le8_composite_score, n_components, le8_complete)
 ```
 
-`le8_n_components` reports how many component scores contributed, while
+`n_components` reports how many component scores contributed, while
 `le8_complete` is `TRUE` only when all eight were available. If a
 component cannot be calculated for any observation, the function emits one
 consolidated warning identifying every structurally unavailable component.
+
+## Imputing missing inputs
+
+By default, `score_le8(impute = FALSE)` never fills in missing values: the composite averages whichever components are available, which treats a missing component as equal to the average of that person's other components. With
+`impute = TRUE`, `score_le8()` instead uses multiple imputation
+[@rubin1987multiple] with mice [@vanbuuren2011mice]:
+
+1. **Check.** Observed values are validated first, so data that cannot be
+   scored stop before any imputation.
+2. **Impute the inputs, not the scores.** Each missing input, such as non-HDL
+   cholesterol or sleep hours, is imputed from age, the participant's other
+   inputs, and any auxiliary variables you supply. Numeric inputs use
+   predictive mean matching, which only ever imputes values observed in other
+   participants; categorical inputs use logistic or multinomial regression.
+3. **Follow the scoring rules.** An input is imputed only for participants
+   whose age uses it (adult BMI is never imputed for a child, for example),
+   and combinations the AHA rules do not score, such as diagnosed diabetes
+   without an HbA1c, are never imputed.
+4. **Score and pool.** Each completed data set is scored and the results are
+   stacked with an `.imp` column. `summary()`, `summarise()`, and `plot()`
+   pool them with Rubin's rules, so confidence intervals include the
+   uncertainty from the missing values.
+
+```{r imputation, eval = requireNamespace("mice", quietly = TRUE), warning = FALSE}
+adults <- read.csv(
+  system.file("extdata", "le8-adult-example.csv", package = "essential8")
+  ) |>
+  select(!starts_with("expected_")) |>
+  mutate(non_hdl_cholesterol = replace(non_hdl_cholesterol, c(2, 5, 8), NA))
+
+imputed <- adults |>
+  score_le8(impute = le8_imputation_control(m = 20, seed = 2026))
+
+summarise(imputed) |>
+  filter(measure %in% c("composite", "blood_lipids")) |>
+  select(measure, mean, conf.low, conf.high, fmi) |>
+  mutate(across(where(is.numeric), \(x) round(x, 2)))
+```
+
+The fraction of missing information (`fmi`) shows how much of each interval's
+width comes from the imputed values. `le8_imputation_control()` sets the
+number of imputations, a seed, and auxiliary predictors such as an analysis
+outcome; `le8_imputation_setup()` shows exactly what will be imputed and how.
+`vignette("case-study")` compares complete cases, averaged components, and
+multiple imputation on simulated data.
+
+## Summarize and plot scores
+
+The scored data keep their original class and gain methods for `summary()`,
+`tidy()` (long format), `plot()` (with ggplot2), and, with dplyr,
+`summarise()` without expressions for grouped summaries:
+
+```{r methods}
+scored <- bind_rows(
+  patient,
+  patient |> mutate(id = "patient_2", sleep_hours = 5, bmi = 31)
+) |>
+  score_le8()
+```
+
+```{r}
+summary(scored)
+```
+
+```{r}
+summarise(scored)
+```
 
 ## Learn more
 - Package website: https://thatoneguy006.github.io/essential8/index.html
@@ -220,12 +296,6 @@ problems.
 
 ## References
 
-- Lloyd-Jones, D. M., Allen, N. B., Anderson, C. A. M., et al. (2022).
-  Life's Essential 8: Updating and Enhancing the American Heart Association's
-  Construct of Cardiovascular Health: A Presidential Advisory From the
-  American Heart Association. *Circulation*, 146(5), e18-e43.
-  <https://doi.org/10.1161/CIR.0000000000001078>
-- Lloyd-Jones, D. M., Ning, H., Labarthe, D., et al. (2022). Status of
-  Cardiovascular Health in US Adults and Children Using the American Heart
-  Association's New Life's Essential 8 Metrics. *Circulation*, 146(11),
-  822-835. <https://doi.org/10.1161/CIRCULATIONAHA.122.060911>
+:::{#refs}
+
+:::

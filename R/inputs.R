@@ -72,15 +72,26 @@
 
 .le8_component_score_columns <- function() {
   c(
-    "le8_diet_score",
-    "le8_physical_activity_score",
-    "le8_nicotine_score",
-    "le8_sleep_score",
-    "le8_bmi_score",
-    "le8_blood_lipids_score",
-    "le8_blood_glucose_score",
-    "le8_blood_pressure_score"
+    "diet_score",
+    "physical_activity_score",
+    "nicotine_score",
+    "sleep_score",
+    "bmi_score",
+    "blood_lipids_score",
+    "blood_glucose_score",
+    "blood_pressure_score"
   )
+}
+
+# Output names used before 0.4.0, when every score carried the `le8_` prefix.
+.le8_legacy_output_columns <- function() {
+  c(paste0("le8_", .le8_component_score_columns()), "le8_n_components")
+}
+
+# Short component keys ("diet", "bmi", ...) in AHA order, named by score column.
+.le8_component_keys <- function() {
+  columns <- .le8_component_score_columns()
+  stats::setNames(sub("_score$", "", columns), columns)
 }
 
 .le8_component_labels <- function() {
@@ -108,11 +119,12 @@
     paste0("hei2015_", .hei2015_component_names(), "_score"),
     "physical_activity_moderate_equivalent_minutes",
     .le8_component_score_columns(),
-    "le8_n_components",
+    "n_components",
     "le8_composite_score",
     "le8_complete",
-    # Reserve the pre-rename output name to prevent ambiguous results.
+    # Reserve pre-rename output names to prevent ambiguous results.
     "le8_score",
+    .le8_legacy_output_columns(),
     "le8_category",
     "le8_population"
   )
@@ -148,7 +160,8 @@
   if (length(conflicting_columns) > 0L) {
     .abort_input(c(
       "{.arg data} already contains LE8 output columns.",
-      "x" = "Conflicting: {paste(conflicting_columns, collapse = ', ')}."
+      "x" = "Conflicting: {paste(conflicting_columns, collapse = ', ')}.",
+      "i" = "Rename or remove these columns before scoring."
     ))
   }
 

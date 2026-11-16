@@ -45,6 +45,8 @@ navbar:
           href: articles/population-diets.html
         - text: Scoring children
           href: articles/pediatric-scoring.html
+        - text: "Case study: the lifespan"
+          href: articles/case-study.html
     news:
       text: Changelog
       href: news/index.html
@@ -60,6 +62,7 @@ articles:
       - essential8-get-started
       - population-diets
       - pediatric-scoring
+      - case-study
 
 footer:
   structure:

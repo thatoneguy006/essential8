@@ -11,7 +11,7 @@ test_that("the hand-scored pediatric and mixed-age example is reproduced", {
     "blood_lipids", "blood_glucose", "blood_pressure"
   )
   expect_equal(
-    unname(as.matrix(result[paste0("le8_", component, "_score")])),
+    unname(as.matrix(result[paste0(component, "_score")])),
     unname(as.matrix(fixture[paste0("expected_", component, "_score")]))
   )
   expect_equal(result$mepa_total, fixture$expected_mepa_total)
@@ -19,7 +19,7 @@ test_that("the hand-scored pediatric and mixed-age example is reproduced", {
     result$physical_activity_moderate_equivalent_minutes,
     fixture$expected_activity_minutes
   )
-  expect_identical(result$le8_n_components, fixture$expected_n_components)
+  expect_identical(result$n_components, fixture$expected_n_components)
   expect_equal(result$le8_composite_score, fixture$expected_le8_composite_score)
   expect_identical(result$le8_category, fixture$expected_le8_category)
   expect_identical(result$le8_population, fixture$expected_le8_population)
@@ -66,7 +66,7 @@ test_that("pediatric age-band boundaries follow the AHA tables", {
   base <- pediatric_row("school_8_years")
 
   sleep <- function(age, hours) {
-    suppressWarnings(score_le8(with_values(base, age = age, sleep_hours = hours)))$le8_sleep_score
+    suppressWarnings(score_le8(with_values(base, age = age, sleep_hours = hours)))$sleep_score
   }
   # 6-12 years: optimal 9-12 h, closed at both ends.
   expect_equal(sleep(8, c(9, 12, 12.5, 13, 8.5, 8, 7, 6)), c(100, 100, 90, 40, 70, 40, 20, 0))
@@ -74,11 +74,11 @@ test_that("pediatric age-band boundaries follow the AHA tables", {
   expect_equal(sleep(c(12.99, 13, 19), 8.5), c(70, 100, 100))
   # Age 20 is adult (7 to <9 h optimal).
   adult <- suppressWarnings(score_le8(with_values(base, age = 20, sleep_hours = 7)))
-  expect_equal(adult$le8_sleep_score, 100)
+  expect_equal(adult$sleep_score, 100)
 
   lipids <- function(non_hdl, treated = FALSE) {
     score_pediatric(with_values(base, non_hdl_cholesterol = non_hdl,
-                        lipid_lowering_treatment = treated))$le8_blood_lipids_score
+                        lipid_lowering_treatment = treated))$blood_lipids_score
   }
   expect_equal(lipids(c(99.9, 100, 119.9, 120, 144.9, 145, 189.9, 190)),
                c(100, 60, 60, 40, 40, 20, 20, 0))
@@ -86,7 +86,7 @@ test_that("pediatric age-band boundaries follow the AHA tables", {
 
   activity <- function(moderate, vigorous = 0) {
     score_pediatric(with_values(base, moderate_activity_minutes = moderate,
-                        vigorous_activity_minutes = vigorous))$le8_physical_activity_score
+                        vigorous_activity_minutes = vigorous))$physical_activity_score
   }
   expect_equal(activity(c(0, 0.5, 119, 120, 240, 300, 360, 419, 420)),
                c(0, 20, 20, 40, 60, 80, 90, 90, 100))
@@ -98,7 +98,7 @@ test_that("pediatric BMI uses percentile and percent-of-95th bands", {
   base <- pediatric_row("school_8_years")
   bmi <- function(percentile, percent_of_p95 = NA_real_) {
     score_pediatric(with_values(base, bmi_percentile = percentile,
-                        bmi_percent_of_p95 = percent_of_p95))$le8_bmi_score
+                        bmi_percent_of_p95 = percent_of_p95))$bmi_score
   }
   expect_equal(bmi(c(5, 84.9, 85, 94.9)), c(100, 100, 70, 70))
   expect_equal(bmi(95, c(100, 119.9, 120, 139.9, 140)), c(30, 30, 15, 15, 0))
@@ -111,7 +111,7 @@ test_that("infant weight scores size and rapid gain", {
   base <- pediatric_row("infant_9_months")
   weight <- function(percentile, z_change) {
     score_pediatric(with_values(base, infant_weight_percentile = percentile,
-                        infant_weight_z_change = z_change))$le8_bmi_score
+                        infant_weight_z_change = z_change))$bmi_score
   }
   expect_equal(
     weight(c(97.6, 97.7, 99.7, 97.6, 97.7, 99.7), c(0, 0, 0, 0.67, 0.67, 0.67)),
@@ -122,7 +122,7 @@ test_that("infant weight scores size and rapid gain", {
   young <- pediatric_row("infant_5_months")
   young_score <- function(percentile) {
     score_pediatric(with_values(young, infant_weight_percentile = percentile),
-              min_components = 1)$le8_bmi_score
+              min_components = 1)$bmi_score
   }
   # No rapid-gain term before 6 months; z change is not required.
   expect_equal(young_score(c(97.6, 97.7, 99.7)), c(100, 75, 50))
@@ -134,7 +134,7 @@ test_that("pediatric blood pressure applies AAP 2017 'whichever is lower'", {
                         diastolic_bp_p90 = 70, diastolic_bp_p95 = 74)
   bp <- function(systolic, diastolic = 60, treated = FALSE) {
     score_pediatric(with_values(base, systolic_bp = systolic, diastolic_bp = diastolic,
-                        antihypertensive_treatment = treated))$le8_blood_pressure_score
+                        antihypertensive_treatment = treated))$blood_pressure_score
   }
   # Thresholds 110 (elevated), 114 (stage 1), 126 (stage 2), 144 (0 points).
   expect_equal(bp(c(109.9, 110, 113.9, 114, 125.9, 126, 143.9, 144)),
@@ -149,7 +149,7 @@ test_that("pediatric blood pressure applies AAP 2017 'whichever is lower'", {
                     diastolic_bp_p90 = 82, diastolic_bp_p95 = 86)
   capped <- function(systolic, diastolic) {
     score_pediatric(with_values(tall, systolic_bp = systolic,
-                        diastolic_bp = diastolic))$le8_blood_pressure_score
+                        diastolic_bp = diastolic))$blood_pressure_score
   }
   expect_equal(capped(c(119, 120, 130, 140, 160), 60), c(100, 75, 50, 25, 0))
   expect_equal(capped(100, c(79, 80, 90, 100)), c(100, 50, 25, 0))
@@ -157,10 +157,10 @@ test_that("pediatric blood pressure applies AAP 2017 'whichever is lower'", {
   # Missing references leave ages 1-12 unscored; age 13 uses adult bands.
   expect_true(is.na(suppressWarnings(
     score_pediatric(with_values(base, systolic_bp_p95 = NA))
-  )$le8_blood_pressure_score))
+  )$blood_pressure_score))
   teen <- score_pediatric(with_values(base, age = 13, systolic_bp = 125,
                               diastolic_bp = 70))
-  expect_equal(teen$le8_blood_pressure_score, 75)
+  expect_equal(teen$blood_pressure_score, 75)
 })
 
 test_that("pediatric nicotine categories and modifiers follow Table 1", {
@@ -168,7 +168,7 @@ test_that("pediatric nicotine categories and modifiers follow Table 1", {
   nicotine <- function(status, nds = FALSE, secondhand = FALSE) {
     score_pediatric(with_values(base, smoking_status = status,
                         current_inhaled_nds = nds,
-                        secondhand_smoke_home = secondhand))$le8_nicotine_score
+                        secondhand_smoke_home = secondhand))$nicotine_score
   }
   expect_equal(nicotine(c("never", "former", "current")), c(100, 50, 0))
   expect_equal(nicotine(c("never", "former"), nds = TRUE), c(25, 25))
@@ -177,7 +177,7 @@ test_that("pediatric nicotine categories and modifiers follow Table 1", {
   # years_since_quit is not used for children.
   expect_equal(
     score_pediatric(with_values(base, smoking_status = "former",
-                        years_since_quit = NA))$le8_nicotine_score,
+                        years_since_quit = NA))$nicotine_score,
     50
   )
 })
@@ -185,11 +185,11 @@ test_that("pediatric nicotine categories and modifiers follow Table 1", {
 test_that("young children's MEPA screeners reuse the adult columns", {
   preschool <- pediatric_row("preschool_4_years")
   expect_identical(score_pediatric(preschool)$mepa_total, 8L)
-  expect_equal(score_pediatric(preschool)$le8_diet_score, 80)
+  expect_equal(score_pediatric(preschool)$diet_score, 80)
   all_met <- with_values(preschool, whole_grains = 3, nuts = 4)
-  expect_equal(score_pediatric(all_met)$le8_diet_score, 100)
+  expect_equal(score_pediatric(all_met)$diet_score, 100)
 
-  diet <- function(row, ...) score_pediatric(with_values(row, ...))$le8_diet_score
+  diet <- function(row, ...) score_pediatric(with_values(row, ...))$diet_score
   # Vegetables are the daily sum of the two vegetable items.
   expect_equal(diet(preschool, green_leafy_vegetables = c(1, 0.9)), c(80, 70))
   # Fruit is the weekly sum of berries and other fruit, 14/week = 2/day.
@@ -223,7 +223,7 @@ test_that("ages 6 to 19 use the adult MEPA screener and bands", {
   row <- pediatric_row("school_8_years")
   result <- score_pediatric(row)
   expect_identical(result$mepa_total, 9L)
-  expect_equal(result$le8_diet_score, 50)
+  expect_equal(result$diet_score, 50)
 })
 
 test_that("young-child MEPA needs only the fields its ages use", {
@@ -231,7 +231,7 @@ test_that("young-child MEPA needs only the fields its ages use", {
   preschool <- pediatric_row("preschool_4_years")
   preschool[c("sex", "milk_source", "chicken", "cheese", "beans",
               "alcohol")] <- NULL
-  expect_equal(score_pediatric(preschool)$le8_diet_score, 80)
+  expect_equal(score_pediatric(preschool)$diet_score, 80)
 
   # A missing field the ages need is a naming error, not a missing score.
   missing <- preschool
@@ -239,7 +239,7 @@ test_that("young-child MEPA needs only the fields its ages use", {
   expect_error(score_pediatric(missing), "fish -> fish",
                class = "essential8_input_error")
   mapped <- score_pediatric(missing, mepa_columns = c(fish = "fish_per_week"))
-  expect_equal(mapped$le8_diet_score, 80)
+  expect_equal(mapped$diet_score, 80)
 
   toddler <- pediatric_row("toddler_18_months")
   toddler$milk_source <- NULL
@@ -262,9 +262,9 @@ test_that("components AHA does not define at an age are not scored", {
     result <- score_pediatric(row, min_components = 3),
     class = "essential8_not_applicable"
   )
-  expect_true(is.na(result$le8_blood_pressure_score))
-  expect_true(is.na(result$le8_physical_activity_score))
-  expect_identical(result$le8_n_components, 4L)
+  expect_true(is.na(result$blood_pressure_score))
+  expect_true(is.na(result$physical_activity_score))
+  expect_identical(result$n_components, 4L)
 
   # Population diet percentiles are defined from age 2.
   infant <- pediatric_row("infant_9_months")
@@ -275,11 +275,11 @@ test_that("components AHA does not define at an age are not scored", {
                             min_components = 3),
     class = "essential8_not_applicable"
   )
-  expect_true(is.na(percentile$le8_diet_score))
+  expect_true(is.na(percentile$diet_score))
   older <- with_values(infant, age = 2)
   older$age_months <- NULL
   expect_equal(
-    suppressWarnings(score_le8(older, diet_method = "percentile"))$le8_diet_score,
+    suppressWarnings(score_le8(older, diet_method = "percentile"))$diet_score,
     80
   )
 })
@@ -332,7 +332,7 @@ test_that("packaged adult diet references are refused for children", {
   reference <- diet_reference(40, 55, 65, 80, method = "hei2015",
                               label = "Synthetic pediatric reference")
   expect_equal(
-    score_pediatric(child, diet_method = "hei2015", reference = reference)$le8_diet_score,
+    score_pediatric(child, diet_method = "hei2015", reference = reference)$diet_score,
     80
   )
 
@@ -345,7 +345,7 @@ test_that("packaged adult diet references are refused for children", {
 
   child$hei2015 <- NULL
   child$diet_value <- 95
-  expect_equal(score_pediatric(child, diet_method = "hei2015")$le8_diet_score, 100)
+  expect_equal(score_pediatric(child, diet_method = "hei2015")$diet_score, 100)
 })
 
 test_that("pediatric errors report score_pediatric() as the call", {
@@ -359,5 +359,5 @@ test_that("ages just below 20 are pediatric and 20 is adult", {
   result <- score_pediatric(with_values(base, age = c(19.999, 20)))
   expect_identical(result$le8_population, c("pediatric", "adult"))
   # Sleep of 7.5 h: 0.5 h short of the 8-10 h pediatric range, optimal for adults.
-  expect_equal(result$le8_sleep_score, c(70, 100))
+  expect_equal(result$sleep_score, c(70, 100))
 })

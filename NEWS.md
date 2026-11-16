@@ -1,4 +1,4 @@
-# essential8 (development version)
+# essential8 0.9.0
 
 ## Major Changes
 
@@ -22,12 +22,58 @@
   blood-pressure reference inputs from sex, age, height, and weight using the
   suggested packages cdcanthro and pedbp.
 - New `vignette("pediatric-scoring")`.
+- `score_le8()` results now carry the class `essential8_scores` on top of the
+  input's class (data frames, tibbles, and grouped tibbles are otherwise
+  unchanged), with new methods:
+  - `summary()` reports the number of rows scored, the distribution of the
+    composite and each component score, and the cardiovascular health
+    categories.
+  - `tidy()` reshapes the scores into long format, one row per input row and
+    measure. `tidy()` is re-exported from generics.
+  - `plot()` draws the mean scores, their distributions
+    (`type = "distribution"`), or a histogram of the composite score by
+    category (`type = "composite"`) with ggplot2. `type = "forest"` draws the
+    mean scores with confidence intervals, optionally compared across the
+    groups in `by`, using `ggforestplotR::ggforestplot()`; other arguments to
+    `plot()` are passed on to `ggforestplot()`.
+  - With dplyr, `summarise()` (or `summarize()`) without expressions returns
+    the `summary()` statistics as a data frame, by group with `.by`.
+    Summaries with expressions are handled by dplyr as before.
+- Multiple imputation of missing inputs with mice:
+  - `score_le8(impute = TRUE)` imputes missing inputs, scores every imputed
+    data set, and returns them stacked with an `.imp` column. `summary()`,
+    `summarise()`, `tidy()`, and `plot()` on the result pool across
+    imputations with Rubin's rules.
+  - `le8_imputation_control()` sets the number of imputations, iterations, a
+    seed, auxiliary predictors, and other `mice::mice()` arguments:
+    `score_le8(impute = le8_imputation_control(m = 50, seed = 1))`.
+  - The imputation imputes an input only for participants whose age uses it,
+    limits each model's predictors to inputs available for everyone it
+    applies to, and never imputes a combination AHA does not score (for
+    example, diagnosed diabetes without an HbA1c value, or current combustible
+    smoking with current inhaled-NDS use). `le8_imputation_setup()` shows
+    these settings, and `score_le8_imputed()` scores a mice run of your own.
+- New `vignette("case-study")` works through a complete project: scoring
+  500 simulated children and adults, choosing `min_components`, imputing
+  missing laboratory values, and summarizing and plotting the results.
+- New `as_le8_scores()` restores the `essential8_scores` class to scored data
+  after `group_by()`, `as_tibble()`, or reading saved results.
+
+## Breaking Changes
+
+- Component score columns no longer have the `le8_` prefix: they are now
+  `diet_score`, `physical_activity_score`, `nicotine_score`, `sleep_score`,
+  `bmi_score`, `blood_lipids_score`, `blood_glucose_score`, and
+  `blood_pressure_score`. `le8_n_components` is now `n_components`. Columns
+  that describe the LE8 composite keep the prefix: `le8_composite_score`,
+  `le8_complete`, `le8_category`, and `le8_population`.
+- Because output names are reserved, `data` that already contains one of the
+  new names (for example, a `sleep_score` from another instrument) or one of
+  the old `le8_`-prefixed names now raises an error. Rename those columns
+  before scoring.
 
 ## Minor Changes
 
-- Input errors now also carry the class `essential8_input_error`;
-  pediatric-only errors carry `essential8_pediatric_input_error`. The
-  `essential8_adult_input_error` class remains on general and adult errors.
 - Errors now report `score_le8()` as the call rather than an internal helper.
 
 # essential8 0.3.0

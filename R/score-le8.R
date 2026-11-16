@@ -21,9 +21,11 @@
 #' @param min_components A single integer from 1 to 8 specifying the minimum
 #'   number of non-missing LE8 component scores required to calculate
 #'   `le8_composite_score`. The default is 7. Available component scores are
-#'   averaged without imputation; observations below the threshold receive
+#'   averaged without imputation, which treats a missing component as equal
+#'   to the average of the others; observations below the threshold receive
 #'   `NA_real_`. Pediatric data usually need a lower value; see
-#'   *Pediatric scoring*.
+#'   *Pediatric scoring*. To account for missing inputs instead, use
+#'   `impute`.
 #' @param dash_columns,hei2015_columns `NULL`, or named character vectors
 #'   mapping canonical DASH or HEI-2015 fields to columns in `data`. Unmapped
 #'   fields default to the canonical name prefixed with `dash_` or `hei2015_`.
@@ -40,6 +42,11 @@
 #' @param hei2015_cutpoints `NULL` to use `reference`, or four
 #'   nondecreasing reference HEI-2015-total cutpoints (25th, 50th, 75th, 95th
 #'   percentiles), each from 0 to 100. Tied cutpoints are allowed.
+#' @param impute Whether to multiply impute missing inputs before scoring:
+#'   `FALSE` (the default), `TRUE` for the default settings, or
+#'   [le8_imputation_control()] to set the number of imputations, a seed,
+#'   auxiliary predictors, and other [mice::mice()] arguments. Requires the
+#'   mice package and `diet_method = "mepa"`. See *Multiple imputation*.
 #' @param reference `"nhanes_2015_2018"` (the default), or a method-matched
 #'   [diet_reference()] object. Used for already-computed indices and raw
 #'   intake scoring when explicit cutpoints are absent. Raw DASH requires the
@@ -315,14 +322,46 @@
 #' earlier versions; pediatric-only errors carry
 #' `essential8_pediatric_input_error`.
 #'
+#' @section Multiple imputation:
+#' With `impute`, `score_le8()` fills in missing inputs with [mice::mice()]
+#' several times, scores every completed data set, and returns them stacked.
+#' The imputation:
+#'
+#' 1. checks the observed values, so data that cannot be scored stop before
+#'    imputation;
+#' 2. imputes an input only for participants whose age uses it (adult BMI is
+#'    never imputed for a child, for example), predicting it from age, the
+#'    other inputs available for the same participants, and any `auxiliary`
+#'    columns;
+#' 3. uses predictive mean matching for numeric inputs, so imputed values are
+#'    always values observed in someone else, and logistic or multinomial
+#'    regression for categorical inputs;
+#' 4. never imputes a combination the AHA scoring rules do not score, such as
+#'    diagnosed diabetes without an HbA1c, current smoking with current
+#'    inhaled-NDS use, or a fasting glucose of 126 mg/dL or more without
+#'    diagnosed diabetes.
+#'
+#' `min_components` then applies to each completed data set as usual.
+#' [summary()][summary.essential8_imputed_scores()], dplyr
+#' [summarise()][summarise.essential8_imputed_scores()], and `plot()` pool
+#' the results across imputations with Rubin's rules. See
+#' [le8_imputation_setup()] for the full rules, and to inspect or adjust them.
+#'
+#' Imputation assumes values are missing at random given the variables in the
+#' imputation models; include the variables used in later analyses, such as
+#' exposures and outcomes, with `le8_imputation_control(auxiliary = )`.
+#'
 #' @return
-#' An object of the same class as `data`, containing the original columns plus
+#' An `essential8_scores` object: `data`, with its original class (so tibbles
+#' and grouped tibbles are returned as such) and columns, plus
 #' `mepa_total` (items met on the age-appropriate MEPA screener: 0-16 from
-#' age 6, 0-10 at ages 2-5, 0-6 at 6-23 months), `dash_total`, and `hei2015_total` (missing unless calculated
-#' from the corresponding raw inputs),
-#' `physical_activity_moderate_equivalent_minutes` (weekly minutes used for
-#' adults and children aged 6+), the eight component score
-#' columns prefixed with `le8_`, `le8_n_components`, `le8_composite_score`,
+#' age 6, 0-10 at ages 2-5, 0-6 at 6-23 months), `dash_total`, and
+#' `hei2015_total` (missing unless calculated from the corresponding raw
+#' inputs), `physical_activity_moderate_equivalent_minutes` (weekly minutes
+#' used for adults and children aged 6+), the eight component scores
+#' (`diet_score`, `physical_activity_score`, `nicotine_score`, `sleep_score`,
+#' `bmi_score`, `blood_lipids_score`, `blood_glucose_score`, and
+#' `blood_pressure_score`), `n_components`, `le8_composite_score`,
 #' `le8_complete`, `le8_category`, and `le8_population` (`"adult"` or
 #' `"pediatric"`). The component count reports how many
 #' scores contributed to the composite score; `le8_complete` is `TRUE`
@@ -334,8 +373,21 @@
 #' also appended as `dash_<field>_score`; they sum to `dash_total`.
 #' For raw HEI-2015 calls, the 13 component scores are also appended as
 #' `hei2015_<component>_score`, including `fatty_acids` and `saturated_fats`.
-#' The result has the same class as `data`, so tibbles and grouped tibbles
-#' are returned as such.
+#'
+#' With `impute`, an `essential8_imputed_scores` object instead: the scored
+#' completed data sets stacked, with the imputation number in `.imp` and the
+#' row of `data` in `.id`. It is a data frame, or a tibble for tibble input
+#' (ungrouped). The `mids` object from mice is kept as `attr(x, "mids")` for
+#' diagnostics, for example `plot(attr(x, "mids"))` to check convergence.
+#'
+#' `data` must not already contain any of these output columns (compared
+#' case-insensitively), or the `le8_`-prefixed component names used by
+#' essential8 0.3.0 and earlier; rename or remove them first.
+#'
+#' The `essential8_scores` class adds [summary()][summary.essential8_scores()],
+#' [tidy()][tidy.essential8_scores()], [plot()][plot.essential8_scores()], and
+#' dplyr [summarise()][summarise.essential8_scores()] methods. See
+#' [as_le8_scores()] for when the class is kept and how to restore it.
 #'
 #' @references
 #' Lloyd-Jones DM, Allen NB, Anderson CAM, et al. (2022). Life's Essential 8:
@@ -365,7 +417,9 @@
 #' \href{https://epi.grants.cancer.gov/hei/developing.html}{scoring standards}
 #' and \href{https://epi.grants.cancer.gov/hei/hei-scoring-method.html}{algorithm}.
 #'
-#' @seealso [add_pediatric_references()] to derive pediatric growth-chart and
+#' @seealso [summary.essential8_scores()], [tidy.essential8_scores()], and
+#'   [plot.essential8_scores()] to summarize, reshape, and plot the scores;
+#'   [add_pediatric_references()] to derive pediatric growth-chart and
 #'   blood-pressure inputs; [diet_reference()] for custom diet references.
 #'
 #' @examplesIf requireNamespace("dplyr", quietly = TRUE)
@@ -414,7 +468,7 @@
 #' )
 #'
 #' scores <- score_le8(patient, diet_method = "mepa")
-#' select(scores, id, mepa_total, le8_diet_score, le8_composite_score,
+#' select(scores, id, mepa_total, diet_score, le8_composite_score,
 #'        le8_category)
 #'
 #' # A 4-year-old with the preschool diet screener and no laboratory values.
@@ -440,8 +494,19 @@
 #' )
 #'
 #' child_scores <- score_le8(child, min_components = 5)
-#' select(child_scores, id, mepa_total, starts_with("le8_"))
+#' select(child_scores, id, mepa_total, ends_with("_score"), n_components)
 #'
+#' @examplesIf requireNamespace("mice", quietly = TRUE)
+#'
+#' # Multiply impute missing inputs, then pool the scores.
+#' adults <- read.csv(system.file(
+#'   "extdata", "le8-adult-example.csv", package = "essential8"
+#' ))
+#' adults <- adults[!startsWith(names(adults), "expected_")]
+#' adults$non_hdl_cholesterol[c(2, 5)] <- NA
+#'
+#' imputed <- score_le8(adults, impute = le8_imputation_control(m = 5, seed = 1))
+#' summary(imputed)
 #' @export
 score_le8 <- function(
   data,
@@ -452,7 +517,8 @@ score_le8 <- function(
   dash_cutpoints = NULL,
   hei2015_columns = NULL,
   hei2015_cutpoints = NULL,
-  reference = "nhanes_2015_2018"
+  reference = "nhanes_2015_2018",
+  impute = FALSE
 ) {
   min_components <- .validate_min_components(min_components)
   diet_method <- .normalize_diet_method(diet_method)
@@ -460,6 +526,20 @@ score_le8 <- function(
     diet_method, mepa_columns, dash_columns, dash_cutpoints,
     hei2015_columns, hei2015_cutpoints
   )
+  imputation <- .resolve_impute(impute)
+  if (!is.null(imputation)) {
+    return(.score_le8_with_imputation(
+      data,
+      control = imputation,
+      score_args = list(
+        diet_method = diet_method,
+        mepa_columns = mepa_columns,
+        min_components = min_components,
+        reference = reference
+      ),
+      call = rlang::current_env()
+    ))
+  }
 
   original_data <- data
   input_columns <- names(data)
@@ -482,14 +562,14 @@ score_le8 <- function(
     dash_total = diet$dash_total,
     hei2015_total = diet$hei2015_total,
     physical_activity_moderate_equivalent_minutes = .le8_activity_minutes(data, age),
-    le8_diet_score = diet$score,
-    le8_physical_activity_score = .score_le8_physical_activity(data, age),
-    le8_nicotine_score = .score_le8_nicotine(data, age),
-    le8_sleep_score = .score_le8_sleep(data, age),
-    le8_bmi_score = .score_le8_bmi(data, age),
-    le8_blood_lipids_score = .score_le8_blood_lipids(data, age),
-    le8_blood_glucose_score = .score_le8_blood_glucose(data),
-    le8_blood_pressure_score = .score_le8_blood_pressure(data, age),
+    diet_score = diet$score,
+    physical_activity_score = .score_le8_physical_activity(data, age),
+    nicotine_score = .score_le8_nicotine(data, age),
+    sleep_score = .score_le8_sleep(data, age),
+    bmi_score = .score_le8_bmi(data, age),
+    blood_lipids_score = .score_le8_blood_lipids(data, age),
+    blood_glucose_score = .score_le8_blood_glucose(data),
+    blood_pressure_score = .score_le8_blood_pressure(data, age),
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
@@ -511,7 +591,11 @@ score_le8 <- function(
   # Assign into the caller's object so tibbles, grouped tibbles, and
   # row names are preserved; the validated copy is only used internally.
   original_data[names(scores)] <- scores
-  original_data
+  .new_le8_scores(
+    original_data,
+    diet_method = diet_method,
+    min_components = min_components
+  )
 }
 
 # Component dispatch -------------------------------------------------------------

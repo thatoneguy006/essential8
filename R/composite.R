@@ -15,7 +15,7 @@
   composite_score <- rep(NA_real_, nrow(scores))
   composite_score[eligible] <- component_mean[eligible]
 
-  scores$le8_n_components <- component_count
+  scores$n_components <- component_count
   scores$le8_composite_score <- composite_score
   scores$le8_complete <- component_count == 8L
 
@@ -96,13 +96,13 @@
 # (for example, blood pressure before age 1) are not scored.
 .inform_not_applicable <- function(data, applicable) {
   key_inputs <- list(
-    le8_diet_score = c("diet_value", "dash", "hei2015"),
-    le8_physical_activity_score = c(
+    diet_score = c("diet_value", "dash", "hei2015"),
+    physical_activity_score = c(
       "moderate_activity_minutes",
       "vigorous_activity_minutes",
       "active_play_minutes"
     ),
-    le8_blood_pressure_score = c("systolic_bp", "diastolic_bp")
+    blood_pressure_score = c("systolic_bp", "diastolic_bp")
   )
   ignored <- vapply(names(key_inputs), function(component) {
     columns <- intersect(key_inputs[[component]], names(data))

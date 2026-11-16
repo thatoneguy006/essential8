@@ -9,7 +9,7 @@ test_that("diabetes with an unknown glucose measure is not scored as HbA1c", {
 
   result <- suppressWarnings(score_le8(input))
 
-  expect_equal(result$le8_blood_glucose_score, c(NA_real_, NA_real_))
+  expect_equal(result$blood_glucose_score, c(NA_real_, NA_real_))
 })
 
 test_that("diabetes with a known HbA1c is still scored", {
@@ -18,7 +18,7 @@ test_that("diabetes with a known HbA1c is still scored", {
   input$glucose_measure <- "hba1c"
   input$glucose_value <- c(6.8, 10)
 
-  expect_equal(score_le8(input)$le8_blood_glucose_score, c(40, 0))
+  expect_equal(score_le8(input)$blood_glucose_score, c(40, 0))
 })
 
 test_that("lean muscular override never scores a missing BMI or profile", {
@@ -29,7 +29,7 @@ test_that("lean muscular override never scores a missing BMI or profile", {
 
   result <- suppressWarnings(score_le8(input))
 
-  expect_equal(result$le8_bmi_score, c(NA, NA, 100))
+  expect_equal(result$bmi_score, c(NA, NA, 100))
 })
 
 test_that("an NA lean muscular flag only blanks BMIs it could change", {
@@ -40,7 +40,7 @@ test_that("an NA lean muscular flag only blanks BMIs it could change", {
 
   result <- suppressWarnings(score_le8(input))
 
-  expect_equal(result$le8_bmi_score, c(100, NA, 30))
+  expect_equal(result$bmi_score, c(100, NA, 30))
 })
 
 test_that("an NA prediabetes flag only blanks scores it could change", {
@@ -54,7 +54,7 @@ test_that("an NA prediabetes flag only blanks scores it could change", {
 
   # Diabetic and prediabetic-range rows cannot receive the penalty;
   # the normoglycemic row could, so its score stays unknown.
-  expect_equal(result$le8_blood_glucose_score, c(40, 60, NA))
+  expect_equal(result$blood_glucose_score, c(40, 60, NA))
 })
 
 test_that("entirely missing columns read as logical NA are treated as missing", {
@@ -69,8 +69,8 @@ test_that("entirely missing columns read as logical NA are treated as missing", 
     class = "essential8_insufficient_components"
   )
 
-  expect_equal(result$le8_physical_activity_score, c(NA_real_, NA_real_))
-  expect_equal(result$le8_blood_glucose_score, c(NA_real_, NA_real_))
+  expect_equal(result$physical_activity_score, c(NA_real_, NA_real_))
+  expect_equal(result$blood_glucose_score, c(NA_real_, NA_real_))
   expect_identical(result$vigorous_activity_minutes, c(NA, NA))
 })
 
@@ -139,7 +139,7 @@ test_that("an all-missing diet_value column does not block index scoring", {
 
   result <- score_le8(input, "hei2015", reference = "nhanes_2015_2018")
 
-  expect_equal(result$le8_diet_score, c(25, 80))
+  expect_equal(result$diet_score, c(25, 80))
 })
 
 test_that("raw DASH returns its eight component scores", {

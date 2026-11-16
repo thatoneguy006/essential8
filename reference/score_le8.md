@@ -1,10 +1,11 @@
 # Score Life's Essential 8 cardiovascular health
 
-Computes the eight adult Life's Essential 8 (LE8) component scores and
-the composite score using the American Heart Association's 2022
-Presidential Advisory. Component scores are calculated wherever
-sufficient inputs are available, without imputing missing values. This
-implementation applies only to adults aged 20 years or older.
+Computes the eight Life's Essential 8 (LE8) component scores and the
+composite score using the American Heart Association's 2022 Presidential
+Advisory. Rows aged 20 years or older are scored with the adult
+definitions; rows aged 4 months to 19 years are scored with the
+pediatric definitions. Component scores are calculated wherever
+sufficient inputs are available, without imputing missing values.
 
 ## Usage
 
@@ -18,7 +19,8 @@ score_le8(
   dash_cutpoints = NULL,
   hei2015_columns = NULL,
   hei2015_cutpoints = NULL,
-  reference = "nhanes_2015_2018"
+  reference = "nhanes_2015_2018",
+  impute = FALSE
 )
 ```
 
@@ -26,8 +28,8 @@ score_le8(
 
 - data:
 
-  A data frame with one row per adult and the input columns described
-  below.
+  A data frame with one row per person (or visit) and the input columns
+  described below. Adults and children may be mixed.
 
 - diet_method:
 
@@ -39,16 +41,20 @@ score_le8(
 - mepa_columns:
 
   `NULL`, or a named character vector mapping canonical MEPA fields to
-  columns in `data`. The names are canonical fields and the values are
-  actual column names. Unmapped fields use their canonical names.
+  columns in `data`. The names are canonical fields (the 16 screener
+  items, `sex`, and `milk_source`) and the values are actual column
+  names. Unmapped fields use their canonical names.
 
 - min_components:
 
   A single integer from 1 to 8 specifying the minimum number of
   non-missing LE8 component scores required to calculate
   `le8_composite_score`. The default is 7. Available component scores
-  are averaged without imputation; observations below the threshold
-  receive `NA_real_`.
+  are averaged without imputation, which treats a missing component as
+  equal to the average of the others; observations below the threshold
+  receive `NA_real_`. Pediatric data usually need a lower value; see
+  *Pediatric scoring*. To account for missing inputs instead, use
+  `impute`.
 
 - dash_columns, hei2015_columns:
 
@@ -85,27 +91,62 @@ score_le8(
   `dash_cutpoints`. Direct percentiles and explicit raw cutpoints bypass
   reference lookup. The built-in references describe nonpregnant adults
   aged 20+ with two reliable recalls; they are derived estimates, not
-  AHA-published cutpoints.
+  AHA-published cutpoints, and are refused for pediatric rows.
+
+- impute:
+
+  Whether to multiply impute missing inputs before scoring: `FALSE` (the
+  default), `TRUE` for the default settings, or
+  [`le8_imputation_control()`](https://thatoneguy006.github.io/essential8/reference/le8_imputation_control.md)
+  to set the number of imputations, a seed, auxiliary predictors, and
+  other [`mice::mice()`](https://amices.org/mice/reference/mice.html)
+  arguments. Requires the mice package and `diet_method = "mepa"`. See
+  *Multiple imputation*.
 
 ## Value
 
-An object of the same class as `data`, containing the original columns
-plus `mepa_total`, `dash_total`, and `hei2015_total` (missing unless
-calculated from the corresponding raw inputs),
-`physical_activity_moderate_equivalent_minutes`, the eight component
-score columns prefixed with `le8_`, `le8_n_components`,
-`le8_composite_score`, `le8_complete`, and `le8_category`. The component
-count reports how many scores contributed to the composite score;
-`le8_complete` is `TRUE` only when all eight components are available.
-Categories are `"low"` for scores below 50, `"moderate"` for scores from
-50 to less than 80, and `"high"` for scores of at least 80. The category
-is missing when the composite score is missing. For raw DASH calls, the
-eight component scores (1 to 5 points each) are also appended as
-`dash_<field>_score`; they sum to `dash_total`. For raw HEI-2015 calls,
-the 13 component scores are also appended as
-`hei2015_<component>_score`, including `fatty_acids` and
-`saturated_fats`. The result has the same class as `data`, so tibbles
-and grouped tibbles are returned as such.
+An `essential8_scores` object: `data`, with its original class (so
+tibbles and grouped tibbles are returned as such) and columns, plus
+`mepa_total` (items met on the age-appropriate MEPA screener: 0-16 from
+age 6, 0-10 at ages 2-5, 0-6 at 6-23 months), `dash_total`, and
+`hei2015_total` (missing unless calculated from the corresponding raw
+inputs), `physical_activity_moderate_equivalent_minutes` (weekly minutes
+used for adults and children aged 6+), the eight component scores
+(`diet_score`, `physical_activity_score`, `nicotine_score`,
+`sleep_score`, `bmi_score`, `blood_lipids_score`, `blood_glucose_score`,
+and `blood_pressure_score`), `n_components`, `le8_composite_score`,
+`le8_complete`, `le8_category`, and `le8_population` (`"adult"` or
+`"pediatric"`). The component count reports how many scores contributed
+to the composite score; `le8_complete` is `TRUE` only when all eight
+components are available. Categories are `"low"` for scores below 50,
+`"moderate"` for scores from 50 to less than 80, and `"high"` for scores
+of at least 80. The category is missing when the composite score is
+missing. For raw DASH calls, the eight component scores (1 to 5 points
+each) are also appended as `dash_<field>_score`; they sum to
+`dash_total`. For raw HEI-2015 calls, the 13 component scores are also
+appended as `hei2015_<component>_score`, including `fatty_acids` and
+`saturated_fats`.
+
+With `impute`, an `essential8_imputed_scores` object instead: the scored
+completed data sets stacked, with the imputation number in `.imp` and
+the row of `data` in `.id`. It is a data frame, or a tibble for tibble
+input (ungrouped). The `mids` object from mice is kept as
+`attr(x, "mids")` for diagnostics, for example `plot(attr(x, "mids"))`
+to check convergence.
+
+`data` must not already contain any of these output columns (compared
+case-insensitively), or the `le8_`-prefixed component names used by
+essential8 0.3.0 and earlier; rename or remove them first.
+
+The `essential8_scores` class adds
+[summary()](https://thatoneguy006.github.io/essential8/reference/summary.essential8_scores.md),
+[tidy()](https://thatoneguy006.github.io/essential8/reference/tidy.essential8_scores.md),
+[plot()](https://thatoneguy006.github.io/essential8/reference/plot.essential8_scores.md),
+and dplyr
+[summarise()](https://thatoneguy006.github.io/essential8/reference/summarise.essential8_scores.md)
+methods. See
+[`as_le8_scores()`](https://thatoneguy006.github.io/essential8/reference/as_le8_scores.md)
+for when the class is kept and how to restore it.
 
 ## Diet scoring methods
 
@@ -164,24 +205,31 @@ case (for example `BMI`) is an error. MEPA, DASH, and HEI-2015 diet
 fields are matched case-insensitively. A column whose values are all
 missing may be logical `NA` (as
 [`read.csv()`](https://rdrr.io/r/utils/read.table.html) produces for a
-blank column).
+blank column). Columns that only apply to adults or only to children are
+ignored for other rows.
 
-- `age`: Age in years; must be present, complete, and at least 20.
+- `age`: Age in years; must be present, complete, and at least 4 months
+  (1/3 year). Rows aged 20 or older are scored as adults.
+
+- `age_months`: Optional age in months, used for the pediatric age bands
+  when observed. It must fall within the same completed year as `age`.
 
 - For `diet_method = "mepa"`, the 16 Table C screener-item columns named
-  below and `sex` (or `female` when `sex` is absent). The item names are
-  matched exactly after case normalization. If any screener item is
-  present, all 16 items and sex are required; omitting every item leaves
-  the diet component missing. Supply daily servings in `olive_oil`,
-  `green_leafy_vegetables`, `other_vegetables`, and `whole_grains`;
-  supply weekly servings or frequency in `berries`, `other_fruit`,
-  `meat`, `fish`, `chicken`, `cheese`, `butter_cream`, `beans`,
-  `sweets_and_pastries`, `nuts`, and `alcohol`; supply the number of
-  times per week that fast-food meals are consumed in `fast_food`. Sex
-  may be encoded as `"m"`/`"f"`, `"male"`/`"female"`, or `0`/`1`, where
-  `0` is male and `1` is female. Character encodings are matched
-  case-insensitively, and character `"0"`/`"1"` values are also
-  accepted. A logical `female` column (`TRUE` for female) is also
+  below and `sex` (or `female` when `sex` is absent). The same columns
+  serve children; see *Pediatric input columns* for which items each age
+  uses. The item names are matched exactly after case normalization. If
+  any screener item is present, every field used at the ages in `data`
+  is required (all 16 items and sex when any row is aged 6 or older);
+  omitting every item leaves the diet component missing. Supply daily
+  servings in `olive_oil`, `green_leafy_vegetables`, `other_vegetables`,
+  and `whole_grains`; supply weekly servings or frequency in `berries`,
+  `other_fruit`, `meat`, `fish`, `chicken`, `cheese`, `butter_cream`,
+  `beans`, `sweets_and_pastries`, `nuts`, and `alcohol`; supply the
+  number of times per week that fast-food meals are consumed in
+  `fast_food`. Sex may be encoded as `"m"`/`"f"`, `"male"`/`"female"`,
+  or `0`/`1`, where `0` is male and `1` is female. Character encodings
+  are matched case-insensitively, and character `"0"`/`"1"` values are
+  also accepted. A logical `female` column (`TRUE` for female) is also
   accepted.
 
 - `dash` or `hei2015`: An already-computed index for the selected
@@ -229,28 +277,31 @@ blank column).
   entirely missing.
 
 - `moderate_activity_minutes` and `vigorous_activity_minutes`: Weekly
-  minutes. Each vigorous minute counts as two moderate-equivalent
-  minutes.
+  minutes. For adults, each vigorous minute counts as two
+  moderate-equivalent minutes; for children aged 6 to 19, every minute
+  counts once.
 
-- `smoking_status`: One of `"never"`, `"former"`, or `"current"`.
+- `smoking_status`: One of `"never"`, `"former"`, or `"current"`. See
+  *Pediatric input columns* for the pediatric meaning.
 
 - `years_since_quit`: Years since quitting combustible tobacco. This is
-  used only when `smoking_status` is `"former"`.
+  used only for adults whose `smoking_status` is `"former"`.
 
 - `current_inhaled_nds`: Whether an inhaled nicotine-delivery system is
   currently used.
 
-- `secondhand_smoke_home`: Whether the adult lives with an active indoor
-  smoker.
+- `secondhand_smoke_home`: Whether the person lives with an active
+  indoor smoker.
 
-- `sleep_hours`: Average hours of sleep per night.
+- `sleep_hours`: Average hours of sleep per night (per 24 hours,
+  including naps, for children aged 5 or younger).
 
-- `bmi`: Body mass index in kg/m^2. Values below 18.5 are not scored
-  because the AHA advisory defers to clinician judgment for underweight
-  adults.
+- `bmi`: Adult body mass index in kg/m^2. Values below 18.5 are not
+  scored because the AHA advisory defers to clinician judgment for
+  underweight adults.
 
-- `bmi_profile`: Either `"general"` or `"asian_pacific"`. The function
-  never infers a profile from race or ethnicity.
+- `bmi_profile`: Either `"general"` or `"asian_pacific"` (adults). The
+  function never infers a profile from race or ethnicity.
 
 - `non_hdl_cholesterol`: Non-HDL cholesterol in mg/dL.
 
@@ -273,21 +324,107 @@ blank column).
 Component input columns may contain missing values or be omitted. A
 component score is `NA_real_` when its available inputs are
 insufficient. Missing values are never imputed. A warning is emitted
-when an entire LE8 component cannot be calculated for any observation.
+when an entire LE8 component cannot be calculated for any observation
+where AHA defines it.
+
+## Pediatric scoring
+
+Rows aged 4 months to 19 years use the children column of Table 1 of the
+advisory and the suggested rules for younger children in its
+Supplemental Appendix 2:
+
+- Diet: MEPA (the adult 16-item screener and adult bands at ages 6-19; a
+  10-item subset at 10 points per item at ages 2-5; a 6-item subset at
+  ages 6-23 months), or population percentiles at ages 2-19. Not scored
+  before 6 months.
+
+- Physical activity: daily active play at ages 1-5; weekly moderate or
+  vigorous minutes at ages 6-19. Not scored before 1 year.
+
+- Nicotine exposure, sleep, BMI, blood lipids, and blood glucose: all
+  pediatric ages, with age-appropriate sleep ranges, growth-chart BMI
+  (weight-for-length or BMI percentile before age 2), and pediatric
+  non-HDL cholesterol bands. Glucose uses the adult table.
+
+- Blood pressure: AAP 2017 percentile categories at ages 1-12, adult
+  bands at ages 13-19. Not scored before 1 year.
+
+Components AHA does not define at a row's age are `NA` and are not
+counted toward `min_components`; a message notes any such inputs that
+were supplied. AHA recommends averaging the components that are
+available and appropriate for measurement in children (the NHANES
+analysis averaged as few as three), so pediatric analyses usually set a
+lower `min_components`.
+[`add_pediatric_references()`](https://thatoneguy006.github.io/essential8/reference/add_pediatric_references.md)
+can derive the growth-chart and blood-pressure reference inputs. See
+[`vignette("pediatric-scoring")`](https://thatoneguy006.github.io/essential8/articles/pediatric-scoring.md).
+
+Where the sources conflict, the package follows the more specific rule:
+the supplement's 2-5 year diet rule (10 points per item) rather than the
+Table 1 bands; and, for 6-23 month weight, the supplement's explicit
+0-point worst state (at or above the 99.7th percentile with rapid gain)
+rather than its decrements, which would leave 25. Nineteen-year-olds use
+the 13-18 year sleep range (8 to 10 hours), the last range AHA lists.
+
+## Pediatric input columns
+
+- `smoking_status`: `"never"` (never tried any nicotine product),
+  `"former"` (tried a nicotine product, but not within 30 days), or
+  `"current"` (combustible use within 30 days). `current_inhaled_nds` is
+  inhaled-NDS use within 30 days and caps the score at 25. Record
+  `"never"` and `FALSE` for young children without exposure;
+  `secondhand_smoke_home` applies at every age.
+
+- `active_play_minutes`: Ages 1-5. Average daily minutes of active play
+  of any intensity over 7 days.
+
+- `bmi_percentile` and `bmi_percent_of_p95`: Ages 2-19. CDC BMI-for-age
+  percentile (0-100) and BMI as a percentage of the 95th percentile (for
+  example, 125). The latter is used only at or above the 95th
+  percentile. Percentiles below the 5th are rejected because AHA defers
+  to clinician judgment.
+
+- `infant_weight_percentile` and `infant_weight_z_change`: Under age 2.
+  WHO weight-for-length (or BMI-for-age) percentile, and the increase in
+  the matching z-score since the prior routine visit (for example, since
+  age 1 month). The change is required from 6 months; 0.67 or more
+  counts as rapid weight gain.
+
+- `systolic_bp_p90`, `systolic_bp_p95`, `diastolic_bp_p90`, and
+  `diastolic_bp_p95`: Ages 1-12. The child's AAP 2017 90th and 95th
+  blood-pressure percentiles in mm Hg for age, sex, and height.
+
+- MEPA, ages 2-5: ten of the adult items. Vegetables are
+  `green_leafy_vegetables + other_vegetables` (at least 2 per day) and
+  fruit is `berries + other_fruit` (at least 14 per week, i.e. 2 per
+  day); `whole_grains` (3+ per day), `olive_oil` (1+ per day), `fish`
+  (1+ per week), `nuts` (4+ per week), `meat` (3 or fewer per week),
+  `butter_cream` (3 or fewer per week), `sweets_and_pastries` (3 or
+  fewer per week), and `fast_food` (2 or fewer per month, i.e. at most
+  24/52 per week). For children under 6, `sweets_and_pastries` should
+  include sugar-sweetened beverages.
+
+- MEPA, ages 6-23 months: vegetables and fruit as above (at least 1 per
+  day before 12 months, 2 per day from 12 months), `whole_grains` (same
+  thresholds), no sweets or sugar-sweetened beverages, no fast food, and
+  `milk_source`: `"human"`, `"cow"`, `"formula"`, or `"other"`. Human
+  milk meets the item before 12 months; human or cow's milk from 12
+  months.
 
 ## Optional clinical-judgment columns
 
 - `apply_lean_muscular_bmi_override`: A caller-adjudicated flag
   asserting that a lean, higher-muscle-mass adult in the general BMI
   profile has a BMI from 25 to less than 30 and should receive 100 BMI
-  points. If absent, the standard BMI band is used.
+  points. If absent, the standard BMI band is used. Not defined for
+  children.
 
 - `apply_sleep_apnea_penalty`: If `TRUE`, subtract 20 points for
-  untreated or undertreated sleep apnea. If absent, no discretionary
-  penalty is applied.
+  untreated or undertreated sleep apnea (adults or children). If absent,
+  no discretionary penalty is applied.
 
 - `apply_prediabetes_metformin_penalty`: A caller-adjudicated flag
-  asserting that the adult has a history of prediabetes, is taking
+  asserting that the person has a history of prediabetes, is taking
   metformin to prevent diabetes, is currently normoglycemic, and the
   clinician chose to apply the AHA's discretionary 20-point decrement.
   If absent, no discretionary penalty is applied.
@@ -333,6 +470,49 @@ different timeframes. Combinations without a source-defined score,
 including simultaneous current combustible smoking and current
 inhaled-NDS use, produce a structured error.
 
+Input errors inherit from `essential8_input_error` and
+`essential8_error`. General and adult errors also carry
+`essential8_adult_input_error`, as in earlier versions; pediatric-only
+errors carry `essential8_pediatric_input_error`.
+
+## Multiple imputation
+
+With `impute`, `score_le8()` fills in missing inputs with
+[`mice::mice()`](https://amices.org/mice/reference/mice.html) several
+times, scores every completed data set, and returns them stacked. The
+imputation:
+
+1.  checks the observed values, so data that cannot be scored stop
+    before imputation;
+
+2.  imputes an input only for participants whose age uses it (adult BMI
+    is never imputed for a child, for example), predicting it from age,
+    the other inputs available for the same participants, and any
+    `auxiliary` columns;
+
+3.  uses predictive mean matching for numeric inputs, so imputed values
+    are always values observed in someone else, and logistic or
+    multinomial regression for categorical inputs;
+
+4.  never imputes a combination the AHA scoring rules do not score, such
+    as diagnosed diabetes without an HbA1c, current smoking with current
+    inhaled-NDS use, or a fasting glucose of 126 mg/dL or more without
+    diagnosed diabetes.
+
+`min_components` then applies to each completed data set as usual.
+[summary()](https://thatoneguy006.github.io/essential8/reference/summary.essential8_imputed_scores.md),
+dplyr
+[summarise()](https://thatoneguy006.github.io/essential8/reference/summarise.essential8_imputed_scores.md),
+and [`plot()`](https://rdrr.io/r/graphics/plot.default.html) pool the
+results across imputations with Rubin's rules. See
+[`le8_imputation_setup()`](https://thatoneguy006.github.io/essential8/reference/le8_imputation_setup.md)
+for the full rules, and to inspect or adjust them.
+
+Imputation assumes values are missing at random given the variables in
+the imputation models; include the variables used in later analyses,
+such as exposures and outcomes, with
+`le8_imputation_control(auxiliary = )`.
+
 ## References
 
 Lloyd-Jones DM, Allen NB, Anderson CAM, et al. (2022). Life's Essential
@@ -346,6 +526,11 @@ Association's New Life's Essential 8 Metrics. *Circulation*, 146(11),
 822-835.
 [doi:10.1161/CIRCULATIONAHA.122.060911](https://doi.org/10.1161/CIRCULATIONAHA.122.060911)
 
+Flynn JT, Kaelber DC, Baker-Smith CM, et al. (2017). Clinical Practice
+Guideline for Screening and Management of High Blood Pressure in
+Children and Adolescents. *Pediatrics*, 140(3), e20171904.
+[doi:10.1542/peds.2017-1904](https://doi.org/10.1542/peds.2017-1904)
+
 Fung TT, Chiuve SE, McCullough ML, et al. (2008). Adherence to a
 DASH-Style Diet and Risk of Coronary Heart Disease and Stroke in Women.
 *Archives of Internal Medicine*, 168(7), 713-720.
@@ -358,6 +543,18 @@ Dietetics*, 118(9), 1591-1602.
 See also the National Cancer Institute's [scoring
 standards](https://epi.grants.cancer.gov/hei/developing.html) and
 [algorithm](https://epi.grants.cancer.gov/hei/hei-scoring-method.html).
+
+## See also
+
+[`summary.essential8_scores()`](https://thatoneguy006.github.io/essential8/reference/summary.essential8_scores.md),
+[`tidy.essential8_scores()`](https://thatoneguy006.github.io/essential8/reference/tidy.essential8_scores.md),
+and
+[`plot.essential8_scores()`](https://thatoneguy006.github.io/essential8/reference/plot.essential8_scores.md)
+to summarize, reshape, and plot the scores;
+[`add_pediatric_references()`](https://thatoneguy006.github.io/essential8/reference/add_pediatric_references.md)
+to derive pediatric growth-chart and blood-pressure inputs;
+[`diet_reference()`](https://thatoneguy006.github.io/essential8/reference/diet_reference.md)
+for custom diet references.
 
 ## Examples
 
@@ -415,10 +612,80 @@ patient <- tibble(
 )
 
 scores <- score_le8(patient, diet_method = "mepa")
-select(scores, id, mepa_total, le8_diet_score, le8_composite_score,
+select(scores, id, mepa_total, diet_score, le8_composite_score,
        le8_category)
 #> # A tibble: 1 × 5
-#>   id        mepa_total le8_diet_score le8_composite_score le8_category
-#>   <chr>          <int>          <dbl>               <dbl> <chr>       
-#> 1 patient_1         14             80                  80 high        
+#>   id        mepa_total diet_score le8_composite_score le8_category
+#>   <chr>          <int>      <dbl>               <dbl> <chr>       
+#> 1 patient_1         14         80                  80 high        
+
+# A 4-year-old with the preschool diet screener and no laboratory values.
+child <- tibble(
+  id = "child_1",
+  age = 4,
+  # Ten MEPA items apply at ages 2-5; sweets include sugary drinks.
+  green_leafy_vegetables = 1, other_vegetables = 1, # servings per day
+  berries = 7, other_fruit = 14,                     # servings per week
+  whole_grains = 2, olive_oil = 1,                   # servings per day
+  sweets_and_pastries = 2, meat = 2, fish = 1,       # servings per week
+  nuts = 2, butter_cream = 1,
+  fast_food = 0.25,                                  # times per week
+  active_play_minutes = 160,
+  smoking_status = "never", current_inhaled_nds = FALSE,
+  secondhand_smoke_home = FALSE,
+  sleep_hours = 11,
+  bmi_percentile = 60, bmi_percent_of_p95 = 85,
+  systolic_bp = 98, diastolic_bp = 58,
+  systolic_bp_p90 = 103, systolic_bp_p95 = 107,
+  diastolic_bp_p90 = 63, diastolic_bp_p95 = 67,
+  antihypertensive_treatment = FALSE
+)
+
+child_scores <- score_le8(child, min_components = 5)
+#> Warning: ! Some LE8 components could not be calculated for any observations.
+#> ✖ Blood lipids
+#> ✖ Blood glucose
+#> ℹ Overall LE8 composite scores will use the available components, subject to
+#>   `min_components`.
+select(child_scores, id, mepa_total, ends_with("_score"), n_components)
+#> # A tibble: 1 × 12
+#>   id     mepa_total diet_score physical_activity_sc…¹ nicotine_score sleep_score
+#>   <chr>       <int>      <dbl>                  <dbl>          <dbl>       <dbl>
+#> 1 child…          8         80                     90            100         100
+#> # ℹ abbreviated name: ¹​physical_activity_score
+#> # ℹ 6 more variables: bmi_score <dbl>, blood_lipids_score <dbl>,
+#> #   blood_glucose_score <dbl>, blood_pressure_score <dbl>,
+#> #   le8_composite_score <dbl>, n_components <int>
+
+# Multiply impute missing inputs, then pool the scores.
+adults <- read.csv(system.file(
+  "extdata", "le8-adult-example.csv", package = "essential8"
+))
+adults <- adults[!startsWith(names(adults), "expected_")]
+adults$non_hdl_cholesterol[c(2, 5)] <- NA
+
+imputed <- score_le8(adults, impute = le8_imputation_control(m = 5, seed = 1))
+#> Warning: Number of logged events: 55
+summary(imputed)
+#> LE8 scores: 10 participants (10 adult), pooled over 5 imputations
+#> Diet method: mepa; min_components: 7
+#> Composite score available for 10 of 10 (average over imputations).
+#> 
+#>                    n mean    95% CI  fmi   sd median
+#> LE8 composite     10 48.4 27.0-69.7 0.19 28.9   49.1
+#> Diet              10 51.0 22.9-79.1 0.19 38.1   50.0
+#> Physical activity 10 60.0 35.2-84.8 0.19 33.7   70.0
+#> Nicotine exposure 10 40.0 15.4-64.6 0.19 33.3   30.0
+#> Sleep             10 55.0 28.5-81.5 0.19 36.0   55.0
+#> BMI               10 46.5 20.2-72.8 0.19 35.7   50.0
+#> Blood lipids      10 46.4 17.6-75.2 0.26 37.0   42.0
+#> Blood glucose     10 46.0 22.6-69.4 0.19 31.7   50.0
+#> Blood pressure    10 42.0 19.4-64.6 0.19 30.7   40.0
+#> Means pooled with Rubin's rules; fmi = fraction of missing information.
+#> 
+#> Category (rows with a composite score):
+#>            n percent    95% CI
+#>   low      5   50.0% 13.1-86.9
+#>   moderate 4   40.0%  3.9-76.1
+#>   high     1   10.0%  0.0-32.1
 ```

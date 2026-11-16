@@ -1,5 +1,119 @@
 # Changelog
 
+## essential8 0.9.0
+
+CRAN release: 2026-11-14
+
+### Major Changes
+
+- [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+  now scores children aged 4 months to 19 years with the pediatric LE8
+  definitions (Table 1 and Supplemental Appendix 2 of the 2022
+  advisory). Rows are routed by `age`, so adults and children can be
+  scored in one call, and the new `le8_population` column records which
+  definitions were used. Components AHA does not define at a child’s age
+  (for example, blood pressure before age 1) are `NA` and are excluded
+  from `min_components`.
+- Pediatric MEPA uses the same input columns as adults, plus
+  `milk_source` at 6-23 months: 6 items at 6-23 months, 10 items at 2-5
+  years (10 points per item), and all 16 items with adult bands from
+  age 6. `mepa_total` reports items met on the age-appropriate screener.
+- New pediatric inputs: `age_months`, `milk_source`,
+  `active_play_minutes`, `bmi_percentile`, `bmi_percent_of_p95`,
+  `infant_weight_percentile`, `infant_weight_z_change`, and the AAP 2017
+  blood-pressure references `systolic_bp_p90`, `systolic_bp_p95`,
+  `diastolic_bp_p90`, and `diastolic_bp_p95`.
+- New
+  [`add_pediatric_references()`](https://thatoneguy006.github.io/essential8/reference/add_pediatric_references.md)
+  derives the growth-chart and blood-pressure reference inputs from sex,
+  age, height, and weight using the suggested packages cdcanthro and
+  pedbp.
+- New
+  [`vignette("pediatric-scoring")`](https://thatoneguy006.github.io/essential8/articles/pediatric-scoring.md).
+- [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+  results now carry the class `essential8_scores` on top of the input’s
+  class (data frames, tibbles, and grouped tibbles are otherwise
+  unchanged), with new methods:
+  - [`summary()`](https://rdrr.io/r/base/summary.html) reports the
+    number of rows scored, the distribution of the composite and each
+    component score, and the cardiovascular health categories.
+  - [`tidy()`](https://generics.r-lib.org/reference/tidy.html) reshapes
+    the scores into long format, one row per input row and measure.
+    [`tidy()`](https://generics.r-lib.org/reference/tidy.html) is
+    re-exported from generics.
+  - [`plot()`](https://rdrr.io/r/graphics/plot.default.html) draws the
+    mean scores, their distributions (`type = "distribution"`), or a
+    histogram of the composite score by category (`type = "composite"`)
+    with ggplot2. `type = "forest"` draws the mean scores with
+    confidence intervals, optionally compared across the groups in `by`,
+    using
+    [`ggforestplotR::ggforestplot()`](https://thatoneguy006.github.io/ggforestplotR/reference/ggforestplot.html);
+    other arguments to
+    [`plot()`](https://rdrr.io/r/graphics/plot.default.html) are passed
+    on to `ggforestplot()`.
+  - With dplyr,
+    [`summarise()`](https://dplyr.tidyverse.org/reference/summarise.html)
+    (or
+    [`summarize()`](https://dplyr.tidyverse.org/reference/summarise.html))
+    without expressions returns the
+    [`summary()`](https://rdrr.io/r/base/summary.html) statistics as a
+    data frame, by group with `.by`. Summaries with expressions are
+    handled by dplyr as before.
+- Multiple imputation of missing inputs with mice:
+  - `score_le8(impute = TRUE)` imputes missing inputs, scores every
+    imputed data set, and returns them stacked with an `.imp` column.
+    [`summary()`](https://rdrr.io/r/base/summary.html),
+    [`summarise()`](https://dplyr.tidyverse.org/reference/summarise.html),
+    [`tidy()`](https://generics.r-lib.org/reference/tidy.html), and
+    [`plot()`](https://rdrr.io/r/graphics/plot.default.html) on the
+    result pool across imputations with Rubin’s rules.
+  - [`le8_imputation_control()`](https://thatoneguy006.github.io/essential8/reference/le8_imputation_control.md)
+    sets the number of imputations, iterations, a seed, auxiliary
+    predictors, and other
+    [`mice::mice()`](https://amices.org/mice/reference/mice.html)
+    arguments:
+    `score_le8(impute = le8_imputation_control(m = 50, seed = 1))`.
+  - The imputation imputes an input only for participants whose age uses
+    it, limits each model’s predictors to inputs available for everyone
+    it applies to, and never imputes a combination AHA does not score
+    (for example, diagnosed diabetes without an HbA1c value, or current
+    combustible smoking with current inhaled-NDS use).
+    [`le8_imputation_setup()`](https://thatoneguy006.github.io/essential8/reference/le8_imputation_setup.md)
+    shows these settings, and
+    [`score_le8_imputed()`](https://thatoneguy006.github.io/essential8/reference/score_le8_imputed.md)
+    scores a mice run of your own.
+- New
+  [`vignette("case-study")`](https://thatoneguy006.github.io/essential8/articles/case-study.md)
+  works through a complete project: scoring 500 simulated children and
+  adults, choosing `min_components`, imputing missing laboratory values,
+  and summarizing and plotting the results.
+- New
+  [`as_le8_scores()`](https://thatoneguy006.github.io/essential8/reference/as_le8_scores.md)
+  restores the `essential8_scores` class to scored data after
+  [`group_by()`](https://dplyr.tidyverse.org/reference/group_by.html),
+  [`as_tibble()`](https://tibble.tidyverse.org/reference/as_tibble.html),
+  or reading saved results.
+
+### Breaking Changes
+
+- Component score columns no longer have the `le8_` prefix: they are now
+  `diet_score`, `physical_activity_score`, `nicotine_score`,
+  `sleep_score`, `bmi_score`, `blood_lipids_score`,
+  `blood_glucose_score`, and `blood_pressure_score`. `le8_n_components`
+  is now `n_components`. Columns that describe the LE8 composite keep
+  the prefix: `le8_composite_score`, `le8_complete`, `le8_category`, and
+  `le8_population`.
+- Because output names are reserved, `data` that already contains one of
+  the new names (for example, a `sleep_score` from another instrument)
+  or one of the old `le8_`-prefixed names now raises an error. Rename
+  those columns before scoring.
+
+### Minor Changes
+
+- Errors now report
+  [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
+  as the call rather than an internal helper.
+
 ## essential8 0.3.0
 
 ### Major Changes

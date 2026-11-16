@@ -3,12 +3,15 @@
 Diet is one of the eight components of the American Heart Association’s
 (AHA) Life’s Essential 8 (LE8). `essential8` supports three diet
 measures: MEPA, DASH, and HEI-2015. Each describes diet quality in a
-different way. The package first calculates or accepts a diet score,
+different way. This package first calculates or accepts a diet score,
 then applies the LE8 scoring rules.
 
 This article explains where the measures came from, how they become LE8
 points, and which inputs to use. Examples apply to adults aged 20 or
-older.
+older; for children, see
+[`vignette("pediatric-scoring")`](https://thatoneguy006.github.io/essential8/articles/pediatric-scoring.md).
+The packaged NHANES references describe adults and are refused for
+pediatric rows.
 
 ## Where the diet measures came from
 
@@ -93,8 +96,8 @@ score of 70 is therefore different from the 70th percentile or an LE8
 diet score of 70. The reference determines which LE8 band contains that
 raw score.
 
-The resulting `le8_diet_score` contributes to the LE8 composite in the
-same way as the other seven components.
+The resulting `diet_score` contributes to the LE8 composite in the same
+way as the other seven components.
 [`score_le8()`](https://thatoneguy006.github.io/essential8/reference/score_le8.md)
 averages available component scores when at least `min_components` are
 present; the default is seven.
@@ -107,20 +110,14 @@ Examination Survey. `essential8` includes references derived from those
 survey years and the matching USDA Food Patterns Equivalents Database
 (FPED), which converts foods into common food-group units.
 
-The package references describe 8,241 adults aged 20 or older, excluding
+The NHANES references describe 8,241 adults aged 20 or older, excluding
 known pregnancy, with two reliable dietary recalls and complete required
 inputs. The builder averages the same two days’ foods, nutrients, and
 energy before scoring. It uses the combined dietary weight
 (`WTDR2D / 2`), survey strata, and sampling units to calculate weighted
 cutpoints: the score values that mark the percentile boundaries.
 
-These are estimates calculated for this package, rather than cutpoint
-tables published by the AHA. They describe scores based on two recalls,
-rather than each person’s long-term usual intake. Scoring uses the
-stored cutpoints; it does not download data or rank the people in your
-input against each other.
-
-The DASH reference uses the package’s specific FPED adaptation,
+The DASH reference uses an FPED adaptation specific to `essential8`:
 `essential8_fung_fped_v1`. It uses pooled intake quintiles across sexes
 and the food definitions listed below. An existing DASH score must match
 these definitions to use this reference. HEI-2015 inputs should also
@@ -139,9 +136,7 @@ Use one diet method and one type of diet input per call:
 
 The examples use `dplyr` and the native pipe (`|>`, available in R
 4.1+). We start with two packaged example adults so the other LE8
-components are available. All records and added diet values are
-illustrative. The selected method ignores the unused MEPA columns in
-these records.
+components are available.
 
 ``` r
 
@@ -176,12 +171,12 @@ Add an HEI-2015 score and name the reference explicitly:
 adults |>
   mutate(hei2015 = c(45, 70)) |>
   score_le8(diet_method = "hei2015", reference = "nhanes_2015_2018") |>
-  select(id, hei2015, le8_diet_score)
+  select(id, hei2015, diet_score)
 #> # A tibble: 2 × 3
-#>   id      hei2015 le8_diet_score
-#>   <chr>     <dbl>          <dbl>
-#> 1 adult_1      45             25
-#> 2 adult_2      70             80
+#>   id      hei2015 diet_score
+#>   <chr>     <dbl>      <dbl>
+#> 1 adult_1      45         25
+#> 2 adult_2      70         80
 ```
 
 The raw scores of 45 and 70 receive 25 and 80 LE8 points with this
@@ -200,20 +195,18 @@ lookup is needed:
 adults |>
   mutate(diet_value = c(35, 98)) |>
   score_le8(diet_method = "dash") |>
-  select(id, diet_value, le8_diet_score)
+  select(id, diet_value, diet_score)
 #> # A tibble: 2 × 3
-#>   id      diet_value le8_diet_score
-#>   <chr>        <dbl>          <dbl>
-#> 1 adult_1         35             25
-#> 2 adult_2         98            100
+#>   id      diet_value diet_score
+#>   <chr>        <dbl>      <dbl>
+#> 1 adult_1         35         25
+#> 2 adult_2         98        100
 ```
 
 These percentiles receive 25 and 100 LE8 points. Supply `95` for the
-95th percentile, rather than `0.95`. The package rejects a batch that
-looks like fractional proportions and does not rescale it. This check
-can also reject genuine fractional percentiles below 1 when they make up
-the whole batch. The generic `diet_method = "percentile"` option uses
-the same LE8 bands.
+95th percentile, rather than `0.95`. Fractional proportions are
+rejected. The generic `diet_method = "percentile"` option uses the same
+LE8 bands.
 
 ## Calculate DASH from raw inputs
 
@@ -246,7 +239,7 @@ the volume or weight of the food as eaten.
 | `dash_sweetened_beverages` | Added-sugar teaspoon equivalents from the reference’s beverage codes, multiplied by 4/26 |
 | `dash_energy_kcal` | Positive kcal/day, including alcohol |
 
-The package standardizes sodium to 2,000 kcal using
+Sodium is standardized to 2,000 kcal using
 `sodium / energy_kcal * 2000`. Supply unadjusted mg/day; do not apply
 this adjustment twice. Average the same recalls’ daily inputs before
 scoring.
@@ -270,12 +263,12 @@ dash_inputs <- tibble(
 adults |>
   bind_cols(dash_inputs) |>
   score_le8(diet_method = "dash", reference = "nhanes_2015_2018") |>
-  select(id, dash_total, le8_diet_score)
+  select(id, dash_total, diet_score)
 #> # A tibble: 2 × 3
-#>   id      dash_total le8_diet_score
-#>   <chr>        <int>          <dbl>
-#> 1 adult_1         27             80
-#> 2 adult_2         36            100
+#>   id      dash_total diet_score
+#>   <chr>        <int>      <dbl>
+#> 1 adult_1         27         80
+#> 2 adult_2         36        100
 ```
 
 Raw DASH scoring also returns the eight component scores, such as
@@ -295,8 +288,8 @@ standards](https://epi.grants.cancer.gov/hei/developing.html).
 Scores between the minimum and maximum standards are proportional. For
 example, 0.8 cup equivalents of total fruit per 1,000 kcal earns all 5
 fruit points; 0.4 earns 2.5. Higher intake beyond a component’s maximum
-standard does not add points. After summing the 13 components, the
-package compares the total with the reference to assign LE8 points.
+standard does not add points. After summing the 13 components, the total
+is compared with the reference to assign LE8 points.
 
 ### Prepare the daily inputs
 
@@ -311,9 +304,9 @@ package compares the total with the reference to assign LE8 points.
 
 Include juice in total fruit but exclude it from whole fruit. Count
 legumes in both vegetable and protein groups, using the appropriate
-equivalents. Average the same recalls’ inputs before scoring. The
-package calculates the densities, fat ratio, and energy percentages from
-these amounts, following the [NCI
+equivalents. Average the same recalls’ inputs before scoring.
+`essential8` calculates the densities, fat ratio, and energy percentages
+from these amounts, following the [NCI
 algorithm](https://epi.grants.cancer.gov/hei/hei-scoring-method.html).
 
 ### Score the inputs
@@ -341,12 +334,12 @@ hei_inputs <- tibble(
 adults |>
   bind_cols(hei_inputs) |>
   score_le8(diet_method = "hei2015", reference = "nhanes_2015_2018") |>
-  select(id, hei2015_total, le8_diet_score)
+  select(id, hei2015_total, diet_score)
 #> # A tibble: 2 × 3
-#>   id      hei2015_total le8_diet_score
-#>   <chr>           <dbl>          <dbl>
-#> 1 adult_1          61.1             50
-#> 2 adult_2         100              100
+#>   id      hei2015_total diet_score
+#>   <chr>           <dbl>      <dbl>
+#> 1 adult_1          61.1         50
+#> 2 adult_2         100          100
 ```
 
 Raw HEI-2015 scoring also returns all 13 component scores, such as
@@ -361,7 +354,6 @@ percentiles:
 
 ``` r
 
-# Teaching values only; derive real cutpoints from a suitable population.
 custom <- diet_reference(
   p25 = 40, p50 = 55, p75 = 65, p95 = 80,
   method = "hei2015", label = "Example reference"
@@ -370,12 +362,12 @@ custom <- diet_reference(
 adults |>
   mutate(hei2015 = c(45, 70)) |>
   score_le8(diet_method = "hei2015", reference = custom) |>
-  select(id, hei2015, le8_diet_score)
+  select(id, hei2015, diet_score)
 #> # A tibble: 2 × 3
-#>   id      hei2015 le8_diet_score
-#>   <chr>     <dbl>          <dbl>
-#> 1 adult_1      45             25
-#> 2 adult_2      70             80
+#>   id      hei2015 diet_score
+#>   <chr>     <dbl>      <dbl>
+#> 1 adult_1      45         25
+#> 2 adult_2      70         80
 ```
 
 A reference must match the diet method, score definition, and

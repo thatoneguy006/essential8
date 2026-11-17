@@ -4,12 +4,12 @@
 
 ## R CMD check results
 
-- `R CMD check essential8_0.9.0.tar.gz --as-cran`
+- `R CMD check essential8_0.9.1.tar.gz --as-cran`
 - Status: OK
 0 errors | 0 warnings | 0 notes
 
 ## Submission notes
 
-- This is an update release
+- This is an update release to fix the failing CRAN check
 - There are no known reverse dependencies to check
 

@@ -1,3 +1,13 @@
+# essential8 0.9.1
+
+## Minor Changes
+
+- Added Rhub checks
+
+## Bug Fixes
+
+- Fixed failing test on Intel MKL platform
+
 # essential8 0.9.0
 
 ## Major Changes

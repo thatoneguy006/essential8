@@ -293,24 +293,64 @@ test_that("score_le8(impute =) returns stacked scored imputations", {
   )
 })
 
-test_that("score_le8(impute =) is reproducible with a seed and keeps tibbles", {
+
+test_that("score_le8(impute =) passes seeds and keeps tibbles", {
   skip_if_not_installed("mice")
   skip_if_not_installed("tibble")
+  
   adults <- tibble::as_tibble(adult_input_fixture())
   adults$non_hdl_cholesterol[c(2, 5)] <- NA
   adults$sleep_hours[3] <- NA
+  
   run <- function(seed) {
     suppressWarnings(score_le8(
       adults,
-      impute = le8_imputation_control(m = 2, maxit = 2, seed = seed)
+      impute = le8_imputation_control(
+        m = 2,
+        maxit = 2,
+        seed = seed
+      )
     ))
   }
+  
   first <- run(1)
-
-  expect_s3_class(first, c("essential8_imputed_scores", "essential8_scores", "tbl_df"))
+  second <- run(2)
+  
+  # Preserve output structure.
+  expect_s3_class(
+    first,
+    c("essential8_imputed_scores",
+      "essential8_scores", "tbl_df")
+  )
   expect_true(all(c(".imp", ".id") %in% names(first)))
-  expect_identical(first$blood_lipids_score, run(1)$blood_lipids_score)
-  expect_false(identical(first$sleep_score, run(2)$sleep_score))
+  
+  # Verify that seeds reach mice.
+  expect_equal(attr(first, "mids")$seed, 1)
+  expect_equal(attr(second, "mids")$seed, 2)
+  
+  observed <- !is.na(adults$non_hdl_cholesterol)
+  
+  for (scores in list(first, second)) {
+    completed <- mice::complete(
+      attr(scores, "mids"),
+      action = "long"
+    )
+    
+    # Observed values must remain unchanged.
+    expect_equal(
+      completed$non_hdl_cholesterol[rep(observed, 2)],
+      rep(adults$non_hdl_cholesterol[observed], 2)
+    )
+    
+    # PMM imputations must come from observed donors.
+    expect_true(all(
+      completed$non_hdl_cholesterol[rep(!observed, 2)] %in%
+        adults$non_hdl_cholesterol[observed]
+    ))
+    
+    # All required lipid scores must be available.
+    expect_false(anyNA(scores$blood_lipids_score))
+  }
 })
 
 test_that("score_le8(impute =) handles one input to impute, and none", {

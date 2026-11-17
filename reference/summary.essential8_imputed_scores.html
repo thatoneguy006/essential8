@@ -134,13 +134,13 @@ and <code>fmi</code>, and averaged <code>sd</code>, <code>min</code>, <code>q25<
 <span class="r-out co"><span class="r-pr">#&gt;</span> Composite score available for 10 of 10 (average over imputations).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                    n mean    95% CI  fmi   sd median</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> LE8 composite     10 48.4 27.0-69.7 0.19 28.9   49.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> LE8 composite     10 48.4 27.2-69.5 0.19 28.6   49.1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Diet              10 51.0 22.9-79.1 0.19 38.1   50.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Physical activity 10 60.0 35.2-84.8 0.19 33.7   70.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Nicotine exposure 10 40.0 15.4-64.6 0.19 33.3   30.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Sleep             10 55.0 28.5-81.5 0.19 36.0   55.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> BMI               10 46.5 20.2-72.8 0.19 35.7   50.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Blood lipids      10 46.4 17.6-75.2 0.26 37.0   42.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Blood lipids      10 46.4 17.9-74.9 0.31 34.9   42.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Blood glucose     10 46.0 22.6-69.4 0.19 31.7   50.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Blood pressure    10 42.0 19.4-64.6 0.19 30.7   40.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Means pooled with Rubin's rules; fmi = fraction of missing information.</span>
@@ -152,25 +152,25 @@ and <code>fmi</code>, and averaged <code>sd</code>, <code>min</code>, <code>q25<
 <span class="r-out co"><span class="r-pr">#&gt;</span>   high     1   10.0%  0.0-32.1</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">scores</span><span class="op">)</span><span class="op">$</span><span class="va">statistics</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>             measure  n n_missing    mean std.error conf.low conf.high       df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1         composite 10         0 48.3625  9.153674 26.99869  69.72631 7.485177</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1         composite 10         0 48.3625  9.048758 27.23785  69.48715 7.474421</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2              diet 10         0 51.0000 12.036980 22.91725  79.08275 7.500000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3 physical_activity 10         0 60.0000 10.645813 35.16290  84.83710 7.500000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4          nicotine 10         0 40.0000 10.540926 15.40760  64.59240 7.500000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5             sleep 10         0 55.0000 11.377365 28.45616  81.54384 7.500000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6               bmi 10         0 46.5000 11.280514 20.18211  72.81789 7.500000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7      blood_lipids 10         0 46.4000 12.142853 17.60321  75.19679 6.901248</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7      blood_lipids 10         0 46.4000 11.827651 17.87106  74.92894 6.379532</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 8     blood_glucose 10         0 46.0000 10.022198 22.61782  69.38218 7.500000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 9    blood_pressure 10         0 42.0000  9.695360 19.38034  64.61966 7.500000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         fmi       sd min     q25  median      q75 max</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.1923391 28.91606 1.5 33.4375 49.0625 64.46875 100</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.1904762 38.06427 0.0 25.0000 50.0000 80.00000 100</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0.1904762 33.66502 0.0 40.0000 70.0000 87.50000 100</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 0.1904762 33.33333 0.0 25.0000 30.0000 63.75000 100</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 0.1904762 35.97839 0.0 25.0000 55.0000 85.00000 100</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 0.1904762 35.67212 0.0 18.7500 50.0000 73.75000 100</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7 0.2591463 36.95696 0.0 20.0000 42.0000 72.00000 100</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8 0.1904762 31.69297 0.0 22.5000 50.0000 60.00000 100</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9 0.1904762 30.65942 0.0 26.2500 40.0000 53.75000 100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.1936833 28.56449   3 33.4375 49.0625 63.65625 100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.1904762 38.06427   0 25.0000 50.0000 80.00000 100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0.1904762 33.66502   0 40.0000 70.0000 87.50000 100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 0.1904762 33.33333   0 25.0000 30.0000 63.75000 100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 0.1904762 35.97839   0 25.0000 55.0000 85.00000 100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 0.1904762 35.67212   0 18.7500 50.0000 73.75000 100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7 0.3131137 34.88782   0 20.0000 42.0000 69.00000 100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8 0.1904762 31.69297   0 22.5000 50.0000 60.00000 100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9 0.1904762 30.65942   0 26.2500 40.0000 53.75000 100</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

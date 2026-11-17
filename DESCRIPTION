@@ -1,6 +1,6 @@
 Package: essential8
 Title: Reproducible Cardiovascular Health Metric Scoring
-Version: 0.9.0
+Version: 0.9.1
 Authors@R: c(
     person(
       given = "Carson",

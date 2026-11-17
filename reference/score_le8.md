@@ -672,13 +672,13 @@ summary(imputed)
 #> Composite score available for 10 of 10 (average over imputations).
 #> 
 #>                    n mean    95% CI  fmi   sd median
-#> LE8 composite     10 48.4 27.0-69.7 0.19 28.9   49.1
+#> LE8 composite     10 48.4 27.2-69.5 0.19 28.6   49.1
 #> Diet              10 51.0 22.9-79.1 0.19 38.1   50.0
 #> Physical activity 10 60.0 35.2-84.8 0.19 33.7   70.0
 #> Nicotine exposure 10 40.0 15.4-64.6 0.19 33.3   30.0
 #> Sleep             10 55.0 28.5-81.5 0.19 36.0   55.0
 #> BMI               10 46.5 20.2-72.8 0.19 35.7   50.0
-#> Blood lipids      10 46.4 17.6-75.2 0.26 37.0   42.0
+#> Blood lipids      10 46.4 17.9-74.9 0.31 34.9   42.0
 #> Blood glucose     10 46.0 22.6-69.4 0.19 31.7   50.0
 #> Blood pressure    10 42.0 19.4-64.6 0.19 30.7   40.0
 #> Means pooled with Rubin's rules; fmi = fraction of missing information.

@@ -7,7 +7,7 @@ authors:
     given-names: Carson
     orcid: https://orcid.org/0009-0004-8710-1097
 type: software
-version: 0.9.0
+version: 0.9.1
 identifiers:
   - type: doi
     value: "10.32614/CRAN.package.ggforestplotR"

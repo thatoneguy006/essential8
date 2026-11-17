@@ -163,13 +163,13 @@ summary(score_le8_imputed(imputed))
 #> Composite score available for 10 of 10 (average over imputations).
 #> 
 #>                    n mean    95% CI  fmi   sd median
-#> LE8 composite     10 48.7 27.9-69.5 0.20 28.0   50.4
+#> LE8 composite     10 48.6 27.1-70.1 0.19 29.1   50.9
 #> Diet              10 51.0 22.9-79.1 0.19 38.1   50.0
 #> Physical activity 10 60.0 35.2-84.8 0.19 33.7   70.0
 #> Nicotine exposure 10 40.0 15.4-64.6 0.19 33.3   30.0
-#> Sleep             10 58.0 29.2-86.8 0.30 35.5   61.0
+#> Sleep             10 58.0 31.0-85.0 0.26 34.8   64.0
 #> BMI               10 46.5 20.2-72.8 0.19 35.7   50.0
-#> Blood lipids      10 46.0 14.3-77.7 0.45 33.3   44.0
+#> Blood lipids      10 45.2 17.5-72.9 0.23 36.3   40.0
 #> Blood glucose     10 46.0 22.6-69.4 0.19 31.7   50.0
 #> Blood pressure    10 42.0 19.4-64.6 0.19 30.7   40.0
 #> Means pooled with Rubin's rules; fmi = fraction of missing information.

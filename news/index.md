@@ -2,6 +2,8 @@
 
 ## essential8 0.9.1
 
+CRAN release: 2026-11-17
+
 ### Minor Changes
 
 - Added Rhub checks

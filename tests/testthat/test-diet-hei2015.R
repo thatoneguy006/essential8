@@ -148,6 +148,36 @@ test_that("HEI-2015 uses fixed reference thresholds with inclusive equality", {
   expect_equal(singleton$diet_score, result$diet_score[2])
 })
 
+test_that("calculated HEI ties tolerate roundoff only at the band boundary", {
+  # At this energy intake, the published maximum standards sum to a value
+  # one floating-point step below 100. Half the fruit standard yields 97.5.
+  row <- adult_hei2015_row("best")
+  energy <- 682
+  fields <- grep("^hei2015_", names(row), value = TRUE)
+  row[fields] <- lapply(row[fields], function(x) x * energy / 1000)
+  saturated <- 0.08 * energy / 9
+  row$hei2015_saturated_fat <- saturated
+  row$hei2015_polyunsaturated_fat <- saturated
+  row$hei2015_monounsaturated_fat <- 1.5 * saturated
+  row$hei2015_sodium <- 1.1 * energy
+  row$hei2015_added_sugars <- 0.065 * energy / 16
+  for (boundary in c(100, 97.5)) {
+    fruit_density <- if (boundary == 100) 0.8 else 0.4
+    row$hei2015_total_fruits <- fruit_density * energy / 1000
+    reference <- diet_reference(25, 50, 75, boundary, method = "hei2015")
+    below <- row
+    below$hei2015_total_fruits <- below$hei2015_total_fruits - 1e-9
+    scores <- score_le8(rbind(row, below), "hei2015", reference = reference)
+    expect_equal(scores$hei2015_total[1], boundary, tolerance = 1e-14)
+    expect_equal(scores$diet_score, c(100, 80))
+
+    # A supplied score has no component arithmetic to compensate for.
+    index <- adult_example_row()
+    index$hei2015 <- boundary - 2^-46
+    expect_equal(score_le8(index, "hei2015", reference = reference)$diet_score, 80)
+  }
+})
+
 test_that("explicit HEI-2015 reference cutpoints are validated", {
   for (reference in list(numeric(), c(0, 50, 101, 101),
                          c(0, 50, NA, 100), c(0, 70, 50, 100),

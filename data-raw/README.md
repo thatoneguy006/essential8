@@ -25,8 +25,10 @@ Rscript data-raw/build_diet_references.R tmp/nhanes-cache --verify
 ```
 
 The first run downloads official public files into the ignored cache. The
-verification run recomputes indices and compares cutpoints, cycle sample
-counts, and source hashes with the packaged objects. Updating sources,
+verification run compares all 32 DASH intake cutpoints, the DASH and HEI-2015
+total-score cutpoints, cycle sample counts, and source hashes with the packaged
+objects. A changed intake cutpoint identifies the food group or nutrient and
+the percentile boundary. Updating sources,
 index definitions, exclusions, or estimator requires a new reference version,
 not silently changing an existing reference. CRAN and ordinary tests do not
 run this pipeline or need a network connection.

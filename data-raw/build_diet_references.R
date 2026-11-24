@@ -4,6 +4,27 @@
 # archives as data. The downloaded executables are NEVER executed.
 # Raw files and participant scores stay in the ignored cache, not the package.
 
+verify_dash_intake_cutpoints <- function(packaged, rebuilt) {
+  if (!setequal(names(packaged), names(rebuilt)) || anyDuplicated(names(packaged))) {
+    stop("DASH intake fields differ. Packaged: ", toString(names(packaged)),
+         ". Rebuilt: ", toString(names(rebuilt)), call. = FALSE)
+  }
+  for (field in names(rebuilt)) {
+    old <- packaged[[field]]
+    new <- rebuilt[[field]]
+    if (length(old) != 4L || length(new) != 4L) {
+      stop("Expected four DASH intake cutpoints for ", field, ".", call. = FALSE)
+    }
+    for (i in seq_along(new)) {
+      if (!identical(old[[i]], new[[i]])) {
+        stop(sprintf("DASH %s p%d differs. Packaged %.17g, rebuilt %.17g.",
+                     field, 20L * i, old[[i]], new[[i]]), call. = FALSE)
+      }
+    }
+  }
+  invisible(TRUE)
+}
+
 build_diet_references <- function(cache = "tmp/nhanes-cache", verify = FALSE) {
   for (package in c("haven", "survey", "digest")) {
     if (!requireNamespace(package, quietly = TRUE)) {
@@ -191,7 +212,7 @@ build_diet_references <- function(cache = "tmp/nhanes-cache", verify = FALSE) {
     dash_nuts_and_legumes = cohort$nuts_legumes,
     dash_whole_grains = cohort$whole_grains,
     dash_low_fat_dairy = cohort$low_fat_dairy,
-    dash_sodium = cohort$sodium / (cohort$energy / 2000),
+    dash_sodium = env$.dash_sodium_per_2000_kcal(cohort$sodium, cohort$energy),
     dash_red_and_processed_meat = cohort$red_meat,
     dash_sweetened_beverages = cohort$sweetened_beverages
   )
@@ -252,6 +273,10 @@ build_diet_references <- function(cache = "tmp/nhanes-cache", verify = FALSE) {
   if (verify) {
     stored <- new.env()
     load("R/sysdata.rda", stored)
+    verify_dash_intake_cutpoints(
+      stored$.nhanes_diet_references$dash$provenance$component_cutpoints,
+      .nhanes_diet_references$dash$provenance$component_cutpoints
+    )
     for (method in names(.nhanes_diet_references)) {
       old <- stored$.nhanes_diet_references[[method]]
       new <- .nhanes_diet_references[[method]]
@@ -260,7 +285,8 @@ build_diet_references <- function(cache = "tmp/nhanes-cache", verify = FALSE) {
                 identical(old$provenance$n_by_cycle, new$provenance$n_by_cycle))
       stopifnot(identical(old$provenance$sources, new$provenance$sources))
     }
-    message("Rebuilt cutpoints and sample counts match the packaged references.")
+    message("All 32 DASH intake cutpoints, total-score cutpoints, cycle counts, ",
+            "and source hashes match the packaged references.")
   } else {
     save(.nhanes_diet_references, file = "R/sysdata.rda", version = 2, compress = "xz")
     utils::write.csv(do.call(rbind, manifest), "data-raw/source-manifest.csv", row.names = FALSE)

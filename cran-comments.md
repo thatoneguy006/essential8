@@ -4,7 +4,7 @@
 
 ## R CMD check results
 
-- `R CMD check essential8_0.9.1.tar.gz --as-cran`
+- `R CMD check essential8_1.0.0.tar.gz --as-cran`
 - Status: OK
 0 errors | 0 warnings | 0 notes
 

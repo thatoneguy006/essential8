@@ -54,9 +54,8 @@
   }
 }
 
-# Percentile columns use the 0-100 scale. Values confined to 0-1 (other than
-# the endpoints alone) are rejected as apparent proportions; values are never
-# rescaled automatically.
+# Low percentile points can look like proportions. Flag the ambiguity while
+# preserving the supplied values and the documented 0-100 scale.
 .check_percentile_column <- function(value, column, label = column) {
   if (any(value < 0 | value > 100, na.rm = TRUE)) {
     .abort_input("{.field {column}} must be between 0 and 100.")
@@ -64,10 +63,10 @@
   observed <- value[!is.na(value)]
   if (length(observed) && all(observed <= 1) &&
       any(observed > 0 & observed < 1)) {
-    .abort_input(c(
-      "{.field {column}} appears to contain proportions.",
-      "i" = "Use the 0 to 100 scale, for example 95 for the 95th percentile."
-    ))
+    .warn_le8(c(
+      "{.field {column}} contains only values at or below 1.",
+      "i" = "Scoring uses percentile points. Check the units if these are proportions."
+    ), class = "essential8_percentile_scale_warning")
   }
 }
 
@@ -273,9 +272,5 @@
       "MEPA data must not supply a precomputed {.field diet_value}.",
       "i" = "Provide the raw MEPA screener responses; the package derives {.field mepa_total}."
     ))
-  }
-  if (diet_method == "percentile") {
-    .check_numeric_column(data, "diet_value")
-    .validate_diet_percentile(data$diet_value)
   }
 }

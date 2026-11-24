@@ -11,7 +11,9 @@ score_le8_imputed(data, ...)
 settings from \code{\link[=le8_imputation_setup]{le8_imputation_setup()}}), or a data frame of stacked
 completed data sets with an integer \code{.imp} column numbering them from 1
 (for example, from \code{mice::complete(imputed, "long")} or another
-imputation package). To impute and score in one call, use
+imputation package). If supplied, \code{.id} must identify the same
+participants once each in every completed data set. Row order may differ.
+To impute and score in one call, use
 \code{score_le8(impute = TRUE)} instead.}
 
 \item{...}{Arguments passed to \code{\link[=score_le8]{score_le8()}}, such as \code{min_components}.}
@@ -35,7 +37,10 @@ Rubin's rules. Means are pooled with total variance
 \eqn{T = \bar{U} + (1 + 1/m) B} and Barnard-Rubin degrees of freedom; the
 fraction of missing information (\code{fmi}) describes how much the
 imputations add to the uncertainty. Category percentages are pooled the
-same way. Standard deviations and quantiles are averaged across
+same way. When within-imputation variance is zero and estimates differ,
+the estimate and standard error remain available. The interval is missing
+because the Barnard-Rubin degrees of freedom are zero.
+Standard deviations and quantiles are averaged across
 imputations, which describes the distribution but carries no interval.
 }
 

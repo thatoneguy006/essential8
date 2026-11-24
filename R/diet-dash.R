@@ -6,6 +6,11 @@
   )
 }
 
+# Use the same order of operations when building and applying intake quintiles.
+.dash_sodium_per_2000_kcal <- function(sodium, energy_kcal) {
+  sodium / (energy_kcal / 2000)
+}
+
 .validate_dash_cutpoints <- function(dash_cutpoints) {
   fields <- c(.adult_dash_fields(), "total")
   if (!is.list(dash_cutpoints) || is.data.frame(dash_cutpoints) ||
@@ -64,7 +69,7 @@
       )
     }
     # The packaged FPED definition uses sodium standardized to 2,000 kcal.
-    inputs$sodium <- inputs$sodium / inputs$energy_kcal * 2000
+    inputs$sodium <- .dash_sodium_per_2000_kcal(inputs$sodium, inputs$energy_kcal)
     inputs$energy_kcal <- NULL
   }
   reverse <- c("sodium", "red_and_processed_meat", "sweetened_beverages")

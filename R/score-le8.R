@@ -293,6 +293,9 @@
 #' Added sugars use 16 kcal per teaspoon equivalent; saturated fat uses
 #' 9 kcal per gram. Scores are capped at each component's maximum. Their sum
 #' is `hei2015_total` (0 to 100), which is distinct from the LE8 diet score.
+#' For a calculated HEI-2015 total, the band comparison allows for floating-point
+#' rounding within twice machine epsilon times the cutpoint. The reported total
+#' retains its full precision. Supplied index scores use exact comparisons.
 #' With zero saturated fat and positive unsaturated fat, the fatty-acid
 #' component receives 10 points; with all three fats zero it receives zero,
 #' following the NCI scoring macro. Missing inputs are never treated as zero;

@@ -37,7 +37,8 @@
 #' @param bmi Optional name of a BMI column in kg/m^2. When `NULL` (the
 #'   default), BMI is calculated from `weight` and `height`.
 #' @param age_months Optional name of a column holding age in months. When
-#'   `NULL`, `age_months` is used if present, otherwise `age * 12`.
+#'   `NULL`, observed `age_months` values take precedence. Missing months
+#'   use `age * 12` when age in years is available.
 #' @param completed_months If `FALSE` (the default), ages are exact, so
 #'   54 months means exactly 4.5 years. If `TRUE`, ages are completed months
 #'   (as in NHANES) and 0.5 is added before every reference lookup. Unlike
@@ -211,6 +212,10 @@ add_pediatric_references <- function(
     months <- .reference_measurement(data, age_months, "age_months")
   } else if ("age_months" %in% names(data)) {
     months <- .reference_measurement(data, "age_months", "age_months")
+    missing <- is.na(months)
+    if (any(missing) && "age" %in% names(data)) {
+      months[missing] <- 12 * .reference_measurement(data[missing, , drop = FALSE], "age", "age")
+    }
   } else {
     months <- .reference_measurement(data, "age", "age") * 12
   }

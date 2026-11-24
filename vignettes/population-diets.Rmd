@@ -211,7 +211,7 @@ or weight of the food as eaten.
 | `dash_energy_kcal` | Positive kcal/day, including alcohol |
 
 Sodium is standardized to 2,000 kcal using
-`sodium / energy_kcal * 2000`. Supply unadjusted mg/day; do not apply this
+`sodium / (energy_kcal / 2000)`. Supply unadjusted mg/day; do not apply this
 adjustment twice. Average the same recalls' daily inputs before scoring.
 
 ### Score the inputs

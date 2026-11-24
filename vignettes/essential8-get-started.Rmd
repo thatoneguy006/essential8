@@ -127,7 +127,12 @@ so that the derived diet input can be audited. The default MEPA sex field is
 
 The `diet_method` argument defaults to `"mepa"`. If your data contains both MEPA and percentile inputs, split the rows into separate data frames and call `score_le8()` separately for each method.
 
-`essential8` can also compute DASH/HEI-2015 percentiles if you collected data for those instruments. Use `diet_method = "dash"` or `"hei2015"` with raw food and nutrient inputs,the resulting data-frame is similar to the MEPA call. Otherwise supply the DASH/HEI-2015 scores to be converted to percentiles, or the percentiles themselves in the data-frame via `diet_value`. See
+For DASH or HEI-2015, supply raw intake data or an existing index score with
+`diet_method = "dash"` or `"hei2015"`. The package compares the index with
+four reference cutpoints and returns 0, 25, 50, 80, or 100 LE8 diet points.
+For example, an index at or above the 75th cutpoint and below the 95th earns
+80 points. Its exact percentile within that band is unknown. If you already
+have a percentile, supply it in `diet_value` as in the example below. See
 `vignette("population-diets", package = "essential8")` for the background,
 scoring rules, and examples.
 

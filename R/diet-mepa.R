@@ -238,13 +238,7 @@
 .resolve_mepa_columns <- function(data, mepa_columns, needed) {
   requested <- .normalize_mepa_column_map(mepa_columns)
   data_names <- names(data)
-  index <- stats::setNames(
-    match(tolower(unname(requested)), tolower(data_names)),
-    names(requested)
-  )
-  if (is.na(index[["sex"]]) && tolower(requested[["sex"]]) == "sex") {
-    index[["sex"]] <- match("female", tolower(data_names))
-  }
+  index <- .mepa_column_index(data_names, requested)
 
   explicitly_mapped <- tolower(names(mepa_columns))
   item_found <- !is.na(index[.adult_mepa_item_columns()])
@@ -272,6 +266,17 @@
   }
 
   stats::setNames(data_names[found], names(found))
+}
+
+.mepa_column_index <- function(data_names, requested = .normalize_mepa_column_map(NULL)) {
+  index <- stats::setNames(
+    match(tolower(unname(requested)), tolower(data_names)),
+    names(requested)
+  )
+  if (is.na(index[["sex"]]) && tolower(requested[["sex"]]) == "sex") {
+    index[["sex"]] <- match("female", tolower(data_names))
+  }
+  index
 }
 
 # Validated values for every resolved field, keyed by canonical name.

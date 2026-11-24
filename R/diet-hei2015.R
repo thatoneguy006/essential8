@@ -75,9 +75,12 @@
   components[is.na(energy), ] <- NA_real_
   components[is.nan(components)] <- NA_real_
   total <- rowSums(components)
+  # A sum of calculated components can fall a few floating-point steps below
+  # a mathematical tie. Allow roundoff only when assigning the raw HEI band.
+  band_cutpoints <- cutpoints - 2 * .Machine$double.eps * cutpoints
   list(
     total = total,
     components = components,
-    score = .score_population_diet_total(total, cutpoints)
+    score = .score_population_diet_total(total, band_cutpoints)
   )
 }

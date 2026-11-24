@@ -322,11 +322,14 @@ plot.essential8_scores <- function(
     ref_line = NULL
   )
   if (!is.null(by)) {
-    args$group <- by
+    args$group <- .le8_forest_group_column(by)
   }
   args[names(dots)] <- dots
 
   plot <- do.call(ggforestplotR::ggforestplot, args)
+  if (!is.null(by) && args$group != by && identical(plot$labels$colour, args$group)) {
+    plot <- plot + ggplot2::labs(colour = by)
+  }
   plot +
     .le8_threshold_lines() +
     ggplot2::labs(
@@ -360,6 +363,11 @@ plot.essential8_scores <- function(
     )
   }
   invisible()
+}
+
+.le8_forest_group_column <- function(by) {
+  reserved <- c("measure", "label", "estimate", "conf.low", "conf.high", "n")
+  if (by %in% reserved) ".le8_group" else by
 }
 
 # One row per measure (and group): mean score with a t-based interval.
@@ -402,7 +410,7 @@ plot.essential8_scores <- function(
       n = stats$n
     )
     if (!is.null(by)) {
-      out[[by]] <- factor(names(pieces)[i], levels = names(pieces))
+      out[[.le8_forest_group_column(by)]] <- factor(names(pieces)[i], levels = names(pieces))
     }
     out
   })

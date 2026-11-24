@@ -56,7 +56,9 @@ diagnosed diabetes. Each imputed glucose value comes from donors with
 the same measure and diabetes status, and a measure is imputed only if
 such donors exist. These rules run in mice's \code{post}
 step of every iteration, so the other imputation models condition on
-consistent values.
+consistent values. Pediatric blood-pressure references use ordered donor
+values so that each 90th percentile is at most its 95th percentile.
+A reference with no compatible donor stays missing and raises a warning.
 }
 
 Two values that follow from observed data are filled in before imputation

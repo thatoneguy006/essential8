@@ -1,3 +1,9 @@
+# essential8 0.9.1.9000 (development version)
+
+## Bug Fixes
+
+- Misc bug fixes
+
 # essential8 0.9.1
 
 ## Minor Changes

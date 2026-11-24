@@ -46,6 +46,15 @@ test_that("reference DASH standardizes sodium using observed energy", {
   }
 })
 
+test_that("observed NHANES sodium ties stay in the lower intake quintile", {
+  input <- adult_dash_row()[c(1, 1), ]
+  input$dash_sodium <- c(2322, 4473.5)
+  input$dash_energy_kcal <- c(1497, 2564)
+  expect_equal(score_le8(input, "dash")$dash_sodium_score, c(4, 3))
+  input$dash_sodium <- input$dash_sodium + 1e-6
+  expect_equal(score_le8(input, "dash")$dash_sodium_score, c(3, 2))
+})
+
 test_that("reference DASH matches explicit scoring of standardized intakes", {
   ref <- .resolve_diet_reference("dash", "nhanes_2015_2018")
   cuts <- c(ref$provenance$component_cutpoints,
@@ -54,7 +63,7 @@ test_that("reference DASH matches explicit scoring of standardized intakes", {
   input$dash_energy_kcal <- c(1600, 2400)
   actual <- score_le8(input, "dash")
   standardized <- input
-  standardized$dash_sodium <- input$dash_sodium / input$dash_energy_kcal * 2000
+  standardized$dash_sodium <- input$dash_sodium / (input$dash_energy_kcal / 2000)
   standardized$dash_energy_kcal <- NULL
   expected <- score_le8(standardized, "dash", dash_cutpoints = cuts)
   expect_identical(actual$dash_total, expected$dash_total)

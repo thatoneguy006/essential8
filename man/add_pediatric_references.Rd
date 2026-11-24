@@ -31,7 +31,8 @@ before age 2).}
 default), BMI is calculated from \code{weight} and \code{height}.}
 
 \item{age_months}{Optional name of a column holding age in months. When
-\code{NULL}, \code{age_months} is used if present, otherwise \code{age * 12}.}
+\code{NULL}, observed \code{age_months} values take precedence. Missing months
+use \code{age * 12} when age in years is available.}
 
 \item{completed_months}{If \code{FALSE} (the default), ages are exact, so
 54 months means exactly 4.5 years. If \code{TRUE}, ages are completed months

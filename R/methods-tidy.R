@@ -43,7 +43,7 @@ tidy.essential8_scores <- function(x, id_cols = NULL, composite = TRUE, ...) {
     )
   }
   if (is.null(id_cols) && inherits(x, "grouped_df")) {
-    id_cols <- setdiff(names(attr(x, "groups")), ".rows")
+    id_cols <- setdiff(names(attr(x, "groups")), c(".rows", "le8_population"))
   }
   id_cols <- .check_tidy_id_cols(id_cols, x)
   if (.is_imputed(x)) {

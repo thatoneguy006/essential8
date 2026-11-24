@@ -35,7 +35,9 @@
 #'   the same measure and diabetes status, and a measure is imputed only if
 #'   such donors exist. These rules run in mice's `post`
 #'   step of every iteration, so the other imputation models condition on
-#'   consistent values.
+#'   consistent values. Pediatric blood-pressure references use ordered donor
+#'   values so that each 90th percentile is at most its 95th percentile.
+#'   A reference with no compatible donor stays missing and raises a warning.
 #'
 #' Two values that follow from observed data are filled in before imputation
 #' (deductive imputation): `glucose_measure` is `"hba1c"` when `diabetes` is
@@ -118,7 +120,14 @@ le8_imputation_setup <- function(data, auxiliary = NULL, diet_method = "mepa") {
   prepared <- as.data.frame(data, stringsAsFactors = FALSE)
   age <- .le8_age(prepared)
   usage <- .le8_input_usage(age)
+  mepa_index <- .mepa_column_index(names(prepared))
+  mepa_names <- stats::setNames(names(prepared)[mepa_index], names(mepa_index))
+  found <- !is.na(mepa_names)
+  names(usage)[match(names(mepa_names)[found], names(usage))] <- mepa_names[found]
   inputs <- intersect(names(usage), names(prepared))
+  if (any(auxiliary %in% inputs)) {
+    .abort_input("Auxiliary predictors must be separate from the resolved LE8 inputs.")
+  }
 
   # Structurally unused values play no part in scoring; blank them so they
   # cannot enter an imputation model.
@@ -127,7 +136,7 @@ le8_imputation_setup <- function(data, auxiliary = NULL, diet_method = "mepa") {
   }
   deduced <- .deduce_le8_inputs(prepared)
   prepared <- deduced$data
-  prepared <- .le8_inputs_as_factors(prepared, inputs)
+  prepared <- .le8_inputs_as_factors(prepared, inputs, mepa_names)
   for (column in auxiliary) {
     if (is.character(prepared[[column]]) || is.logical(prepared[[column]])) {
       prepared[[column]] <- factor(prepared[[column]])
@@ -144,7 +153,9 @@ le8_imputation_setup <- function(data, auxiliary = NULL, diet_method = "mepa") {
   # Rows each input is needed for: its age band and, for years_since_quit,
   # adults who are, or may be imputed as, former smokers.
   needed <- usage[inputs]
-  if ("years_since_quit" %in% inputs) {
+  if ("years_since_quit" %in% inputs && !"smoking_status" %in% inputs) {
+    needed$years_since_quit[] <- FALSE
+  } else if ("years_since_quit" %in% inputs) {
     status <- as.character(prepared$smoking_status)
     needed$years_since_quit <- needed$years_since_quit &
       (is.na(status) | status == "former")
@@ -160,6 +171,7 @@ le8_imputation_setup <- function(data, auxiliary = NULL, diet_method = "mepa") {
   )
   # Without observed values there is nothing to draw from.
   where[, inputs[!observed_used]] <- FALSE
+  where <- .le8_bp_imputation_mask(prepared, where)
   targets <- inputs[colSums(where[, inputs, drop = FALSE]) > 0L]
 
   method <- stats::setNames(rep("", length(columns)), columns)
@@ -363,11 +375,11 @@ print.essential8_imputation_control <- function(x, ...) {
   if (all(setup$method == "")) {
     cli::cli_inform(
       c(
-        "i" = "No missing inputs needed imputing; each of the {control$m} data sets is the observed data."
+        "i" = "No inputs are scheduled for stochastic imputation. Returning {control$m} copies after deterministic deductions."
       ),
       class = "essential8_imputation_message"
     )
-    observed <- as.data.frame(data)
+    observed <- .deduce_le8_inputs(as.data.frame(data))$data
     n <- nrow(observed)
     # Same layout as mice::complete(action = "long"): .imp and .id last.
     stacked <- observed[rep(seq_len(n), control$m), , drop = FALSE]
@@ -471,7 +483,7 @@ print.essential8_imputation_setup <- function(x, ...) {
   shown <- inputs[inputs$missing > 0L, , drop = FALSE]
   if (nrow(shown) > 0L) {
     cat("\n")
-    shown$method[shown$impute == 0L] <- "(no observed values)"
+    shown$method[shown$impute == 0L] <- "(no eligible donors)"
     print(shown, row.names = FALSE)
   }
   invisible(x)
@@ -616,6 +628,9 @@ print.essential8_imputation_setup <- function(x, ...) {
   counts <- c(glucose_measure = 0L, current_inhaled_nds = 0L)
   if (all(c("diabetes", "glucose_measure") %in% names(data))) {
     rows <- which(data$diabetes %in% TRUE & is.na(data$glucose_measure))
+    if (length(rows) && is.factor(data$glucose_measure)) {
+      levels(data$glucose_measure) <- union(levels(data$glucose_measure), "hba1c")
+    }
     data$glucose_measure[rows] <- "hba1c"
     counts[["glucose_measure"]] <- length(rows)
   }
@@ -637,19 +652,25 @@ print.essential8_imputation_setup <- function(x, ...) {
   )
 }
 
-.le8_inputs_as_factors <- function(data, inputs) {
+.le8_inputs_as_factors <- function(data, inputs, mepa_names) {
   levels <- .le8_categorical_levels()
   for (column in intersect(inputs, .le8_inputs_of_type("logical"))) {
     data[[column]] <- factor(data[[column]], levels = c(FALSE, TRUE))
   }
-  for (column in intersect(inputs, names(levels))) {
+  for (field in names(levels)) {
+    column <- if (field %in% names(mepa_names)) mepa_names[[field]] else field
+    if (!column %in% inputs) next
+    if (field == "sex" && tolower(column) == "female" && is.logical(data[[column]])) {
+      data[[column]] <- factor(data[[column]], levels = c(FALSE, TRUE))
+      next
+    }
     value <- switch(
-      column,
+      field,
       sex = .normalize_sex(data[[column]], column),
       milk_source = .normalize_milk_source(data[[column]], column),
       as.character(data[[column]])
     )
-    data[[column]] <- factor(value, levels = levels[[column]])
+    data[[column]] <- factor(value, levels = levels[[field]])
   }
   data
 }
@@ -658,10 +679,28 @@ print.essential8_imputation_setup <- function(x, ...) {
 .le8_inputs_from_factors <- function(data) {
   for (column in intersect(.le8_inputs_of_type("logical"), names(data))) {
     if (is.factor(data[[column]]) || is.character(data[[column]])) {
-      data[[column]] <- as.logical(as.character(data[[column]]))
+      labels <- as.character(data[[column]])
+      flags <- as.logical(labels)
+      invalid <- unique(labels[!is.na(labels) & is.na(flags)])
+      if (length(invalid)) {
+        .abort_input(c(
+          "Unrecognized logical values in {.field {column}}: {.val {invalid}}.",
+          "i" = "Use TRUE or FALSE for observed flags."
+        ))
+      }
+      data[[column]] <- flags
     }
   }
-  for (column in intersect(names(.le8_categorical_levels()), names(data))) {
+  # mice represents a logical female alias as a two-level factor. Preserve
+  # its logical encoding so the public MEPA resolver can interpret it.
+  mepa_index <- .mepa_column_index(names(data))
+  sex <- names(data)[mepa_index[["sex"]]]
+  if (!is.na(sex) && tolower(sex) == "female" && is.factor(data[[sex]]) &&
+      all(levels(data[[sex]]) %in% c("FALSE", "TRUE"))) {
+    data[[sex]] <- as.logical(as.character(data[[sex]]))
+  }
+  categorical <- c(names(.le8_choices()), names(data)[mepa_index[c("sex", "milk_source")]])
+  for (column in intersect(categorical, names(data))) {
     if (is.factor(data[[column]])) {
       data[[column]] <- as.character(data[[column]])
     }
@@ -679,7 +718,8 @@ print.essential8_imputation_setup <- function(x, ...) {
 
 # Constrained inputs are visited in dependency order, ahead of the rest.
 .le8_post_columns <- function() {
-  c("smoking_status", "current_inhaled_nds", "diabetes", "glucose_measure", "glucose_value")
+  c("smoking_status", "current_inhaled_nds", "diabetes", "glucose_measure",
+    "glucose_value", names(.le8_bp_partners()))
 }
 
 .le8_visit_sequence <- function(targets) {
@@ -709,6 +749,9 @@ print.essential8_imputation_setup <- function(x, ...) {
       return(rep(FALSE, nrow(data)))
     }
     r[, name]
+  }
+  if (column %in% names(.le8_bp_partners())) {
+    return(.le8_post_bp(column, values, rows, data, r))
   }
   current <- function(name) {
     if (!name %in% names(data)) {
@@ -749,15 +792,11 @@ print.essential8_imputation_setup <- function(x, ...) {
     out[diabetes[rows]] <- "hba1c"
     # A measure is only usable with observed values to draw from for the
     # same diabetes status; otherwise take the other measure.
-    donor_rows <- observed("glucose_value")
-    has_donors <- function(measure, diabetic) {
-      any(donor_rows & current("glucose_measure") == measure & diabetes == diabetic)
-    }
-    for (i in seq_along(rows)[!diabetes[rows]]) {
-      other <- setdiff(c("fasting_glucose", "hba1c"), out[i])
-      if (!has_donors(out[i], FALSE) && has_donors(other, FALSE)) {
-        out[i] <- other
-      }
+    donor_rows <- observed("glucose_value") & !diabetes
+    available <- intersect(c("fasting_glucose", "hba1c"),
+                           current("glucose_measure")[donor_rows])
+    if (length(available) == 1L) {
+      out[!diabetes[rows] & !out %in% available] <- available
     }
   } else if (column == "glucose_value") {
     out <- .le8_post_glucose_value(as.numeric(values), rows, data, observed("glucose_value"))
@@ -771,6 +810,59 @@ print.essential8_imputation_setup <- function(x, ...) {
   } else {
     out
   }
+}
+
+.le8_bp_partners <- function() {
+  c(systolic_bp_p90 = "systolic_bp_p95", systolic_bp_p95 = "systolic_bp_p90",
+    diastolic_bp_p90 = "diastolic_bp_p95", diastolic_bp_p95 = "diastolic_bp_p90")
+}
+
+# Remove impossible cells before choosing predictors, so downstream models
+# cannot depend on a reference that will remain missing.
+.le8_bp_imputation_mask <- function(data, where) {
+  partners <- .le8_bp_partners()
+  for (column in intersect(names(partners), names(data))) {
+    partner <- partners[[column]]
+    if (!partner %in% names(data) || !any(where[, column])) next
+    donors <- data[[column]][!is.na(data[[column]])]
+    other <- data[[partner]]
+    lower <- endsWith(column, "p90")
+    limit <- if (lower) min(donors) else max(donors)
+    incompatible <- if (lower) other < limit else other > limit
+    observed_other <- other[!is.na(other)]
+    if (length(observed_other)) {
+      pair_possible <- if (lower) max(observed_other) >= limit else min(observed_other) <= limit
+      incompatible[is.na(other)] <- !pair_possible
+    }
+    blocked <- which(where[, column] & incompatible)
+    if (length(blocked)) {
+      where[blocked, column] <- FALSE
+      .warn_le8(
+        "No compatible donor for {.field {column}} in rows {blocked}. The reference stays missing.",
+        class = "essential8_imputation_warning"
+      )
+    }
+  }
+  where
+}
+
+.le8_post_bp <- function(column, values, rows, data, r) {
+  partner <- .le8_bp_partners()[[column]]
+  if (!partner %in% names(data)) return(values)
+  lower <- endsWith(column, "p90")
+  bound <- data[[partner]][rows]
+  if (lower) {
+    # p90 is visited first. Leave room for at least one observed p95 donor.
+    pool95 <- data[[partner]][r[, partner]]
+    bound[!r[rows, partner]] <- if (length(pool95)) max(pool95) else NA_real_
+  }
+  bad <- which(if (lower) values > bound else values < bound)
+  donors <- data[[column]][r[, column]]
+  for (i in bad) {
+    pool <- if (lower) donors[donors <= bound[i]] else donors[donors >= bound[i]]
+    values[i] <- if (length(pool)) pool[sample.int(length(pool), 1L)] else NA_real_
+  }
+  values
 }
 
 # Each imputed glucose value must come from a donor with the same measure and
@@ -810,7 +902,9 @@ print.essential8_imputation_setup <- function(x, ...) {
 #'   settings from [le8_imputation_setup()]), or a data frame of stacked
 #'   completed data sets with an integer `.imp` column numbering them from 1
 #'   (for example, from `mice::complete(imputed, "long")` or another
-#'   imputation package). To impute and score in one call, use
+#'   imputation package). If supplied, `.id` must identify the same
+#'   participants once each in every completed data set. Row order may differ.
+#'   To impute and score in one call, use
 #'   `score_le8(impute = TRUE)` instead.
 #' @param ... Arguments passed to [score_le8()], such as `min_components`.
 #' @return An `essential8_imputed_scores` object: the stacked scored data sets,
@@ -822,7 +916,10 @@ print.essential8_imputation_setup <- function(x, ...) {
 #' \eqn{T = \bar{U} + (1 + 1/m) B} and Barnard-Rubin degrees of freedom; the
 #' fraction of missing information (`fmi`) describes how much the
 #' imputations add to the uncertainty. Category percentages are pooled the
-#' same way. Standard deviations and quantiles are averaged across
+#' same way. When within-imputation variance is zero and estimates differ,
+#' the estimate and standard error remain available. The interval is missing
+#' because the Barnard-Rubin degrees of freedom are zero.
+#' Standard deviations and quantiles are averaged across
 #' imputations, which describes the distribution but carries no interval.
 #' @seealso [le8_imputation_setup()]
 #' @examplesIf requireNamespace("mice", quietly = TRUE)
@@ -897,6 +994,20 @@ score_le8_imputed <- function(data, ...) {
       call = call
     )
   }
+  if (".id" %in% names(x)) {
+    ids <- split(x[[".id"]], imp)
+    reference <- ids[[1L]]
+    valid <- vapply(ids, function(id) {
+      !anyNA(id) && !anyDuplicated(id) && setequal(id, reference)
+    }, logical(1))
+    if (!all(valid)) {
+      cli::cli_abort(
+        "Every imputation must contain the same complete, unique participant IDs in {.field .id}.",
+        class = c("essential8_imputation_error", "essential8_error"),
+        call = call
+      )
+    }
+  }
   length(sizes)
 }
 
@@ -921,6 +1032,13 @@ score_le8_imputed <- function(data, ...) {
   ubar <- mean(variances)
   between <- stats::var(estimates)
   total <- ubar + (1 + 1 / m) * between
+  if (ubar == 0 && between > 0) {
+    empty$estimate <- qbar
+    empty$std.error <- sqrt(total)
+    empty$df <- 0
+    empty$fmi <- 1
+    return(empty)
+  }
   lambda <- if (total > 0) (1 + 1 / m) * between / total else 0
   df_complete <- max(n - 1, 1)
   df_observed <- (df_complete + 1) / (df_complete + 3) * df_complete * (1 - lambda)

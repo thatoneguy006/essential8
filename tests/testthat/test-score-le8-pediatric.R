@@ -104,7 +104,7 @@ test_that("pediatric BMI uses percentile and percent-of-95th bands", {
   expect_equal(bmi(95, c(100, 119.9, 120, 139.9, 140)), c(30, 30, 15, 15, 0))
   expect_true(is.na(bmi(96)))
   expect_error(bmi(4.9), class = "essential8_pediatric_input_error")
-  expect_error(bmi(0.5), "proportions", class = "essential8_input_error")
+  expect_error(suppressWarnings(bmi(0.5)), class = "essential8_pediatric_input_error")
 })
 
 test_that("infant weight scores size and rapid gain", {
